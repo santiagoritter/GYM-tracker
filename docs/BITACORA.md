@@ -311,3 +311,42 @@ Bundle de los módulos de lógica con esbuild (alias `@` resuelto) ejecutado en 
 
 Pendientes opcionales: sync Supabase (requiere cuenta del usuario), deload
 inteligente, `git init` + primer commit (a confirmar por el usuario).
+
+---
+
+## Sesión 6 — Auth, app "viva" y recordatorios (2026-07-19)
+
+### Sistema de autenticación (previo en esta sesión)
+Login/registro local con WebCrypto (SHA-256 + salt), primer usuario = admin,
+onboarding obligatorio de 4 pasos, panel admin, mensajes motivacionales.
+Schema v4 (`users`). Rutas protegidas con `ProtectedRoute` / `AdminRoute`.
+
+### Mejoras de UX/UI y features "app viva"
+Schema **v5**: tablas `bodyMeasurements` y `achievements`; `LocalProfile`
+extendido con `weeklyGoal` y `reminder*`.
+
+- **Toasts** (`stores/toastStore` + `ui/Toast`): feedback global, helpers
+  `toast.success/error/info/pr`. Montado en `App`.
+- **Confetti** (`ui/Confetti`): ráfaga canvas sin dependencias al lograr PR o
+  logro. Cableado en la pantalla de fin de entreno.
+- **Racha** (`lib/stats` `computeStreak`): días consecutivos, actual + máxima.
+- **Meta semanal**: anillo SVG (`ui/ProgressRing`) + `StreakWeekCard` en Home;
+  configurable en Perfil.
+- **Logros** (`lib/achievements`): 11 logros desbloqueables, `syncAchievements`
+  persiste y devuelve nuevos para celebrar. Panel con progreso.
+- **Heatmap** (`gym/CalendarHeatmap`): grilla estilo GitHub, 18 semanas, 5
+  niveles por volumen.
+- **Dashboard ampliado** (`gym/StatsOverview`): 6 métricas. Nuevas pestañas en
+  Progreso: Resumen y Logros.
+- **Medidas corporales** (`pages/Measurements`, lazy): formulario + evolución
+  de peso (Recharts) + historial. Ruta `/medidas`.
+- **Recordatorios** (`lib/reminders` + `pages/Reminders`): notificaciones
+  locales (Web Notifications API) con hora/días configurables, scheduler en
+  `Layout`. Ruta de **emails** documentada + scaffold de Supabase Edge Function
+  (`supabase/functions/send-reminders`, `docs/12-RECORDATORIOS.md`).
+- **Skeletons** (`ui/Skeleton` + shimmer): estado de carga en Home.
+
+### Verificación
+- `tsc -b` strict sin errores · `npm run build` OK (2505 módulos)
+- Chunks: index 405KB / LineChart(Recharts) 385KB / QRScanner 135KB /
+  Progress 55KB / Measurements 4.8KB / Admin 4.2KB (lazy). PWA 16 entradas.

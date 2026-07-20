@@ -1,5 +1,7 @@
 import Dexie, { type Table } from 'dexie'
 import type {
+  Achievement,
+  BodyMeasurement,
   Exercise,
   LocalProfile,
   PersonalRecord,
@@ -24,6 +26,8 @@ export class GymTrackerDB extends Dexie {
   routineExercises!: Table<RoutineExercise, string>
   progressPhotos!: Table<ProgressPhoto, string>
   users!: Table<User, string>
+  bodyMeasurements!: Table<BodyMeasurement, string>
+  achievements!: Table<Achievement, string>
 
   constructor() {
     super('GymTrackerDB')
@@ -52,6 +56,11 @@ export class GymTrackerDB extends Dexie {
     // v4: usuarios para auth local (Fase auth)
     this.version(4).stores({
       users: 'id, email, role',
+    })
+    // v5: medidas corporales y logros (Fase "app viva")
+    this.version(5).stores({
+      bodyMeasurements: 'id, takenAt',
+      achievements: 'id, unlockedAt',
     })
   }
 }

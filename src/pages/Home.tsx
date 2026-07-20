@@ -8,6 +8,8 @@ import { useWorkoutStore } from '@/stores/workoutStore'
 import { useAuthStore } from '@/stores/authStore'
 import { HOME_MESSAGES } from '@/lib/motivational'
 import { formatDate, formatDuration } from '@/lib/utils'
+import StreakWeekCard from '@/components/gym/StreakWeekCard'
+import { WorkoutCardSkeleton } from '@/components/ui/Skeleton'
 
 export default function Home() {
   const navigate = useNavigate()
@@ -61,6 +63,9 @@ export default function Home() {
           })}
         </p>
       </header>
+
+      {/* Racha + meta semanal */}
+      <StreakWeekCard />
 
       {/* Frase motivacional del día */}
       <blockquote className="rounded-xl border border-accent/20 bg-accent/5 px-4 py-3 text-sm italic text-ink-2">
@@ -134,6 +139,8 @@ export default function Home() {
           Últimos entrenos
         </h2>
         <div className="space-y-2">
+          {recentWorkouts === undefined &&
+            Array.from({ length: 2 }).map((_, i) => <WorkoutCardSkeleton key={i} />)}
           {(recentWorkouts ?? []).map((w) => (
             <div key={w.id} className="rounded-xl bg-surface p-4">
               <div className="flex items-center justify-between">

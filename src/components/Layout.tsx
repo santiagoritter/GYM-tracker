@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { Calendar, Dumbbell, Flame, House, LogOut, Shield, TrendingUp, User } from 'lucide-react'
 import { db } from '@/db/schema'
 import { useAuthStore } from '@/stores/authStore'
+import { useReminderScheduler } from '@/lib/reminders'
 import { cn, formatDuration } from '@/lib/utils'
 
 const TABS = [
@@ -16,6 +17,7 @@ const TABS = [
 export default function Layout() {
   const navigate = useNavigate()
   const { name, role, clearSession } = useAuthStore()
+  useReminderScheduler()
   const activeWorkout = useLiveQuery(
     () => db.workouts.filter((w) => !w.finishedAt).first(),
     []

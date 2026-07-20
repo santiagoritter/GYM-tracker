@@ -138,6 +138,30 @@ export interface LocalProfile {
   sex?: 'male' | 'female'
   goal?: FitnessGoal
   level?: ExperienceLevel
+  weeklyGoal?: number // entrenos objetivo por semana
+  reminderEnabled?: 0 | 1
+  reminderTime?: string // "HH:MM" 24h
+  reminderDays?: number[] // 0=domingo … 6=sábado
+}
+
+// Registro histórico de peso corporal y medidas
+export interface BodyMeasurement {
+  id: string
+  takenAt: string
+  weightKg?: number
+  bodyFatPct?: number
+  chestCm?: number
+  waistCm?: number
+  hipsCm?: number
+  armCm?: number
+  thighCm?: number
+  notes?: string
+}
+
+// Logro desbloqueado (el id es la clave del catálogo en lib/achievements)
+export interface Achievement {
+  id: string
+  unlockedAt: string
 }
 
 // En modo local la foto vive como Blob en IndexedDB

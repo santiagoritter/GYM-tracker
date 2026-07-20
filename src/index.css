@@ -30,6 +30,21 @@
   .animate-fade-up {
     animation: fade-up 150ms ease both;
   }
+
+  /* Shimmer de skeletons de carga */
+  @keyframes shimmer {
+    100% { transform: translateX(100%); }
+  }
+  .skeleton {
+    @apply relative overflow-hidden bg-surface-2;
+  }
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+    animation: shimmer 1.4s infinite;
+  }
 }
 
 @layer base {

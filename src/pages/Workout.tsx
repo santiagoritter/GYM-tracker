@@ -7,8 +7,13 @@ import { useWorkoutStore } from '@/stores/workoutStore'
 import { ExercisePicker } from '@/components/gym/ExercisePicker'
 import { RestTimer } from '@/components/gym/RestTimer'
 import { MuscleChip } from '@/components/gym/MuscleChip'
+import Confetti from '@/components/ui/Confetti'
 import type { Exercise, PersonalRecord, WorkoutSet } from '@/types'
 import { cn, formatDuration } from '@/lib/utils'
+import { computeStats } from '@/lib/stats'
+import { syncAchievements, type AchievementDef } from '@/lib/achievements'
+import { toast } from '@/stores/toastStore'
+import { getRandomMessage, WORKOUT_COMPLETE_MESSAGES } from '@/lib/motivational'
 
 export default function Workout() {
   const { workoutId } = useParams<{ workoutId: string }>()
@@ -17,6 +22,7 @@ export default function Workout() {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [elapsed, setElapsed] = useState('')
   const [newPRs, setNewPRs] = useState<PersonalRecord[] | null>(null)
+  const [newAchievements, setNewAchievements] = useState<AchievementDef[]>([])
 
   const workout = useLiveQuery(
     () => (workoutId ? db.workouts.get(workoutId) : undefined),
@@ -88,6 +94,25 @@ export default function Workout() {
   const handleFinish = async () => {
     const prs = await store.finishWorkout(workoutId)
     setNewPRs(prs)
+
+    // Métricas + logros a partir del estado ya persistido
+    const [workouts, prCount] = await Promise.all([
+      db.workouts.toArray(),
+      db.personalRecords.count(),
+    ])
+    const stats = computeStats(workouts)
+    const unlocked = await syncAchievements({ stats, prCount })
+    setNewAchievements(unlocked)
+
+    // Feedback: toasts encadenados
+    const msg = getRandomMessage(WORKOUT_COMPLETE_MESSAGES)
+    toast.success('¡Entreno completado!', msg.text)
+    for (const pr of prs) {
+      toast.pr('¡Nuevo PR! 🏆', `${exerciseMap.get(pr.exerciseId)?.name}: ${pr.weightKg} kg × ${pr.reps}`)
+    }
+    for (const a of unlocked) {
+      toast.pr(`Logro: ${a.emoji} ${a.name}`, a.description)
+    }
   }
 
   const handleDiscard = async () => {
@@ -99,9 +124,31 @@ export default function Workout() {
 
   // Pantalla de resumen post-finalización
   if (newPRs !== null) {
+    const celebrate = newPRs.length > 0 || newAchievements.length > 0
     return (
-      <div className="mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center gap-6 px-6 text-center">
+      <div className="mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center gap-6 px-6 py-10 text-center">
+        {celebrate && <Confetti />}
         <h1 className="text-3xl font-bold">Entreno terminado 🎉</h1>
+
+        {newAchievements.length > 0 && (
+          <div className="w-full space-y-2">
+            {newAchievements.map((a, i) => (
+              <div
+                key={a.id}
+                style={{ animationDelay: `${i * 120}ms` }}
+                className="animate-pr-appear flex items-center gap-3 rounded-2xl border border-accent/40 bg-accent/10 p-3 text-left"
+              >
+                <span className="text-2xl">{a.emoji}</span>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wide text-accent">Logro desbloqueado</p>
+                  <p className="font-semibold">{a.name}</p>
+                  <p className="text-xs text-ink-2">{a.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {newPRs.length > 0 ? (
           <div className="w-full space-y-3">
             {newPRs.map((pr, i) => (

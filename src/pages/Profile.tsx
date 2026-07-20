@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, Shield } from 'lucide-react'
+import { Bell, LogOut, Ruler, Shield } from 'lucide-react'
 import { db } from '@/db/schema'
 import { useAuthStore } from '@/stores/authStore'
 import type { LocalProfile } from '@/types'
@@ -142,6 +142,28 @@ export default function Profile() {
         </div>
 
         <div>
+          <label className="mb-2 block text-sm font-medium text-ink-2">
+            Meta semanal (entrenos)
+          </label>
+          <div className="flex gap-2">
+            {[2, 3, 4, 5, 6].map((n) => (
+              <button
+                key={n}
+                onClick={() => update({ weeklyGoal: n })}
+                className={cn(
+                  'flex-1 rounded-lg border py-2.5 font-mono text-sm font-semibold',
+                  (profile.weeklyGoal ?? 3) === n
+                    ? 'border-accent bg-accent text-bg'
+                    : 'border-line-2 text-ink-2'
+                )}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
           <label className="mb-2 block text-sm font-medium text-ink-2">Sexo</label>
           <div className="flex gap-2">
             {(
@@ -178,6 +200,29 @@ export default function Profile() {
           />
         </div>
       </section>
+
+      {/* Accesos a paneles */}
+      <button
+        onClick={() => navigate('/medidas')}
+        className="flex w-full items-center gap-3 rounded-2xl bg-surface p-4 text-left active:bg-surface-2"
+      >
+        <Ruler size={20} className="text-accent" />
+        <div>
+          <p className="font-semibold">Medidas corporales</p>
+          <p className="text-sm text-ink-3">Registrá tu peso y medidas, y ve tu evolución</p>
+        </div>
+      </button>
+
+      <button
+        onClick={() => navigate('/recordatorios')}
+        className="flex w-full items-center gap-3 rounded-2xl bg-surface p-4 text-left active:bg-surface-2"
+      >
+        <Bell size={20} className="text-accent" />
+        <div>
+          <p className="font-semibold">Recordatorios</p>
+          <p className="text-sm text-ink-3">Avisos para no perder tu racha de entrenos</p>
+        </div>
+      </button>
 
       {/* Admin panel link */}
       {role === 'admin' && (

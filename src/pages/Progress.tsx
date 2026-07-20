@@ -17,12 +17,15 @@ import { HistoryList } from '@/components/gym/HistoryList'
 import { MonthlyStats } from '@/components/gym/MonthlyStats'
 import { StrengthLevels } from '@/components/gym/StrengthLevels'
 import { PhotoGallery } from '@/components/gym/PhotoGallery'
+import StatsOverview from '@/components/gym/StatsOverview'
+import CalendarHeatmap from '@/components/gym/CalendarHeatmap'
+import AchievementsPanel from '@/components/gym/AchievementsPanel'
 import { cn } from '@/lib/utils'
 
-type Tab = 'charts' | 'month' | 'levels' | 'photos' | 'prs' | 'history'
+type Tab = 'summary' | 'charts' | 'month' | 'levels' | 'achievements' | 'photos' | 'prs' | 'history'
 
 export default function Progress() {
-  const [tab, setTab] = useState<Tab>('charts')
+  const [tab, setTab] = useState<Tab>('summary')
 
   return (
     <div className="space-y-4">
@@ -31,9 +34,11 @@ export default function Progress() {
       <div className="-mx-4 flex gap-1 overflow-x-auto px-4 [scrollbar-width:none]">
         {(
           [
+            ['summary', 'Resumen'],
             ['charts', 'Gráficos'],
             ['month', 'Mes'],
             ['levels', 'Niveles'],
+            ['achievements', 'Logros'],
             ['photos', 'Fotos'],
             ['prs', 'PRs'],
             ['history', 'Historial'],
@@ -52,9 +57,21 @@ export default function Progress() {
         ))}
       </div>
 
+      {tab === 'summary' && (
+        <div className="space-y-4">
+          <StatsOverview />
+          <section>
+            <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-2">
+              Actividad
+            </h2>
+            <CalendarHeatmap />
+          </section>
+        </div>
+      )}
       {tab === 'charts' && <Charts />}
       {tab === 'month' && <MonthlyStats />}
       {tab === 'levels' && <StrengthLevels />}
+      {tab === 'achievements' && <AchievementsPanel />}
       {tab === 'photos' && <PhotoGallery />}
       {tab === 'prs' && <PRList />}
       {tab === 'history' && <HistoryList />}

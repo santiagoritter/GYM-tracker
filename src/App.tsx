@@ -11,14 +11,19 @@ import RoutineEditor from '@/pages/RoutineEditor'
 import Login from '@/pages/Login'
 import Registro from '@/pages/Registro'
 import Onboarding from '@/pages/Onboarding'
+import Reminders from '@/pages/Reminders'
+import ToastContainer from '@/components/ui/Toast'
 
 // Lazy: Recharts pesa ~400KB min; solo se descarga al entrar a Progreso
 const Progress = lazy(() => import('@/pages/Progress'))
 const Admin = lazy(() => import('@/pages/Admin'))
+const Measurements = lazy(() => import('@/pages/Measurements'))
 
 export default function App() {
   return (
-    <Routes>
+    <>
+      <ToastContainer />
+      <Routes>
       {/* Rutas públicas */}
       <Route path="/login" element={<Login />} />
       <Route path="/registro" element={<Registro />} />
@@ -43,6 +48,7 @@ export default function App() {
             }
           />
           <Route path="/perfil" element={<Profile />} />
+          <Route path="/recordatorios" element={<Reminders />} />
 
           {/* Panel admin: solo admins */}
           <Route element={<AdminRoute />}>
@@ -58,9 +64,18 @@ export default function App() {
         </Route>
         <Route path="/entreno/:workoutId" element={<Workout />} />
         <Route path="/rutina/:routineId" element={<RoutineEditor />} />
+        <Route
+          path="/medidas"
+          element={
+            <Suspense fallback={<p className="py-12 text-center text-sm text-ink-3">Cargando…</p>}>
+              <Measurements />
+            </Suspense>
+          }
+        />
       </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   )
 }
