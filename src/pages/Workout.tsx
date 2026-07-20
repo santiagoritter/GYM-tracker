@@ -1,0 +1,350 @@
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { ArrowLeft, Check, Minus, Plus, Trash2, Trophy } from 'lucide-react'
+import { db } from '@/db/schema'
+import { useWorkoutStore } from '@/stores/workoutStore'
+import { ExercisePicker } from '@/components/gym/ExercisePicker'
+import { RestTimer } from '@/components/gym/RestTimer'
+import { MuscleChip } from '@/components/gym/MuscleChip'
+import type { Exercise, PersonalRecord, WorkoutSet } from '@/types'
+import { cn, formatDuration } from '@/lib/utils'
+
+export default function Workout() {
+  const { workoutId } = useParams<{ workoutId: string }>()
+  const navigate = useNavigate()
+  const store = useWorkoutStore()
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [elapsed, setElapsed] = useState('')
+  const [newPRs, setNewPRs] = useState<PersonalRecord[] | null>(null)
+
+  const workout = useLiveQuery(
+    () => (workoutId ? db.workouts.get(workoutId) : undefined),
+    [workoutId]
+  )
+  const sets = useLiveQuery(
+    () => (workoutId ? db.workoutSets.where('workoutId').equals(workoutId).toArray() : []),
+    [workoutId]
+  )
+  const exercises = useLiveQuery(() => db.exercises.toArray(), []) ?? []
+  const profile = useLiveQuery(() => db.profile.get('local'), [])
+
+  const exerciseMap = useMemo(
+    () => new Map(exercises.map((e) => [e.id, e])),
+    [exercises]
+  )
+
+  // Agrupar sets por ejercicio, en orden de aparición
+  const grouped = useMemo(() => {
+    const order: string[] = []
+    const map = new Map<string, WorkoutSet[]>()
+    for (const s of (sets ?? []).sort((a, b) => a.setNumber - b.setNumber)) {
+      if (!map.has(s.exerciseId)) {
+        map.set(s.exerciseId, [])
+        order.push(s.exerciseId)
+      }
+      map.get(s.exerciseId)!.push(s)
+    }
+    return order.map((id) => ({ exercise: exerciseMap.get(id), sets: map.get(id)! }))
+  }, [sets, exerciseMap])
+
+  useEffect(() => {
+    if (!workout) return
+    const tick = () => setElapsed(formatDuration(workout.startedAt))
+    tick()
+    const i = setInterval(tick, 1000)
+    return () => clearInterval(i)
+  }, [workout])
+
+  if (!workoutId) return null
+
+  const handleSelectExercise = (exercise: Exercise) => {
+    store.addExercise(workoutId, exercise.id)
+    setPickerOpen(false)
+  }
+
+  const handleCompleteSet = (s: WorkoutSet) => {
+    const next = s.completed === 1 ? 0 : 1
+    store.updateSet(s.id, { completed: next as 0 | 1 })
+    if (next !== 1) return
+    navigator.vibrate?.(50)
+
+    // En superserie: sin descanso hasta cerrar la vuelta (cuando el compañero
+    // del grupo todavía tiene pendiente la serie del mismo número)
+    if (s.supersetGroup !== undefined) {
+      const partnerPending = (sets ?? []).some(
+        (other) =>
+          other.id !== s.id &&
+          other.supersetGroup === s.supersetGroup &&
+          other.exerciseId !== s.exerciseId &&
+          other.setNumber === s.setNumber &&
+          other.completed === 0
+      )
+      if (partnerPending) return
+    }
+    store.startRest(profile?.restTimerDefault ?? 90)
+  }
+
+  const handleFinish = async () => {
+    const prs = await store.finishWorkout(workoutId)
+    setNewPRs(prs)
+  }
+
+  const handleDiscard = async () => {
+    if (confirm('¿Descartar este entreno? Se pierden todos los sets.')) {
+      await store.discardWorkout(workoutId)
+      navigate('/')
+    }
+  }
+
+  // Pantalla de resumen post-finalización
+  if (newPRs !== null) {
+    return (
+      <div className="mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center gap-6 px-6 text-center">
+        <h1 className="text-3xl font-bold">Entreno terminado 🎉</h1>
+        {newPRs.length > 0 ? (
+          <div className="w-full space-y-3">
+            {newPRs.map((pr, i) => (
+              <div
+                key={pr.id}
+                style={{ animationDelay: `${i * 120}ms` }}
+                className="animate-pr-appear rounded-2xl border border-accent/40 bg-accent/10 p-4"
+              >
+                <p className="flex items-center justify-center gap-2 text-sm font-bold text-accent">
+                  <Trophy size={16} /> NUEVO PR
+                </p>
+                <p className="mt-1 font-medium">{exerciseMap.get(pr.exerciseId)?.name}</p>
+                <p className="font-mono text-2xl font-bold">
+                  {pr.weightKg} kg × {pr.reps}
+                </p>
+                <p className="text-xs text-ink-2">1RM estimado: {pr.oneRmKg} kg</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-ink-2">Sin PRs nuevos esta vez. La constancia gana igual.</p>
+        )}
+        <button
+          onClick={() => navigate('/')}
+          className="w-full rounded-xl bg-accent py-4 font-bold text-bg"
+        >
+          Volver al inicio
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mx-auto min-h-screen max-w-lg pb-40">
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-bg/95 px-4 py-3 backdrop-blur">
+        <button onClick={() => navigate('/')} className="p-2 text-ink-2">
+          <ArrowLeft size={22} />
+        </button>
+        <div className="text-center">
+          <p className="text-sm font-medium">{workout?.name}</p>
+          <p className="font-mono text-xs text-accent">{elapsed}</p>
+        </div>
+        <button onClick={handleDiscard} className="p-2 text-danger/70">
+          <Trash2 size={20} />
+        </button>
+      </header>
+
+      <div className="space-y-4 px-4 py-4">
+        {grouped.map(({ exercise, sets: exSets }) => (
+          <div key={exercise?.id ?? 'unknown'} className="rounded-2xl bg-surface p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold">{exercise?.name ?? 'Ejercicio'}</p>
+                  {exSets[0]?.supersetGroup !== undefined && (
+                    <span className="rounded bg-accent/15 px-1.5 py-0.5 text-[10px] font-bold text-accent">
+                      SS
+                    </span>
+                  )}
+                </div>
+                <div className="mt-1 flex gap-1">
+                  {exercise?.musclePrimary.map((m) => <MuscleChip key={m} muscle={m} />)}
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-2 grid grid-cols-[2rem_1fr_1fr_2.5rem] gap-2 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
+              <span>#</span>
+              <span className="text-center">Reps</span>
+              <span className="text-center">Kg</span>
+              <span />
+            </div>
+
+            {exSets.map((s) => (
+              <SetRow
+                key={s.id}
+                set={s}
+                isActive={s.id === exSets.find((x) => x.completed === 0)?.id}
+                onComplete={() => handleCompleteSet(s)}
+                onUpdate={(patch) => store.updateSet(s.id, patch)}
+              />
+            ))}
+
+            <div className="mt-2 flex gap-2">
+              <button
+                onClick={() => store.addSet(workoutId, exercise!.id)}
+                className="flex-1 rounded-lg border border-dashed border-line-2 py-2 text-sm font-medium text-ink-2 active:bg-surface-2"
+              >
+                + Agregar serie
+              </button>
+              {exSets.length > 0 && (
+                <button
+                  onClick={() => store.removeSet(exSets[exSets.length - 1].id)}
+                  className="rounded-lg border border-dashed border-line-2 px-4 py-2 text-sm font-medium text-danger/70 active:bg-surface-2"
+                >
+                  −
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+
+        <button
+          onClick={() => setPickerOpen(true)}
+          className="w-full rounded-2xl border border-line-2 py-4 font-semibold text-ink-2 active:bg-surface"
+        >
+          + Agregar ejercicio
+        </button>
+
+        {grouped.length > 0 && (
+          <button
+            onClick={handleFinish}
+            className="w-full rounded-2xl bg-accent py-4 text-lg font-bold text-bg active:bg-accent-dim"
+          >
+            Finalizar entreno
+          </button>
+        )}
+      </div>
+
+      {pickerOpen && (
+        <ExercisePicker
+          onSelect={handleSelectExercise}
+          onClose={() => setPickerOpen(false)}
+          excludeIds={grouped.map((g) => g.exercise?.id ?? '')}
+        />
+      )}
+      <RestTimer />
+    </div>
+  )
+}
+
+function SetRow({
+  set,
+  isActive,
+  onComplete,
+  onUpdate,
+}: {
+  set: WorkoutSet
+  isActive: boolean
+  onComplete: () => void
+  onUpdate: (patch: Partial<WorkoutSet>) => void
+}) {
+  return (
+    <div
+      className={cn(
+        'mb-1 grid grid-cols-[2rem_1fr_1fr_2.5rem] items-center gap-2 rounded-lg px-1 py-1.5 transition-colors',
+        set.completed === 1 && 'opacity-60',
+        // El set activo (primer pendiente) se resalta según docs/04
+        isActive && 'border-l-2 border-accent bg-surface-2'
+      )}
+    >
+      {/* Tap en el número alterna serie de calentamiento (C) */}
+      <button
+        onClick={() => onUpdate({ isWarmup: set.isWarmup === 1 ? 0 : 1 })}
+        className={cn(
+          'flex h-7 w-7 items-center justify-center rounded-md text-sm font-bold',
+          set.isWarmup === 1 ? 'bg-warning/20 text-warning' : 'text-ink-3'
+        )}
+        title={set.isWarmup === 1 ? 'Serie de calentamiento' : 'Serie de trabajo'}
+      >
+        {set.isWarmup === 1 ? 'C' : set.setNumber}
+      </button>
+
+      <Stepper
+        value={set.reps}
+        step={1}
+        min={1}
+        onChange={(reps) => onUpdate({ reps })}
+      />
+      <Stepper
+        value={set.weightKg}
+        step={2.5}
+        min={0}
+        onChange={(weightKg) => onUpdate({ weightKg })}
+      />
+
+      <button
+        onClick={onComplete}
+        className={cn(
+          'flex h-9 w-9 items-center justify-center rounded-lg border transition-colors',
+          set.completed === 1
+            ? 'animate-set-pop border-success bg-success text-bg'
+            : 'border-line-2 text-ink-3'
+        )}
+      >
+        <Check size={18} strokeWidth={3} />
+      </button>
+
+      {/* RPE: aparece al completar la serie de trabajo (opcional, un tap) */}
+      {set.completed === 1 && set.isWarmup === 0 && (
+        <div className="col-span-4 mt-1 flex items-center gap-1.5">
+          <span className="text-[10px] font-semibold uppercase text-ink-3">RPE</span>
+          {[6, 7, 8, 8.5, 9, 10].map((value) => (
+            <button
+              key={value}
+              onClick={() => onUpdate({ rpe: set.rpe === value ? undefined : value })}
+              className={cn(
+                'rounded-md px-2 py-0.5 font-mono text-xs font-bold',
+                set.rpe === value
+                  ? 'bg-accent text-bg'
+                  : 'bg-surface-2 text-ink-3'
+              )}
+            >
+              {value}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Stepper({
+  value,
+  step,
+  min,
+  onChange,
+}: {
+  value: number
+  step: number
+  min: number
+  onChange: (v: number) => void
+}) {
+  return (
+    <div className="flex items-center justify-center gap-1">
+      <button
+        onClick={() => onChange(Math.max(min, Math.round((value - step) * 10) / 10))}
+        className="flex h-8 w-8 items-center justify-center rounded-md bg-surface-2 text-ink-2 active:bg-surface-3"
+      >
+        <Minus size={14} />
+      </button>
+      <input
+        type="number"
+        value={value}
+        onChange={(e) => onChange(Math.max(min, Number(e.target.value) || 0))}
+        className="w-14 rounded-md bg-surface-2 py-1.5 text-center font-mono text-sm font-bold outline-none focus:ring-1 focus:ring-accent"
+      />
+      <button
+        onClick={() => onChange(Math.round((value + step) * 10) / 10)}
+        className="flex h-8 w-8 items-center justify-center rounded-md bg-surface-2 text-ink-2 active:bg-surface-3"
+      >
+        <Plus size={14} />
+      </button>
+    </div>
+  )
+}
