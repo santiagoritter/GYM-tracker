@@ -31,12 +31,22 @@ const MUSCLE_STYLES: Record<MuscleGroup, string> = {
   cardio: 'text-muscle-cardio border-muscle-cardio/40 bg-muscle-cardio/10',
 }
 
-export function MuscleChip({ muscle, className }: { muscle: MuscleGroup; className?: string }) {
+export function MuscleChip({
+  muscle,
+  secondary = false,
+  className,
+}: {
+  muscle: MuscleGroup
+  secondary?: boolean
+  className?: string
+}) {
   return (
     <span
       className={cn(
         'inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium',
-        MUSCLE_STYLES[muscle],
+        secondary
+          ? 'border-line text-ink-3 bg-fill'
+          : MUSCLE_STYLES[muscle],
         className
       )}
     >
