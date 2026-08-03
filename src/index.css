@@ -107,6 +107,12 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+  html, body {
+    /* Red de seguridad: cualquier elemento que se pase de ancho (chips con
+       scroll horizontal, inputs, etc.) generaba una franja vacía a la
+       derecha en vez de quedar contenido dentro de su propio contenedor. */
+    overflow-x: hidden;
+  }
   body {
     @apply min-h-screen font-sans;
     -webkit-tap-highlight-color: transparent;
