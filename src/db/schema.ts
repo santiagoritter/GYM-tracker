@@ -4,6 +4,7 @@ import type {
   BodyMeasurement,
   EmailVerification,
   Exercise,
+  ExercisePhoto,
   LocalProfile,
   PersonalRecord,
   ProgressPhoto,
@@ -30,6 +31,7 @@ export class GymTrackerDB extends Dexie {
   bodyMeasurements!: Table<BodyMeasurement, string>
   achievements!: Table<Achievement, string>
   emailVerifications!: Table<EmailVerification, string>
+  exercisePhotos!: Table<ExercisePhoto, string>
 
   constructor() {
     super('GymTrackerDB')
@@ -115,6 +117,10 @@ export class GymTrackerDB extends Dexie {
         await tx.table('profile').delete('local')
         await tx.table('profile').put({ ...oldProfile, id: uid })
       }
+    })
+    // v8: foto de referencia por ejercicio (una por usuario por ejercicio)
+    this.version(8).stores({
+      exercisePhotos: 'id, userId, exerciseId, [userId+exerciseId]',
     })
   }
 }

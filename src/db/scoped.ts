@@ -14,6 +14,8 @@ export const bodyMeasurementsFor = (userId: string) =>
 export const achievementsFor = (userId: string) => db.achievements.where('userId').equals(userId)
 export const progressPhotosFor = (userId: string) =>
   db.progressPhotos.where('userId').equals(userId)
+export const exercisePhotoFor = (userId: string, exerciseId: string) =>
+  db.exercisePhotos.get(`${userId}_${exerciseId}`)
 
 // Tablas hijas: se resuelven vía su FK hacia la tabla padre ya scopeada,
 // sin necesitar userId propio (evita desnormalización).

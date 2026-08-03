@@ -1,7 +1,13 @@
-import { useEffect } from 'react'
-import { X, CheckCircle2, AlertTriangle } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { X, CheckCircle2, AlertTriangle, Camera, Trash2 } from 'lucide-react'
 import type { Exercise } from '@/types'
 import { getExerciseInfo } from '@/data/exerciseInfo'
+import { db } from '@/db/schema'
+import { exercisePhotoFor } from '@/db/scoped'
+import { useCurrentUserId } from '@/hooks/useCurrentUserId'
+import { compressImage } from '@/lib/photos'
+import { nowIso } from '@/lib/utils'
 import MuscleBodySVG from './MuscleBodySVG'
 import EquipmentIcon from './EquipmentIcon'
 import Portal from '@/components/ui/Portal'
@@ -60,6 +66,102 @@ const MUSCLE_LABEL: Record<string, string> = {
   cardio: 'Cardio',
 }
 
+/** Foto de referencia personal para el ejercicio (ej: la máquina de tu gym). */
+function ExercisePhotoSection({ exerciseId }: { exerciseId: string }) {
+  const userId = useCurrentUserId()
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [saving, setSaving] = useState(false)
+  const [url, setUrl] = useState<string | null>(null)
+
+  const photo = useLiveQuery(
+    () => (userId ? exercisePhotoFor(userId, exerciseId) : undefined),
+    [userId, exerciseId]
+  )
+
+  useEffect(() => {
+    if (!photo) {
+      setUrl(null)
+      return
+    }
+    const objectUrl = URL.createObjectURL(photo.blob)
+    setUrl(objectUrl)
+    return () => URL.revokeObjectURL(objectUrl)
+  }, [photo])
+
+  const handleFile = async (file: File) => {
+    if (!userId) return
+    setSaving(true)
+    try {
+      const blob = await compressImage(file)
+      await db.exercisePhotos.put({
+        id: `${userId}_${exerciseId}`,
+        userId,
+        exerciseId,
+        blob,
+        createdAt: nowIso(),
+      })
+    } catch {
+      alert('No se pudo procesar la imagen')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!userId) return
+    await db.exercisePhotos.delete(`${userId}_${exerciseId}`)
+  }
+
+  return (
+    <div className="rounded-2xl bg-surface-2 p-4">
+      <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-ink-3">
+        Tu foto de referencia
+      </h3>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        hidden
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          if (file) handleFile(file)
+          e.target.value = ''
+        }}
+      />
+      {url ? (
+        <div className="relative overflow-hidden rounded-xl">
+          <img src={url} alt="" className="h-48 w-full object-cover" />
+          <div className="absolute bottom-2 right-2 flex gap-1.5">
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-bg/80 text-ink backdrop-blur"
+              title="Reemplazar"
+            >
+              <Camera size={15} />
+            </button>
+            <button
+              onClick={handleDelete}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-bg/80 text-danger backdrop-blur"
+              title="Eliminar"
+            >
+              <Trash2 size={15} />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => fileRef.current?.click()}
+          disabled={saving}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-line-2 py-4 text-[13px] font-medium text-ink-2 active:bg-surface-3 disabled:opacity-50"
+        >
+          <Camera size={16} /> {saving ? 'Guardando…' : 'Agregar foto (ej: la máquina de tu gym)'}
+        </button>
+      )}
+    </div>
+  )
+}
+
 export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
   const info = exercise ? getExerciseInfo(exercise.id) : null
 
@@ -87,8 +189,11 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
         onClick={onClose}
       />
 
-      {/* Sheet */}
-      <div className="fixed bottom-0 left-1/2 z-50 w-full max-w-lg -translate-x-1/2 animate-sheet-in rounded-t-3xl bg-surface shadow-float overflow-hidden">
+      {/* Sheet — el centrado horizontal (translateX(-50%)) vive en los
+          keyframes de animate-sheet-in, no en una clase -translate-x-1/2
+          separada: una animación reemplaza el transform completo del
+          elemento, así que una clase de transform aparte quedaría pisada. */}
+      <div className="fixed bottom-0 left-1/2 z-50 w-full max-w-lg animate-sheet-in rounded-t-3xl bg-surface shadow-float overflow-hidden">
         {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1">
           <div className="h-1 w-10 rounded-full bg-line-2" />
@@ -124,6 +229,9 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
 
         {/* Contenido scrolleable */}
         <div className="max-h-[70vh] overflow-y-auto overscroll-contain px-5 pb-8 space-y-6">
+          {/* Foto de referencia */}
+          <ExercisePhotoSection exerciseId={exercise.id} />
+
           {/* Diagrama muscular */}
           <div className="rounded-2xl bg-surface-2 p-4">
             <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-ink-3">

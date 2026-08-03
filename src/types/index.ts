@@ -188,3 +188,13 @@ export interface ProgressPhoto {
   notes?: string
   blob: Blob
 }
+
+// Foto de referencia personal para un ejercicio (ej: la máquina de tu gym).
+// Una por ejercicio por usuario — subir una nueva reemplaza la anterior.
+export interface ExercisePhoto {
+  id: string // = `${userId}_${exerciseId}`
+  userId: string
+  exerciseId: string
+  blob: Blob
+  createdAt: string
+}

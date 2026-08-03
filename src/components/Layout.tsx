@@ -81,7 +81,7 @@ export default function Layout() {
       {activeWorkout && (
         <button
           onClick={() => navigate(`/entreno/${activeWorkout.id}`)}
-          className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] left-1/2 z-50 -translate-x-1/2 animate-scale-in"
+          className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] left-1/2 z-50 animate-scale-in"
         >
           <div className="flex items-center gap-2.5 rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-black shadow-accent">
             <Flame size={15} fill="currentColor" />

@@ -7,12 +7,14 @@ interface Props {
   size?: number
 }
 
-// Paleta de colores por estado
+// Paleta de colores por estado. COLOR_BODY antes era idéntico al fondo de
+// la tarjeta contenedora (bg-surface-2, #2C2C2E) — la silueta quedaba
+// invisible y solo se veían los músculos resaltados "flotando" sueltos.
 const COLOR_PRIMARY = '#E8FF47'
 const COLOR_SECONDARY = 'rgba(232,255,71,0.3)'
-const COLOR_INACTIVE = 'rgba(255,255,255,0.06)'
-const COLOR_BODY = '#2C2C2E'
-const COLOR_OUTLINE = '#3A3A3C'
+const COLOR_INACTIVE = 'rgba(255,255,255,0.12)'
+const COLOR_BODY = '#3A3A3D'
+const COLOR_OUTLINE = '#525256'
 
 // Paths SVG simplificados — vista frontal (coordenadas en 0-100 viewBox)
 function FrontBody({ primary, secondary }: { primary: MuscleGroup[]; secondary: MuscleGroup[] }) {
