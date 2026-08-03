@@ -156,26 +156,29 @@ function BackBody({ primary, secondary }: { primary: MuscleGroup[]; secondary: M
 }
 
 export default function MuscleBodySVG({ primary, secondary = [], view = 'both', size = 120 }: Props) {
+  // aspect-[1/2] + min-w-0 en vez de width/height fijos en px: el diagrama
+  // se achica para entrar en contenedores angostos (celular) en lugar de
+  // desbordar. `size` queda como tope máximo, no como ancho forzado.
   if (view === 'front') {
     return (
-      <div style={{ width: size, height: size * 2 }}>
+      <div className="mx-auto aspect-[1/2] w-full min-w-0" style={{ maxWidth: size }}>
         <FrontBody primary={primary} secondary={secondary} />
       </div>
     )
   }
   if (view === 'back') {
     return (
-      <div style={{ width: size, height: size * 2 }}>
+      <div className="mx-auto aspect-[1/2] w-full min-w-0" style={{ maxWidth: size }}>
         <BackBody primary={primary} secondary={secondary} />
       </div>
     )
   }
   return (
-    <div className="flex gap-4 items-start justify-center">
-      <div style={{ width: size, height: size * 2 }}>
+    <div className="flex w-full items-start justify-center gap-3">
+      <div className="aspect-[1/2] w-full min-w-0 flex-1" style={{ maxWidth: size }}>
         <FrontBody primary={primary} secondary={secondary} />
       </div>
-      <div style={{ width: size, height: size * 2 }}>
+      <div className="aspect-[1/2] w-full min-w-0 flex-1" style={{ maxWidth: size }}>
         <BackBody primary={primary} secondary={secondary} />
       </div>
     </div>

@@ -13,6 +13,9 @@ export default function Registro() {
 
   const [step, setStep] = useState<Step>('form')
   const [pendingUser, setPendingUser] = useState<User | null>(null)
+  // Solo se llena cuando no hay EmailJS configurado — evita que el usuario
+  // tenga que abrir la consola del navegador para encontrar el código.
+  const [devCode, setDevCode] = useState<string | null>(null)
 
   // Formulario
   const [name, setName] = useState('')
@@ -37,8 +40,9 @@ export default function Registro() {
     if (password !== confirm) { setError('Las contraseñas no coinciden.'); return }
     setLoading(true)
     try {
-      const user = await registerUser(email, password, name.trim())
+      const { user, devCode } = await registerUser(email, password, name.trim())
       setPendingUser(user)
+      setDevCode(devCode ?? null)
       setStep('verify')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al registrarse.')
@@ -85,7 +89,8 @@ export default function Registro() {
     setError('')
     setLoading(true)
     try {
-      await resendVerificationEmail(pendingUser.id)
+      const code = await resendVerificationEmail(pendingUser.id)
+      setDevCode(code ?? null)
       setResendCooldown(60)
       const interval = setInterval(() => {
         setResendCooldown((s) => { if (s <= 1) { clearInterval(interval); return 0 } return s - 1 })
@@ -204,6 +209,21 @@ export default function Registro() {
         </form>
       ) : (
         <div className="w-full max-w-sm space-y-6">
+          {devCode && (
+            <div className="rounded-xl border border-accent/30 bg-accent/10 px-4 py-3 text-center">
+              <p className="text-xs font-semibold uppercase tracking-wide text-accent">
+                Modo prueba — sin envío de email configurado
+              </p>
+              <p className="mt-1 font-mono text-2xl font-bold tracking-[0.3em] text-ink">
+                {devCode}
+              </p>
+              <p className="mt-1 text-[11px] text-ink-3">
+                Este código solo aparece acá porque la app no tiene un servicio de
+                email conectado todavía.
+              </p>
+            </div>
+          )}
+
           {/* Inputs de código 6 dígitos */}
           <div className="flex justify-center gap-3">
             {code.map((digit, i) => (

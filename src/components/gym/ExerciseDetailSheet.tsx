@@ -128,40 +128,38 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
             <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-ink-3">
               Músculos involucrados
             </h3>
-            <div className="flex items-start gap-4">
-              <div className="flex-1">
-                <MuscleBodySVG
-                  primary={exercise.musclePrimary}
-                  secondary={exercise.muscleSecondary}
-                  size={80}
-                />
-              </div>
-              <div className="flex-1 space-y-3">
-                {exercise.musclePrimary.length > 0 && (
-                  <div>
-                    <p className="mb-1.5 text-[11px] font-medium text-accent">Primarios</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {exercise.musclePrimary.map((m) => (
-                        <span key={m} className="rounded-lg bg-accent/15 px-2.5 py-1 text-[12px] font-medium text-accent">
-                          {MUSCLE_LABEL[m] ?? m}
-                        </span>
-                      ))}
-                    </div>
+            <div className="mx-auto max-w-[220px]">
+              <MuscleBodySVG
+                primary={exercise.musclePrimary}
+                secondary={exercise.muscleSecondary}
+                size={100}
+              />
+            </div>
+            <div className="mt-4 space-y-3">
+              {exercise.musclePrimary.length > 0 && (
+                <div>
+                  <p className="mb-1.5 text-[11px] font-medium text-accent">Primarios</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {exercise.musclePrimary.map((m) => (
+                      <span key={m} className="rounded-lg bg-accent/15 px-2.5 py-1 text-[12px] font-medium text-accent">
+                        {MUSCLE_LABEL[m] ?? m}
+                      </span>
+                    ))}
                   </div>
-                )}
-                {exercise.muscleSecondary.length > 0 && (
-                  <div>
-                    <p className="mb-1.5 text-[11px] font-medium text-ink-2">Secundarios</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {exercise.muscleSecondary.map((m) => (
-                        <span key={m} className="rounded-lg bg-fill px-2.5 py-1 text-[12px] text-ink-2">
-                          {MUSCLE_LABEL[m] ?? m}
-                        </span>
-                      ))}
-                    </div>
+                </div>
+              )}
+              {exercise.muscleSecondary.length > 0 && (
+                <div>
+                  <p className="mb-1.5 text-[11px] font-medium text-ink-2">Secundarios</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {exercise.muscleSecondary.map((m) => (
+                      <span key={m} className="rounded-lg bg-fill px-2.5 py-1 text-[12px] text-ink-2">
+                        {MUSCLE_LABEL[m] ?? m}
+                      </span>
+                    ))}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
 

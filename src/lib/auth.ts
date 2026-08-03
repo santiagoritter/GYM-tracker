@@ -38,7 +38,18 @@ function generateCode(): string {
   return String(Math.floor(100000 + crypto.getRandomValues(new Uint32Array(1))[0] % 900000))
 }
 
-export async function sendVerificationEmail(userId: string, email: string, name: string): Promise<void> {
+/**
+ * Envía (o simula) el código de verificación. Devuelve el código en texto
+ * plano SOLO cuando no hay EmailJS configurado — así la UI puede mostrarlo
+ * en pantalla en vez de obligar a abrir la consola del navegador. Con
+ * EmailJS configurado, devuelve undefined (el código viaja únicamente por
+ * email).
+ */
+export async function sendVerificationEmail(
+  userId: string,
+  email: string,
+  name: string
+): Promise<string | undefined> {
   // Cooldown real (no solo de UI): evita reenvíos en ráfaga aunque se
   // recargue la página o se manipule el estado del cliente.
   const existing = await db.emailVerifications.get(userId)
@@ -64,9 +75,10 @@ export async function sendVerificationEmail(userId: string, email: string, name:
   })
 
   if (!EMAIL_ENABLED) {
-    // Sin EmailJS configurado, logueamos el código para dev
+    // Sin EmailJS configurado: lo logueamos igual (por si alguien mira la
+    // consola) y lo devolvemos para que la UI lo muestre directamente.
     console.info(`[DEV] Código de verificación para ${email}: ${code}`)
-    return
+    return code
   }
 
   await emailjs.send(
@@ -75,6 +87,7 @@ export async function sendVerificationEmail(userId: string, email: string, name:
     { to_email: email, to_name: name, code },
     EJS_KEY!
   )
+  return undefined
 }
 
 export async function verifyEmailCode(userId: string, inputCode: string): Promise<void> {
@@ -105,11 +118,11 @@ export async function verifyEmailCode(userId: string, inputCode: string): Promis
   await db.emailVerifications.delete(userId)
 }
 
-export async function resendVerificationEmail(userId: string): Promise<void> {
+export async function resendVerificationEmail(userId: string): Promise<string | undefined> {
   const user = await db.users.get(userId)
   if (!user) throw new Error('Usuario no encontrado.')
   if (user.emailVerified) throw new Error('El email ya está verificado.')
-  await sendVerificationEmail(userId, user.email, user.name)
+  return sendVerificationEmail(userId, user.email, user.name)
 }
 
 // ── Registro ────────────────────────────────────────────────────────────────
@@ -121,7 +134,7 @@ export async function registerUser(
   email: string,
   password: string,
   name: string
-): Promise<User> {
+): Promise<{ user: User; devCode?: string }> {
   const normalized = email.toLowerCase().trim()
 
   if (!EMAIL_RE.test(normalized)) throw new Error('El email no tiene un formato válido.')
@@ -149,8 +162,8 @@ export async function registerUser(
     emailVerified: 0,
   }
   await db.users.add(user)
-  await sendVerificationEmail(user.id, user.email, user.name)
-  return user
+  const devCode = await sendVerificationEmail(user.id, user.email, user.name)
+  return { user, devCode }
 }
 
 // ── Login ────────────────────────────────────────────────────────────────────

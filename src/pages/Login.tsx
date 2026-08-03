@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Dumbbell, Eye, EyeOff, Mail } from 'lucide-react'
-import { loginUser, resendVerificationEmail } from '@/lib/auth'
+import { loginUser, resendVerificationEmail, verifyEmailCode } from '@/lib/auth'
 import { useAuthStore } from '@/stores/authStore'
 import { db, ensureProfile } from '@/db/schema'
 
@@ -14,6 +14,16 @@ export default function Login() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [unverifiedUserId, setUnverifiedUserId] = useState<string | null>(null)
+  const [devCode, setDevCode] = useState<string | null>(null)
+  const [code, setCode] = useState(['', '', '', '', '', ''])
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([])
+
+  const finishLogin = async (userId: string, role: 'admin' | 'user', name: string) => {
+    setSession(userId, role, name)
+    await ensureProfile(userId)
+    const u = await db.users.get(userId)
+    navigate(u?.onboardingComplete === 0 ? '/onboarding' : '/', { replace: true })
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -22,19 +32,16 @@ export default function Login() {
     setLoading(true)
     try {
       const user = await loginUser(email, password)
-      setSession(user.id, user.role, user.name)
-      await ensureProfile(user.id)
-
-      if (user.onboardingComplete === 0) {
-        navigate('/onboarding', { replace: true })
-      } else {
-        navigate('/', { replace: true })
-      }
+      await finishLogin(user.id, user.role, user.name)
     } catch (err) {
       if (err instanceof Error && err.message === 'EMAIL_NOT_VERIFIED') {
         const u = await db.users.where('email').equals(email.toLowerCase().trim()).first()
         if (u) setUnverifiedUserId(u.id)
-        setError('Verificá tu email antes de ingresar.')
+        setError('Verificá tu email antes de ingresar. Te reenviamos un código.')
+        if (u) {
+          const code = await resendVerificationEmail(u.id).catch(() => undefined)
+          setDevCode(code ?? null)
+        }
       } else {
         setError(err instanceof Error ? err.message : 'Error al iniciar sesión.')
       }
@@ -45,15 +52,116 @@ export default function Login() {
 
   const handleResendFromLogin = async () => {
     if (!unverifiedUserId) return
+    setError('')
     setLoading(true)
     try {
-      await resendVerificationEmail(unverifiedUserId)
-      setError('Código reenviado. Revisá tu email.')
+      const code = await resendVerificationEmail(unverifiedUserId)
+      setDevCode(code ?? null)
+      setError('Código reenviado.')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al reenviar.')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleCodeInput = (i: number, val: string) => {
+    if (!/^\d*$/.test(val)) return
+    const next = [...code]
+    next[i] = val.slice(-1)
+    setCode(next)
+    if (val && i < 5) inputRefs.current[i + 1]?.focus()
+    if (next.every(Boolean)) verifyCode(next.join(''))
+  }
+
+  const handleCodeKeyDown = (i: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !code[i] && i > 0) {
+      inputRefs.current[i - 1]?.focus()
+    }
+  }
+
+  const verifyCode = async (fullCode: string) => {
+    if (!unverifiedUserId) return
+    setError('')
+    setLoading(true)
+    try {
+      await verifyEmailCode(unverifiedUserId, fullCode)
+      const u = await db.users.get(unverifiedUserId)
+      if (u) await finishLogin(u.id, u.role, u.name)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Código inválido.')
+      setCode(['', '', '', '', '', ''])
+      inputRefs.current[0]?.focus()
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (unverifiedUserId) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-bg px-6">
+        <div className="mb-8 flex flex-col items-center gap-3">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent">
+            <Mail size={32} className="text-bg" strokeWidth={2.5} />
+          </div>
+          <h1 className="text-2xl font-bold">Verificá tu email</h1>
+          <p className="text-center text-sm text-ink-3">
+            Ingresá el código de 6 dígitos que te mandamos.
+          </p>
+        </div>
+
+        <div className="w-full max-w-sm space-y-6">
+          {devCode && (
+            <div className="rounded-xl border border-accent/30 bg-accent/10 px-4 py-3 text-center">
+              <p className="text-xs font-semibold uppercase tracking-wide text-accent">
+                Modo prueba — sin envío de email configurado
+              </p>
+              <p className="mt-1 font-mono text-2xl font-bold tracking-[0.3em] text-ink">
+                {devCode}
+              </p>
+            </div>
+          )}
+
+          <div className="flex justify-center gap-3">
+            {code.map((digit, i) => (
+              <input
+                key={i}
+                ref={(el) => { inputRefs.current[i] = el }}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={digit}
+                onChange={(e) => handleCodeInput(i, e.target.value)}
+                onKeyDown={(e) => handleCodeKeyDown(i, e)}
+                className="h-14 w-12 rounded-xl bg-surface text-center text-xl font-bold outline-none ring-1 ring-line-2 transition focus:ring-accent"
+                autoFocus={i === 0}
+              />
+            ))}
+          </div>
+
+          {error && (
+            <p className="rounded-lg bg-danger/10 px-4 py-2.5 text-center text-sm text-danger">
+              {error}
+            </p>
+          )}
+
+          <button
+            onClick={handleResendFromLogin}
+            disabled={loading}
+            className="w-full rounded-xl bg-surface py-3 text-sm text-ink-2 transition active:opacity-70 disabled:opacity-40"
+          >
+            Reenviar código
+          </button>
+
+          <button
+            onClick={() => setUnverifiedUserId(null)}
+            className="w-full text-center text-sm text-ink-3"
+          >
+            Volver
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -103,19 +211,7 @@ export default function Login() {
         </div>
 
         {error && (
-          <div className="rounded-lg bg-danger/10 px-4 py-2.5 text-sm text-danger space-y-2">
-            <p>{error}</p>
-            {unverifiedUserId && (
-              <button
-                type="button"
-                onClick={handleResendFromLogin}
-                disabled={loading}
-                className="flex items-center gap-1.5 font-semibold text-accent underline underline-offset-2"
-              >
-                <Mail size={13} /> Reenviar código de verificación
-              </button>
-            )}
-          </div>
+          <p className="rounded-lg bg-danger/10 px-4 py-2.5 text-sm text-danger">{error}</p>
         )}
 
         <button
