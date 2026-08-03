@@ -7,6 +7,7 @@ import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import type { Equipment, Exercise, MuscleGroup } from '@/types'
 import { MUSCLE_LABELS, MuscleChip } from '@/components/gym/MuscleChip'
 import EquipmentIcon from '@/components/gym/EquipmentIcon'
+import Portal from '@/components/ui/Portal'
 import { cn } from '@/lib/utils'
 
 const MUSCLE_FILTERS = Object.keys(MUSCLE_LABELS) as MuscleGroup[]
@@ -101,8 +102,9 @@ export function ExercisePicker({ onSelect, onClose, excludeIds = [] }: Props) {
   )
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-bg">
-      <div className="mx-auto flex w-full max-w-lg flex-1 flex-col overflow-hidden">
+    <Portal>
+      <div className="fixed inset-0 z-50 flex flex-col bg-bg">
+        <div className="mx-auto flex w-full max-w-lg flex-1 flex-col overflow-hidden">
         <div className="flex items-center gap-3 border-b border-line px-4 py-3">
           <div className="flex flex-1 items-center gap-2 rounded-lg bg-surface px-3 py-2">
             <Search size={18} className="text-ink-3" />
@@ -172,7 +174,8 @@ export function ExercisePicker({ onSelect, onClose, excludeIds = [] }: Props) {
             <p className="py-12 text-center text-sm text-ink-3">Sin resultados</p>
           )}
         </div>
+        </div>
       </div>
-    </div>
+    </Portal>
   )
 }

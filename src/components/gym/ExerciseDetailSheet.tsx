@@ -4,6 +4,7 @@ import type { Exercise } from '@/types'
 import { getExerciseInfo } from '@/data/exerciseInfo'
 import MuscleBodySVG from './MuscleBodySVG'
 import EquipmentIcon from './EquipmentIcon'
+import Portal from '@/components/ui/Portal'
 import { cn } from '@/lib/utils'
 
 interface Props {
@@ -79,22 +80,15 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
   if (!exercise) return null
 
   return (
-    <>
+    <Portal>
       {/* Overlay oscuro */}
       <div
         className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm animate-fade-up"
-        style={{ willChange: 'transform, opacity' }}
         onClick={onClose}
       />
 
-      {/* Sheet — translateZ(0) fuerza su propia capa de composición: en
-          Safari iOS, un elemento fixed al lado de otro con backdrop-filter
-          puede quedar sin pintarse (se ve el blur pero nada más) si ambos
-          comparten la misma capa GPU. */}
-      <div
-        className="fixed bottom-0 left-1/2 z-50 w-full max-w-lg -translate-x-1/2 animate-sheet-in rounded-t-3xl bg-surface shadow-float overflow-hidden"
-        style={{ isolation: 'isolate', willChange: 'transform' }}
-      >
+      {/* Sheet */}
+      <div className="fixed bottom-0 left-1/2 z-50 w-full max-w-lg -translate-x-1/2 animate-sheet-in rounded-t-3xl bg-surface shadow-float overflow-hidden">
         {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1">
           <div className="h-1 w-10 rounded-full bg-line-2" />
@@ -222,6 +216,6 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
           )}
         </div>
       </div>
-    </>
+    </Portal>
   )
 }
