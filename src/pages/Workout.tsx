@@ -3,7 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ArrowLeft, Check, Minus, Plus, Trash2, Trophy } from 'lucide-react'
 import { db } from '@/db/schema'
+import { workoutSetsOf, workoutsFor, personalRecordsFor } from '@/db/scoped'
 import { useWorkoutStore } from '@/stores/workoutStore'
+import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { ExercisePicker } from '@/components/gym/ExercisePicker'
 import { RestTimer } from '@/components/gym/RestTimer'
 import { MuscleChip } from '@/components/gym/MuscleChip'
@@ -19,6 +21,7 @@ export default function Workout() {
   const { workoutId } = useParams<{ workoutId: string }>()
   const navigate = useNavigate()
   const store = useWorkoutStore()
+  const userId = useCurrentUserId()
   const [pickerOpen, setPickerOpen] = useState(false)
   const [elapsed, setElapsed] = useState('')
   const [newPRs, setNewPRs] = useState<PersonalRecord[] | null>(null)
@@ -29,11 +32,14 @@ export default function Workout() {
     [workoutId]
   )
   const sets = useLiveQuery(
-    () => (workoutId ? db.workoutSets.where('workoutId').equals(workoutId).toArray() : []),
+    () => (workoutId ? workoutSetsOf(workoutId).toArray() : []),
     [workoutId]
   )
   const exercises = useLiveQuery(() => db.exercises.toArray(), []) ?? []
-  const profile = useLiveQuery(() => db.profile.get('local'), [])
+  const profile = useLiveQuery(
+    () => (userId ? db.profile.get(userId) : undefined),
+    [userId]
+  )
 
   const exerciseMap = useMemo(
     () => new Map(exercises.map((e) => [e.id, e])),
@@ -92,16 +98,17 @@ export default function Workout() {
   }
 
   const handleFinish = async () => {
-    const prs = await store.finishWorkout(workoutId)
+    if (!userId) return
+    const prs = await store.finishWorkout(userId, workoutId)
     setNewPRs(prs)
 
     // Métricas + logros a partir del estado ya persistido
     const [workouts, prCount] = await Promise.all([
-      db.workouts.toArray(),
-      db.personalRecords.count(),
+      workoutsFor(userId).toArray(),
+      personalRecordsFor(userId).count(),
     ])
     const stats = computeStats(workouts)
-    const unlocked = await syncAchievements({ stats, prCount })
+    const unlocked = await syncAchievements(userId, { stats, prCount })
     setNewAchievements(unlocked)
 
     // Feedback: toasts encadenados
@@ -213,6 +220,16 @@ export default function Workout() {
                   {exercise?.musclePrimary.map((m) => <MuscleChip key={m} muscle={m} />)}
                 </div>
               </div>
+              <span
+                className={cn(
+                  'shrink-0 rounded-full px-2.5 py-1 font-mono text-xs font-bold',
+                  exSets.every((s) => s.completed === 1)
+                    ? 'bg-success/15 text-success'
+                    : 'bg-surface-2 text-ink-2'
+                )}
+              >
+                {exSets.filter((s) => s.completed === 1).length}/{exSets.length}
+              </span>
             </div>
 
             <div className="mb-2 grid grid-cols-[2rem_1fr_1fr_2.5rem] gap-2 text-[11px] font-semibold uppercase tracking-wide text-ink-3">

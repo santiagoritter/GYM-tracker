@@ -1,12 +1,14 @@
 import { db } from '@/db/schema'
+import { workoutsFor } from '@/db/scoped'
 import type { Routine, RoutineDay, RoutineExercise, Workout, WorkoutSet } from '@/types'
 import { nowIso, uid } from '@/lib/utils'
 
 export const ROUTINE_COLORS = ['#E8FF47', '#60A5FA', '#F97316', '#EC4899', '#4ADE80', '#A855F7']
 
-export async function createRoutine(name: string): Promise<string> {
+export async function createRoutine(userId: string, name: string): Promise<string> {
   const routine: Routine = {
     id: uid(),
+    userId,
     name,
     color: ROUTINE_COLORS[0],
     isActive: 0,
@@ -24,10 +26,10 @@ export async function updateRoutine(id: string, patch: Partial<Routine>): Promis
   await db.routines.update(id, { ...patch, updatedAt: nowIso(), synced: 0 })
 }
 
-/** Solo una rutina activa a la vez. */
-export async function setActiveRoutine(id: string): Promise<void> {
+/** Solo una rutina activa a la vez (por usuario). */
+export async function setActiveRoutine(userId: string, id: string): Promise<void> {
   await db.transaction('rw', db.routines, async () => {
-    await db.routines.toCollection().modify({ isActive: 0 })
+    await db.routines.where('userId').equals(userId).modify({ isActive: 0 })
     await db.routines.update(id, { isActive: 1, updatedAt: nowIso() })
   })
 }
@@ -135,7 +137,7 @@ export async function moveExercise(entryId: string, direction: -1 | 1): Promise<
  * Cada ejercicio arranca con sus series objetivo en repsMin, peso 0
  * (el usuario ajusta; en Fase 5 se autocompleta con el último peso usado).
  */
-export async function startWorkoutFromDay(dayId: string): Promise<string> {
+export async function startWorkoutFromDay(userId: string, dayId: string): Promise<string> {
   const day = await db.routineDays.get(dayId)
   if (!day) throw new Error('Día de rutina no encontrado')
   const entries = (await db.routineExercises.where('dayId').equals(dayId).toArray()).sort(
@@ -144,11 +146,16 @@ export async function startWorkoutFromDay(dayId: string): Promise<string> {
 
   const workout: Workout = {
     id: uid(),
+    userId,
     name: day.name,
     startedAt: nowIso(),
     synced: 0,
     updatedAt: nowIso(),
   }
+
+  // Solo entrenos propios: workoutSets no tiene userId directo, así que se
+  // filtra por los workoutId que ya sabemos que son del usuario actual.
+  const ownWorkoutIds = new Set((await workoutsFor(userId).toArray()).map((w) => w.id))
 
   // Autocompletar peso desde el historial + progresión automática:
   // si la última vez se completaron todas las series objetivo llegando al
@@ -158,7 +165,7 @@ export async function startWorkoutFromDay(dayId: string): Promise<string> {
     const history = await db.workoutSets
       .where('exerciseId')
       .equals(entry.exerciseId)
-      .filter((s) => s.completed === 1 && s.isWarmup === 0)
+      .filter((s) => s.completed === 1 && s.isWarmup === 0 && ownWorkoutIds.has(s.workoutId))
       .toArray()
 
     let suggestedKg = 0

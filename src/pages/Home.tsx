@@ -2,10 +2,11 @@ import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ChevronRight, Play, Flame } from 'lucide-react'
-import { db } from '@/db/schema'
+import { routinesFor, routineDaysOf, workoutsFor } from '@/db/scoped'
 import { startWorkoutFromDay } from '@/db/routines'
 import { useWorkoutStore } from '@/stores/workoutStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { HOME_MESSAGES } from '@/lib/motivational'
 import { formatDate, formatDuration } from '@/lib/utils'
 import StreakWeekCard from '@/components/gym/StreakWeekCard'
@@ -15,37 +16,41 @@ export default function Home() {
   const navigate = useNavigate()
   const startWorkout = useWorkoutStore((s) => s.startWorkout)
   const { name } = useAuthStore()
+  const userId = useCurrentUserId()
   const quote = useMemo(() => HOME_MESSAGES[Math.floor(Math.random() * HOME_MESSAGES.length)], [])
 
   const activeWorkout = useLiveQuery(
-    () => db.workouts.filter((w) => !w.finishedAt).first(),
-    []
+    () => (userId ? workoutsFor(userId).filter((w) => !w.finishedAt).first() : undefined),
+    [userId]
   )
   const recentWorkouts = useLiveQuery(
     () =>
-      db.workouts
-        .orderBy('startedAt')
-        .reverse()
-        .filter((w) => Boolean(w.finishedAt))
-        .limit(3)
-        .toArray(),
-    []
+      userId
+        ? workoutsFor(userId)
+            .filter((w) => Boolean(w.finishedAt))
+            .toArray()
+            .then((ws) =>
+              ws.sort((a, b) => b.startedAt.localeCompare(a.startedAt)).slice(0, 3)
+            )
+        : [],
+    [userId]
   )
   const activeRoutine = useLiveQuery(
-    () => db.routines.filter((r) => r.isActive === 1 && r.isArchived === 0).first(),
-    []
+    () =>
+      userId
+        ? routinesFor(userId).filter((r) => r.isActive === 1 && r.isArchived === 0).first()
+        : undefined,
+    [userId]
   )
   const routineDays = useLiveQuery(
-    () =>
-      activeRoutine
-        ? db.routineDays.where('routineId').equals(activeRoutine.id).sortBy('dayOrder')
-        : [],
+    () => (activeRoutine ? routineDaysOf(activeRoutine.id).sortBy('dayOrder') : []),
     [activeRoutine?.id]
   )
 
   const handleStart = async () => {
+    if (!userId) return
     const name = new Date().toLocaleDateString('es-AR', { weekday: 'long' })
-    const id = await startWorkout(`Entreno del ${name}`)
+    const id = await startWorkout(userId, `Entreno del ${name}`)
     navigate(`/entreno/${id}`)
   }
 
@@ -120,7 +125,8 @@ export default function Home() {
                 {day.isRest === 0 && (
                   <button
                     onClick={async () => {
-                      const id = await startWorkoutFromDay(day.id)
+                      if (!userId) return
+                      const id = await startWorkoutFromDay(userId, day.id)
                       navigate(`/entreno/${id}`)
                     }}
                     className="flex items-center gap-1 rounded-md bg-accent px-2.5 py-1 text-xs font-bold text-bg"

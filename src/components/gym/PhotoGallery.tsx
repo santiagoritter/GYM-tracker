@@ -11,11 +11,14 @@ import {
   YAxis,
 } from 'recharts'
 import { db } from '@/db/schema'
+import { progressPhotosFor } from '@/db/scoped'
+import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { compressImage } from '@/lib/photos'
 import type { ProgressPhoto } from '@/types'
 import { cn, nowIso, uid } from '@/lib/utils'
 
 export function PhotoGallery() {
+  const userId = useCurrentUserId()
   const fileRef = useRef<HTMLInputElement>(null)
   const [viewing, setViewing] = useState<ProgressPhoto | null>(null)
   const [saving, setSaving] = useState(false)
@@ -23,10 +26,18 @@ export function PhotoGallery() {
   const [compareIds, setCompareIds] = useState<string[]>([])
 
   const photos = useLiveQuery(
-    () => db.progressPhotos.orderBy('takenAt').reverse().toArray(),
-    []
+    () =>
+      userId
+        ? progressPhotosFor(userId)
+            .toArray()
+            .then((ps) => ps.sort((a, b) => b.takenAt.localeCompare(a.takenAt)))
+        : [],
+    [userId]
   )
-  const profile = useLiveQuery(() => db.profile.get('local'), [])
+  const profile = useLiveQuery(
+    () => (userId ? db.profile.get(userId) : undefined),
+    [userId]
+  )
 
   const weightData = useMemo(
     () =>
@@ -64,11 +75,13 @@ export function PhotoGallery() {
   }
 
   const handleFile = async (file: File) => {
+    if (!userId) return
     setSaving(true)
     try {
       const blob = await compressImage(file)
       await db.progressPhotos.add({
         id: uid(),
+        userId,
         takenAt: nowIso(),
         weightKg: profile?.bodyWeightKg,
         blob,

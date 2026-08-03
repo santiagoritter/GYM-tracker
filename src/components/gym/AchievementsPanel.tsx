@@ -1,22 +1,30 @@
 import { useEffect } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Lock } from 'lucide-react'
-import { db } from '@/db/schema'
+import { personalRecordsFor, achievementsFor } from '@/db/scoped'
+import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { ACHIEVEMENTS, syncAchievements } from '@/lib/achievements'
 import { useTrainingStats } from '@/hooks/useTrainingStats'
 import { cn } from '@/lib/utils'
 
 export default function AchievementsPanel() {
+  const userId = useCurrentUserId()
   const stats = useTrainingStats()
-  const prCount = useLiveQuery(() => db.personalRecords.count(), []) ?? 0
-  const unlocked = useLiveQuery(() => db.achievements.toArray(), []) ?? []
-  const unlockedIds = new Set(unlocked.map((a) => a.id))
+  const prCount = useLiveQuery(
+    () => (userId ? personalRecordsFor(userId).count() : 0),
+    [userId]
+  ) ?? 0
+  const unlocked = useLiveQuery(
+    () => (userId ? achievementsFor(userId).toArray() : []),
+    [userId]
+  ) ?? []
+  const unlockedIds = new Set(unlocked.map((a) => a.id.slice((userId?.length ?? 0) + 1)))
 
   // Sincroniza en silencio: si hay datos que ya cumplen un logro, lo persiste
   // (la celebración con toast/confetti vive en el flujo de fin de entreno).
   useEffect(() => {
-    if (stats.totalWorkouts > 0) void syncAchievements({ stats, prCount })
-  }, [stats, prCount])
+    if (userId && stats.totalWorkouts > 0) void syncAchievements(userId, { stats, prCount })
+  }, [userId, stats, prCount])
 
   const count = unlockedIds.size
   const total = ACHIEVEMENTS.length

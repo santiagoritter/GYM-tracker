@@ -14,12 +14,12 @@ interface WorkoutStore {
   extendRest: (seconds: number) => void
   skipRest: () => void
 
-  startWorkout: (name: string) => Promise<string>
+  startWorkout: (userId: string, name: string) => Promise<string>
   addExercise: (workoutId: string, exerciseId: string) => Promise<void>
   addSet: (workoutId: string, exerciseId: string, template?: Partial<WorkoutSet>) => Promise<void>
   updateSet: (setId: string, patch: Partial<WorkoutSet>) => Promise<void>
   removeSet: (setId: string) => Promise<void>
-  finishWorkout: (workoutId: string, notes?: string) => Promise<PersonalRecord[]>
+  finishWorkout: (userId: string, workoutId: string, notes?: string) => Promise<PersonalRecord[]>
   discardWorkout: (workoutId: string) => Promise<void>
 }
 
@@ -43,9 +43,10 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
 
   skipRest: () => set({ restTimer: { endsAt: null, totalSeconds: 90 } }),
 
-  startWorkout: async (name) => {
+  startWorkout: async (userId, name) => {
     const workout: Workout = {
       id: uid(),
+      userId,
       name,
       startedAt: nowIso(),
       synced: 0,
@@ -56,7 +57,12 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
   },
 
   addExercise: async (workoutId, exerciseId) => {
-    // Agregar un ejercicio = crear su primera serie vacía
+    // Agregar un ejercicio libremente arranca con 3 series vacías (el
+    // objetivo típico de trabajo) en vez de 1 sola, para que el usuario
+    // tenga que completar/editar series existentes en vez de acordarse
+    // de ir agregándolas una por una.
+    await get().addSet(workoutId, exerciseId)
+    await get().addSet(workoutId, exerciseId)
     await get().addSet(workoutId, exerciseId)
   },
 
@@ -89,7 +95,7 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
     await db.workoutSets.delete(setId)
   },
 
-  finishWorkout: async (workoutId, notes) => {
+  finishWorkout: async (userId, workoutId, notes) => {
     const sets = await db.workoutSets.where('workoutId').equals(workoutId).toArray()
     const workingSets = sets.filter((s) => s.completed === 1 && s.isWarmup === 0)
     const totalVolumeKg = workingSets.reduce((sum, s) => sum + s.weightKg * s.reps, 0)
@@ -118,10 +124,12 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
       const oneRm = calc1RM(best.weightKg, best.reps)
       if (oneRm <= 0) continue
 
-      const current = await db.personalRecords.get(exerciseId)
+      const prId = `${userId}_${exerciseId}`
+      const current = await db.personalRecords.get(prId)
       if (!current || oneRm > current.oneRmKg) {
         const pr: PersonalRecord = {
-          id: exerciseId,
+          id: prId,
+          userId,
           exerciseId,
           weightKg: best.weightKg,
           reps: best.reps,

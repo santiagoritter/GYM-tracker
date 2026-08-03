@@ -26,11 +26,14 @@ const dailyMsg = getDailyMessage()
 export default function Profile() {
   const navigate = useNavigate()
   const { userId, name, role, clearSession } = useAuthStore()
-  const profile = useLiveQuery(() => db.profile.get('local'), [])
+  const profile = useLiveQuery(
+    () => (userId ? db.profile.get(userId) : undefined),
+    [userId]
+  )
   const user = useLiveQuery(() => (userId ? db.users.get(userId) : undefined), [userId])
 
   const update = (patch: Partial<LocalProfile>) => {
-    db.profile.update('local', patch)
+    if (userId) db.profile.update(userId, patch)
   }
 
   const handleLogout = () => {

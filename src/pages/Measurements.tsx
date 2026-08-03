@@ -12,6 +12,8 @@ import {
   YAxis,
 } from 'recharts'
 import { db } from '@/db/schema'
+import { bodyMeasurementsFor } from '@/db/scoped'
+import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import type { BodyMeasurement } from '@/types'
 import { nowIso, uid } from '@/lib/utils'
 import { toast } from '@/stores/toastStore'
@@ -28,12 +30,18 @@ const FIELDS: { key: keyof BodyMeasurement; label: string; unit: string }[] = [
 
 export default function Measurements() {
   const navigate = useNavigate()
+  const userId = useCurrentUserId()
   const [form, setForm] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
 
   const entries = useLiveQuery(
-    () => db.bodyMeasurements.orderBy('takenAt').reverse().toArray(),
-    []
+    () =>
+      userId
+        ? bodyMeasurementsFor(userId)
+            .toArray()
+            .then((es) => es.sort((a, b) => b.takenAt.localeCompare(a.takenAt)))
+        : [],
+    [userId]
   )
 
   const weightSeries = useMemo(
@@ -50,6 +58,7 @@ export default function Measurements() {
   )
 
   const handleSave = async () => {
+    if (!userId) return
     const numbers = FIELDS.reduce<Partial<BodyMeasurement>>((acc, f) => {
       const raw = form[f.key as string]
       if (raw != null && raw !== '') acc[f.key] = Number(raw) as never
@@ -61,10 +70,10 @@ export default function Measurements() {
     }
     setSaving(true)
     try {
-      const entry: BodyMeasurement = { id: uid(), takenAt: nowIso(), ...numbers }
+      const entry: BodyMeasurement = { id: uid(), userId, takenAt: nowIso(), ...numbers }
       await db.bodyMeasurements.add(entry)
       // Si registraste peso, actualizá el peso corporal del perfil también
-      if (numbers.weightKg) await db.profile.update('local', { bodyWeightKg: numbers.weightKg })
+      if (numbers.weightKg) await db.profile.update(userId, { bodyWeightKg: numbers.weightKg })
       setForm({})
       toast.success('Medida registrada', 'Seguí midiendo tu progreso 📏')
     } finally {

@@ -1,4 +1,5 @@
 import { db } from '@/db/schema'
+import { achievementsFor } from '@/db/scoped'
 import { nowIso } from '@/lib/utils'
 import type { TrainingStats } from '@/lib/stats'
 
@@ -39,14 +40,15 @@ export function getAchievement(id: string): AchievementDef | undefined {
  * los nuevos y los devuelve para poder celebrarlos con un toast/confetti.
  */
 export async function syncAchievements(
+  userId: string,
   ctx: AchievementContext
 ): Promise<AchievementDef[]> {
-  const unlocked = await db.achievements.toArray()
-  const unlockedIds = new Set(unlocked.map((a) => a.id))
+  const unlocked = await achievementsFor(userId).toArray()
+  const unlockedDefIds = new Set(unlocked.map((a) => a.id.slice(userId.length + 1)))
   const newly: AchievementDef[] = []
   for (const def of ACHIEVEMENTS) {
-    if (!unlockedIds.has(def.id) && def.test(ctx)) {
-      await db.achievements.put({ id: def.id, unlockedAt: nowIso() })
+    if (!unlockedDefIds.has(def.id) && def.test(ctx)) {
+      await db.achievements.put({ id: `${userId}_${def.id}`, userId, unlockedAt: nowIso() })
       newly.push(def)
     }
   }

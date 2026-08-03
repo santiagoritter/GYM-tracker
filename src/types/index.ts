@@ -48,6 +48,7 @@ export interface Exercise {
 // Flags booleanos como 0|1: IndexedDB no indexa booleans
 export interface Workout {
   id: string
+  userId: string
   name: string
   startedAt: string
   finishedAt?: string
@@ -74,6 +75,7 @@ export interface WorkoutSet {
 
 export interface PersonalRecord {
   id: string // = exerciseId (un PR por ejercicio en modo local)
+  userId: string
   exerciseId: string
   weightKg: number
   reps: number
@@ -84,6 +86,7 @@ export interface PersonalRecord {
 
 export interface Routine {
   id: string
+  userId: string
   name: string
   color: string
   isActive: 0 | 1
@@ -126,10 +129,19 @@ export interface User {
   name: string
   createdAt: string
   onboardingComplete: 0 | 1
+  emailVerified: 0 | 1
+}
+
+export interface EmailVerification {
+  id: string          // = userId
+  code: string        // 6 dígitos hasheados
+  expiresAt: string   // ISO
+  lastSentAt: string  // ISO — cooldown de reenvío
+  attempts: number    // intentos fallidos de verificación (máx 5)
 }
 
 export interface LocalProfile {
-  id: 'local'
+  id: string // = userId (relación 1:1 perfil↔usuario)
   units: 'kg' | 'lbs'
   restTimerDefault: number // segundos
   bodyWeightKg?: number
@@ -147,6 +159,7 @@ export interface LocalProfile {
 // Registro histórico de peso corporal y medidas
 export interface BodyMeasurement {
   id: string
+  userId: string
   takenAt: string
   weightKg?: number
   bodyFatPct?: number
@@ -158,9 +171,10 @@ export interface BodyMeasurement {
   notes?: string
 }
 
-// Logro desbloqueado (el id es la clave del catálogo en lib/achievements)
+// Logro desbloqueado (id = `${userId}_${claveDelCatalogo}` en lib/achievements)
 export interface Achievement {
   id: string
+  userId: string
   unlockedAt: string
 }
 
@@ -168,6 +182,7 @@ export interface Achievement {
 // (en Fase 4 se sube comprimida a Supabase Storage)
 export interface ProgressPhoto {
   id: string
+  userId: string
   takenAt: string
   weightKg?: number
   notes?: string

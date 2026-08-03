@@ -2,6 +2,8 @@ import { useMemo } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Link } from 'react-router-dom'
 import { db } from '@/db/schema'
+import { personalRecordsFor } from '@/db/scoped'
+import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import {
   LEVEL_LABELS,
   STANDARDS,
@@ -10,8 +12,15 @@ import {
 } from '@/lib/strengthStandards'
 
 export function StrengthLevels() {
-  const profile = useLiveQuery(() => db.profile.get('local'), [])
-  const prs = useLiveQuery(() => db.personalRecords.toArray(), []) ?? []
+  const userId = useCurrentUserId()
+  const profile = useLiveQuery(
+    () => (userId ? db.profile.get(userId) : undefined),
+    [userId]
+  )
+  const prs = useLiveQuery(
+    () => (userId ? personalRecordsFor(userId).toArray() : []),
+    [userId]
+  ) ?? []
 
   const prMap = useMemo(() => new Map(prs.map((p) => [p.exerciseId, p])), [prs])
 

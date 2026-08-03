@@ -5,6 +5,7 @@ import { db } from '@/db/schema'
 import type { LocalProfile } from '@/types'
 import { cn } from '@/lib/utils'
 import { toast } from '@/stores/toastStore'
+import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import {
   notificationsSupported,
   requestNotificationPermission,
@@ -23,9 +24,14 @@ const DAYS: { value: number; label: string }[] = [
 
 export default function Reminders() {
   const navigate = useNavigate()
-  const profile = useLiveQuery(() => db.profile.get('local'), [])
+  const userId = useCurrentUserId()
+  const profile = useLiveQuery(
+    () => (userId ? db.profile.get(userId) : undefined),
+    [userId]
+  )
 
-  const update = (patch: Partial<LocalProfile>) => db.profile.update('local', patch)
+  const update = (patch: Partial<LocalProfile>) =>
+    userId ? db.profile.update(userId, patch) : Promise.resolve(0)
 
   if (!profile) return null
 

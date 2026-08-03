@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Calendar, Play, QrCode, ScanLine, Star, Trash2 } from 'lucide-react'
 import { db } from '@/db/schema'
+import { routinesFor, workoutsFor } from '@/db/scoped'
 import {
   createRoutine,
   deleteRoutine,
   setActiveRoutine,
   startWorkoutFromDay,
 } from '@/db/routines'
+import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { Suspense, lazy } from 'react'
 import type { Routine } from '@/types'
 import { cn } from '@/lib/utils'
@@ -23,36 +25,38 @@ const QRScanner = lazy(() =>
 
 export default function Routines() {
   const navigate = useNavigate()
+  const userId = useCurrentUserId()
   const [creating, setCreating] = useState(false)
   const [name, setName] = useState('')
   const [sharing, setSharing] = useState<Routine | null>(null)
   const [scanning, setScanning] = useState(false)
 
   const routines = useLiveQuery(
-    () => db.routines.filter((r) => r.isArchived === 0).toArray(),
-    []
+    () => (userId ? routinesFor(userId).filter((r) => r.isArchived === 0).toArray() : []),
+    [userId]
   )
   const days = useLiveQuery(() => db.routineDays.toArray(), []) ?? []
   const activeWorkout = useLiveQuery(
-    () => db.workouts.filter((w) => !w.finishedAt).first(),
-    []
+    () => (userId ? workoutsFor(userId).filter((w) => !w.finishedAt).first() : undefined),
+    [userId]
   )
 
   const handleCreate = async () => {
     const trimmed = name.trim()
-    if (!trimmed) return
-    const id = await createRoutine(trimmed)
+    if (!trimmed || !userId) return
+    const id = await createRoutine(userId, trimmed)
     setName('')
     setCreating(false)
     navigate(`/rutina/${id}`)
   }
 
   const handleTrain = async (dayId: string) => {
+    if (!userId) return
     if (activeWorkout) {
       navigate(`/entreno/${activeWorkout.id}`)
       return
     }
-    const workoutId = await startWorkoutFromDay(dayId)
+    const workoutId = await startWorkoutFromDay(userId, dayId)
     navigate(`/entreno/${workoutId}`)
   }
 
@@ -126,7 +130,7 @@ export default function Routines() {
                   <QrCode size={18} />
                 </button>
                 <button
-                  onClick={() => setActiveRoutine(routine.id)}
+                  onClick={() => userId && setActiveRoutine(userId, routine.id)}
                   className={cn(
                     'rounded-lg p-2',
                     routine.isActive === 1 ? 'text-accent' : 'text-ink-3'

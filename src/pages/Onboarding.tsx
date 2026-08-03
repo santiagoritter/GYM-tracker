@@ -42,7 +42,7 @@ export default function Onboarding() {
     if (!userId) return
     setSaving(true)
     try {
-      const profile = await db.profile.get('local')
+      const profile = await db.profile.get(userId)
       const patch = {
         ...(sex && { sex }),
         ...(dob && { dob }),
@@ -52,9 +52,9 @@ export default function Onboarding() {
         ...(level && { level }),
       }
       if (profile) {
-        await db.profile.update('local', patch)
+        await db.profile.update(userId, patch)
       } else {
-        await db.profile.add({ id: 'local', units: 'kg', restTimerDefault: 90, ...patch })
+        await db.profile.add({ id: userId, units: 'kg', restTimerDefault: 90, ...patch })
       }
       await db.users.update(userId, { onboardingComplete: 1 })
       navigate('/', { replace: true })

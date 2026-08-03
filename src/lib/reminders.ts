@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '@/db/schema'
+import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { HOME_MESSAGES, getRandomMessage } from '@/lib/motivational'
 import { localDayKey } from '@/lib/stats'
 
@@ -41,7 +42,8 @@ function fireNotification() {
  * requiere backend (Supabase Edge Function + pg_cron) — ver docs/12.
  */
 export function useReminderScheduler() {
-  const profile = useLiveQuery(() => db.profile.get('local'), [])
+  const userId = useCurrentUserId()
+  const profile = useLiveQuery(() => (userId ? db.profile.get(userId) : undefined), [userId])
 
   useEffect(() => {
     if (!profile?.reminderEnabled || !profile.reminderTime) return

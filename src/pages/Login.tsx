@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Dumbbell, Eye, EyeOff } from 'lucide-react'
-import { loginUser } from '@/lib/auth'
+import { Dumbbell, Eye, EyeOff, Mail } from 'lucide-react'
+import { loginUser, resendVerificationEmail } from '@/lib/auth'
 import { useAuthStore } from '@/stores/authStore'
-import { db } from '@/db/schema'
+import { db, ensureProfile } from '@/db/schema'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -13,20 +13,17 @@ export default function Login() {
   const [showPw, setShowPw] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [unverifiedUserId, setUnverifiedUserId] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setUnverifiedUserId(null)
     setLoading(true)
     try {
       const user = await loginUser(email, password)
       setSession(user.id, user.role, user.name)
-
-      // Asegurar perfil local
-      const profile = await db.profile.get('local')
-      if (!profile) {
-        await db.profile.add({ id: 'local', units: 'kg', restTimerDefault: 90 })
-      }
+      await ensureProfile(user.id)
 
       if (user.onboardingComplete === 0) {
         navigate('/onboarding', { replace: true })
@@ -34,7 +31,26 @@ export default function Login() {
         navigate('/', { replace: true })
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al iniciar sesión.')
+      if (err instanceof Error && err.message === 'EMAIL_NOT_VERIFIED') {
+        const u = await db.users.where('email').equals(email.toLowerCase().trim()).first()
+        if (u) setUnverifiedUserId(u.id)
+        setError('Verificá tu email antes de ingresar.')
+      } else {
+        setError(err instanceof Error ? err.message : 'Error al iniciar sesión.')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResendFromLogin = async () => {
+    if (!unverifiedUserId) return
+    setLoading(true)
+    try {
+      await resendVerificationEmail(unverifiedUserId)
+      setError('Código reenviado. Revisá tu email.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al reenviar.')
     } finally {
       setLoading(false)
     }
@@ -60,7 +76,7 @@ export default function Login() {
             required
             autoComplete="email"
             placeholder="tu@email.com"
-            className="w-full rounded-xl bg-surface px-4 py-3 text-sm outline-none ring-1 ring-line-2 transition focus:ring-accent"
+            className="w-full rounded-xl bg-surface px-4 py-3 text-base outline-none ring-1 ring-line-2 transition focus:ring-accent"
           />
         </div>
 
@@ -74,7 +90,7 @@ export default function Login() {
               required
               autoComplete="current-password"
               placeholder="••••••••"
-              className="w-full rounded-xl bg-surface px-4 py-3 pr-11 text-sm outline-none ring-1 ring-line-2 transition focus:ring-accent"
+              className="w-full rounded-xl bg-surface px-4 py-3 pr-11 text-base outline-none ring-1 ring-line-2 transition focus:ring-accent"
             />
             <button
               type="button"
@@ -87,7 +103,19 @@ export default function Login() {
         </div>
 
         {error && (
-          <p className="rounded-lg bg-danger/10 px-4 py-2.5 text-sm text-danger">{error}</p>
+          <div className="rounded-lg bg-danger/10 px-4 py-2.5 text-sm text-danger space-y-2">
+            <p>{error}</p>
+            {unverifiedUserId && (
+              <button
+                type="button"
+                onClick={handleResendFromLogin}
+                disabled={loading}
+                className="flex items-center gap-1.5 font-semibold text-accent underline underline-offset-2"
+              >
+                <Mail size={13} /> Reenviar código de verificación
+              </button>
+            )}
+          </div>
         )}
 
         <button

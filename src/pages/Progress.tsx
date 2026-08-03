@@ -13,6 +13,8 @@ import {
   YAxis,
 } from 'recharts'
 import { db } from '@/db/schema'
+import { workoutsFor, personalRecordsFor } from '@/db/scoped'
+import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { HistoryList } from '@/components/gym/HistoryList'
 import { MonthlyStats } from '@/components/gym/MonthlyStats'
 import { StrengthLevels } from '@/components/gym/StrengthLevels'
@@ -80,9 +82,10 @@ export default function Progress() {
 }
 
 function Charts() {
+  const userId = useCurrentUserId()
   const workouts = useLiveQuery(
-    () => db.workouts.filter((w) => Boolean(w.finishedAt)).toArray(),
-    []
+    () => (userId ? workoutsFor(userId).filter((w) => Boolean(w.finishedAt)).toArray() : []),
+    [userId]
   )
   const exercises = useLiveQuery(() => db.exercises.toArray(), []) ?? []
   const [selectedExercise, setSelectedExercise] = useState<string>('')
@@ -92,11 +95,15 @@ function Charts() {
     [workouts]
   )
 
-  // Claves únicas del índice exerciseId — sin escanear la tabla completa
-  const trainedIds = useLiveQuery(
-    async () => new Set((await db.workoutSets.orderBy('exerciseId').uniqueKeys()) as string[]),
-    []
-  )
+  // Ejercicios distintos entrenados por este usuario (workoutSets no tiene
+  // userId directo, se cruza contra los workoutId ya scopeados).
+  const trainedIds = useLiveQuery(async () => {
+    const ownWorkoutIds = new Set((workouts ?? []).map((w) => w.id))
+    const allSets = await db.workoutSets.toArray()
+    return new Set(
+      allSets.filter((s) => ownWorkoutIds.has(s.workoutId)).map((s) => s.exerciseId)
+    )
+  }, [workouts])
 
   const trainedExercises = useMemo(
     () =>
@@ -247,7 +254,8 @@ function weekKey(date: Date): string {
 }
 
 function PRList() {
-  const prs = useLiveQuery(() => db.personalRecords.toArray(), []) ?? []
+  const userId = useCurrentUserId()
+  const prs = useLiveQuery(() => (userId ? personalRecordsFor(userId).toArray() : []), [userId]) ?? []
   const exercises = useLiveQuery(() => db.exercises.toArray(), []) ?? []
   const exerciseMap = useMemo(() => new Map(exercises.map((e) => [e.id, e])), [exercises])
 

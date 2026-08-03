@@ -1,11 +1,16 @@
 import { Dumbbell, Flame, Timer, TrendingUp, Trophy, Weight } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db } from '@/db/schema'
+import { personalRecordsFor } from '@/db/scoped'
+import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useTrainingStats } from '@/hooks/useTrainingStats'
 
 export default function StatsOverview() {
+  const userId = useCurrentUserId()
   const stats = useTrainingStats()
-  const prCount = useLiveQuery(() => db.personalRecords.count(), []) ?? 0
+  const prCount = useLiveQuery(
+    () => (userId ? personalRecordsFor(userId).count() : 0),
+    [userId]
+  ) ?? 0
 
   const hours = Math.round((stats.totalDurationSec / 3600) * 10) / 10
   const tons = Math.round((stats.totalVolumeKg / 1000) * 10) / 10

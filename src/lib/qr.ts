@@ -4,6 +4,7 @@
 import LZString from 'lz-string'
 import QRCode from 'qrcode'
 import { db } from '@/db/schema'
+import { workoutsFor } from '@/db/scoped'
 import type { Routine, RoutineDay, RoutineExercise } from '@/types'
 
 const PREFIX = 'GYMTR:'
@@ -40,6 +41,12 @@ export async function buildPayload(
     await db.routineDays.where('routineId').equals(routine.id).toArray()
   ).sort((a, b) => a.dayOrder - b.dayOrder)
 
+  // Solo entrenos propios del dueño de la rutina: workoutSets no tiene
+  // userId directo, se filtra por los workoutId que ya sabemos que son suyos.
+  const ownWorkoutIds = options.includeWeights
+    ? new Set((await workoutsFor(routine.userId).toArray()).map((w) => w.id))
+    : null
+
   const qrDays: QRDay[] = []
   for (const day of days) {
     if (day.isRest === 1) {
@@ -58,12 +65,14 @@ export async function buildPayload(
         r: [entry.repsMin, entry.repsMax],
       }
       if (entry.restSeconds !== 90) ex.rs = entry.restSeconds
-      if (options.includeWeights) {
-        // Último peso de trabajo usado en ese ejercicio
+      if (ownWorkoutIds) {
+        // Último peso de trabajo usado en ese ejercicio (solo entrenos propios)
         const lastSet = await db.workoutSets
           .where('exerciseId')
           .equals(entry.exerciseId)
-          .filter((s) => s.completed === 1 && s.isWarmup === 0 && s.weightKg > 0)
+          .filter(
+            (s) => s.completed === 1 && s.isWarmup === 0 && s.weightKg > 0 && ownWorkoutIds.has(s.workoutId)
+          )
           .last()
         if (lastSet) ex.w = lastSet.weightKg
       }
@@ -106,6 +115,7 @@ export async function generateQRDataUrl(data: string): Promise<string> {
 
 /** Importa un payload como rutina nueva. Devuelve id de la rutina y ejercicios omitidos. */
 export async function importPayload(
+  userId: string,
   payload: QRPayload,
   name?: string
 ): Promise<{ routineId: string; skipped: number }> {
@@ -115,6 +125,7 @@ export async function importPayload(
 
   const routine: Routine = {
     id: uid(),
+    userId,
     name: name?.trim() || payload.n,
     color: '#60A5FA',
     isActive: 0,

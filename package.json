@@ -10,6 +10,7 @@
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
+    "@emailjs/browser": "^4.4.1",
     "@tanstack/react-query": "^5.51.0",
     "clsx": "^2.1.1",
     "dexie": "^4.0.8",

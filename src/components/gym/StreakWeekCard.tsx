@@ -1,12 +1,17 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Flame } from 'lucide-react'
 import { db } from '@/db/schema'
+import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useTrainingStats } from '@/hooks/useTrainingStats'
 import ProgressRing from '@/components/ui/ProgressRing'
 
 export default function StreakWeekCard() {
+  const userId = useCurrentUserId()
   const stats = useTrainingStats()
-  const profile = useLiveQuery(() => db.profile.get('local'), [])
+  const profile = useLiveQuery(
+    () => (userId ? db.profile.get(userId) : undefined),
+    [userId]
+  )
   const goal = profile?.weeklyGoal ?? 3
   const done = stats.thisWeekCount
   const metGoal = done >= goal

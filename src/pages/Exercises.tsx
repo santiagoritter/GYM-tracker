@@ -2,9 +2,12 @@ import { useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ChevronRight, Search, Trophy } from 'lucide-react'
 import { db } from '@/db/schema'
+import { personalRecordsFor } from '@/db/scoped'
+import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import type { Equipment, Exercise, MuscleGroup } from '@/types'
 import { MUSCLE_LABELS, MuscleChip } from '@/components/gym/MuscleChip'
 import ExerciseDetailSheet from '@/components/gym/ExerciseDetailSheet'
+import EquipmentIcon from '@/components/gym/EquipmentIcon'
 import { cn } from '@/lib/utils'
 
 const MUSCLE_FILTERS = Object.keys(MUSCLE_LABELS) as MuscleGroup[]
@@ -21,13 +24,17 @@ const EQUIPMENT_LABELS: Record<Equipment, string> = {
 }
 
 export default function Exercises() {
+  const userId = useCurrentUserId()
   const [query, setQuery] = useState('')
   const [muscle, setMuscle] = useState<MuscleGroup | null>(null)
   const [equipment, setEquipment] = useState<Equipment | null>(null)
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null)
 
   const exercises = useLiveQuery(() => db.exercises.toArray(), []) ?? []
-  const prs = useLiveQuery(() => db.personalRecords.toArray(), []) ?? []
+  const prs = useLiveQuery(
+    () => (userId ? personalRecordsFor(userId).toArray() : []),
+    [userId]
+  ) ?? []
   const prMap = useMemo(() => new Map(prs.map((p) => [p.exerciseId, p])), [prs])
 
   const filtered = useMemo(() => {
@@ -112,7 +119,8 @@ export default function Exercises() {
                     <p className="mt-0.5 text-[12px] text-ink-3">{e.nameEn}</p>
                   </div>
                   <div className="flex items-center gap-2 ml-3 shrink-0">
-                    <span className="rounded-lg bg-surface-2 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-2">
+                    <span className="flex items-center gap-1 rounded-lg bg-surface-2 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-2">
+                      <EquipmentIcon equipment={e.equipment} size={12} />
                       {EQUIPMENT_LABELS[e.equipment]}
                     </span>
                     <ChevronRight size={14} className="text-ink-4" />

@@ -1,5 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db } from '@/db/schema'
+import { workoutsFor } from '@/db/scoped'
+import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { computeStats, type TrainingStats } from '@/lib/stats'
 
 const EMPTY: TrainingStats = {
@@ -14,7 +15,11 @@ const EMPTY: TrainingStats = {
 
 /** Métricas de entrenamiento reactivas (se recalculan al cambiar la DB). */
 export function useTrainingStats(): TrainingStats {
-  const workouts = useLiveQuery(() => db.workouts.toArray(), [])
+  const userId = useCurrentUserId()
+  const workouts = useLiveQuery(
+    () => (userId ? workoutsFor(userId).toArray() : []),
+    [userId]
+  )
   if (!workouts) return EMPTY
   return computeStats(workouts)
 }

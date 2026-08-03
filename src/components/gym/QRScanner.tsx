@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import jsQR from 'jsqr'
 import { ClipboardPaste, X } from 'lucide-react'
 import { decodePayload, importPayload, type QRPayload } from '@/lib/qr'
+import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 
 export function QRScanner({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate()
+  const userId = useCurrentUserId()
   const videoRef = useRef<HTMLVideoElement>(null)
   const [payload, setPayload] = useState<QRPayload | null>(null)
   const [name, setName] = useState('')
@@ -73,8 +75,8 @@ export function QRScanner({ onClose }: { onClose: () => void }) {
   }
 
   const handleImport = async () => {
-    if (!payload) return
-    const { routineId, skipped } = await importPayload(payload, name)
+    if (!payload || !userId) return
+    const { routineId, skipped } = await importPayload(userId, payload, name)
     if (skipped > 0) {
       alert(`Rutina importada. ${skipped} ejercicio(s) no se encontraron en el catálogo y se omitieron.`)
     }

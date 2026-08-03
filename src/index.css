@@ -120,4 +120,11 @@
   input[type='number']::-webkit-outer-spin-button {
     -webkit-appearance: none;
   }
+  /* iOS/Android hacen auto-zoom al enfocar inputs con font-size < 16px.
+     !important es necesario: esta regla vive en @layer base, que Tailwind
+     ordena antes que @layer utilities, así que clases como text-sm ganarían
+     por orden de capa aunque tengan menor especificidad. */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
 }

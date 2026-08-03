@@ -3,6 +3,7 @@ import { X, CheckCircle2, AlertTriangle } from 'lucide-react'
 import type { Exercise } from '@/types'
 import { getExerciseInfo } from '@/data/exerciseInfo'
 import MuscleBodySVG from './MuscleBodySVG'
+import EquipmentIcon from './EquipmentIcon'
 import { cn } from '@/lib/utils'
 
 interface Props {
@@ -112,7 +113,10 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
             {DIFFICULTY_LABEL[exercise.difficulty]}
           </span>
           <span className="text-ink-4">·</span>
-          <span className="text-[12px] text-ink-2">{EQUIPMENT_LABEL[exercise.equipment]}</span>
+          <span className="flex items-center gap-1 text-[12px] text-ink-2">
+            <EquipmentIcon equipment={exercise.equipment} size={13} />
+            {EQUIPMENT_LABEL[exercise.equipment]}
+          </span>
           <span className="text-ink-4">·</span>
           <span className="text-[12px] text-ink-2">{PATTERN_LABEL[exercise.pattern]}</span>
         </div>

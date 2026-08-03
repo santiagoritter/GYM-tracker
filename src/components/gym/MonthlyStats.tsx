@@ -3,6 +3,8 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { db } from '@/db/schema'
+import { workoutsFor, personalRecordsFor } from '@/db/scoped'
+import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import type { MuscleGroup } from '@/types'
 import { MUSCLE_LABELS } from '@/components/gym/MuscleChip'
 
@@ -22,14 +24,18 @@ const MUSCLE_COLORS: Record<string, string> = {
 }
 
 export function MonthlyStats() {
+  const userId = useCurrentUserId()
   const [monthOffset, setMonthOffset] = useState(0)
 
   const workouts = useLiveQuery(
-    () => db.workouts.filter((w) => Boolean(w.finishedAt)).toArray(),
-    []
+    () => (userId ? workoutsFor(userId).filter((w) => Boolean(w.finishedAt)).toArray() : []),
+    [userId]
   )
   const exercises = useLiveQuery(() => db.exercises.toArray(), []) ?? []
-  const prs = useLiveQuery(() => db.personalRecords.toArray(), []) ?? []
+  const prs = useLiveQuery(
+    () => (userId ? personalRecordsFor(userId).toArray() : []),
+    [userId]
+  ) ?? []
 
   const exerciseMap = useMemo(() => new Map(exercises.map((e) => [e.id, e])), [exercises])
 

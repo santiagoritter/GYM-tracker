@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db } from '@/db/schema'
+import { workoutsFor } from '@/db/scoped'
+import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { localDayKey } from '@/lib/stats'
 import { cn } from '@/lib/utils'
 
@@ -26,9 +27,10 @@ const LEVEL_CLASS = [
 ]
 
 export default function CalendarHeatmap() {
+  const userId = useCurrentUserId()
   const workouts = useLiveQuery(
-    () => db.workouts.filter((w) => Boolean(w.finishedAt)).toArray(),
-    []
+    () => (userId ? workoutsFor(userId).filter((w) => Boolean(w.finishedAt)).toArray() : []),
+    [userId]
   )
 
   const { columns, monthLabels } = useMemo(() => {
