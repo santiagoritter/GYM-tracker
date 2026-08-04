@@ -5,29 +5,29 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Base — puro negro iOS
-        bg: '#000000',
-        // Superficies con opacidad para glass
+        // Fondo: NO es negro puro. #000 con un acento saturado encima es la
+        // firma del "dark mode con glow" generado por IA; un neutro apenas
+        // tintado da profundidad sin necesidad de halos. Ver DESIGN.md §1.
+        bg: '#0B0B0C',
         surface: {
-          DEFAULT: '#1C1C1E',
-          2: '#2C2C2E',
-          3: '#3A3A3C',
-          glass: 'rgba(28,28,30,0.72)',
+          DEFAULT: '#16161A',
+          2: '#1F1F25',
+          3: '#2A2A32',
+          glass: 'rgba(22,22,26,0.72)',
         },
-        // Separadores iOS
         line: {
-          DEFAULT: 'rgba(84,84,88,0.65)',
-          2: 'rgba(84,84,88,0.45)',
+          DEFAULT: 'rgba(120,120,128,0.28)',
+          2: 'rgba(120,120,128,0.16)',
         },
-        // Labels iOS
         ink: {
           DEFAULT: '#FFFFFF',
-          2: 'rgba(235,235,245,0.6)',
-          3: 'rgba(235,235,245,0.3)',
+          2: 'rgba(235,235,245,0.62)',
+          3: 'rgba(235,235,245,0.34)', // piso de contraste AA sobre surface
           4: 'rgba(235,235,245,0.18)',
         },
-        // Acento de marca (lima)
-        accent: { DEFAULT: '#E8FF47', dim: '#C8E030', muted: 'rgba(232,255,71,0.15)' },
+        // Acento de marca. Se mantiene el lima: no es ninguno de los tells
+        // conocidos (violeta, cyan-sobre-oscuro) y ya es la identidad.
+        accent: { DEFAULT: '#E8FF47', dim: '#C8E030', soft: 'rgba(232,255,71,0.12)' },
         // Fill iOS (para estados hover/pressed sutiles)
         fill: {
           DEFAULT: 'rgba(120,120,128,0.2)',
@@ -50,40 +50,50 @@ export default {
         },
       },
       fontFamily: {
+        // Inter queda deliberadamente FUERA: está en tantos sitios que ya no
+        // distingue nada, y en un iPhone la fuente del sistema se ve mejor
+        // que cualquier webfont cargada por red. Android cae a Roboto, que
+        // también es nativa.
         sans: [
           '-apple-system',
           'BlinkMacSystemFont',
           '"SF Pro Display"',
           '"SF Pro Text"',
-          'Inter',
           'system-ui',
+          'Roboto',
           'sans-serif',
         ],
-        mono: ['"SF Mono"', '"Geist Mono"', '"JetBrains Mono"', 'monospace'],
+        mono: ['"SF Mono"', 'ui-monospace', '"JetBrains Mono"', 'monospace'],
       },
+      // Escala con tope de 18px en contenedores. Redondear tarjetas a 24px+
+      // convierte cada elemento en la misma mancha blanda (DESIGN.md §3).
       borderRadius: {
-        sm: '8px',
-        md: '12px',
-        lg: '16px',
-        xl: '20px',
-        '2xl': '24px',
-        '3xl': '32px',
+        xs: '6px',
+        sm: '10px',
+        md: '14px', // default de tarjeta
+        lg: '18px', // tope
+        xl: '18px',
+        '2xl': '18px',
+        '3xl': '22px', // solo la parte superior de los sheets
       },
       backdropBlur: {
         ios: '20px',
         xs: '8px',
       },
+      // Solo sombras neutras y solo para elevación real. Las de color son
+      // el halo que estamos evitando; las de negro puro se ven sucias.
       boxShadow: {
-        card: '0 2px 16px rgba(0,0,0,0.4)',
-        float: '0 8px 32px rgba(0,0,0,0.6)',
-        accent: '0 4px 20px rgba(232,255,71,0.25)',
-        inner: 'inset 0 1px 0 rgba(255,255,255,0.06)',
+        card: '0 1px 3px rgba(0,0,0,0.35)',
+        float: '0 8px 28px rgba(8,8,10,0.55)',
+        inner: 'inset 0 1px 0 rgba(255,255,255,0.05)',
       },
       transitionTimingFunction: {
-        spring: 'cubic-bezier(0.34,1.56,0.64,1)',
+        standard: 'cubic-bezier(0.25,0.46,0.45,0.94)',
+        decel: 'cubic-bezier(0,0,0.58,1)',
+        // Overshoot permitido en UN solo lugar: el check de serie completada.
+        // En cualquier otro elemento de interfaz se ve anticuado.
+        pop: 'cubic-bezier(0.34,1.56,0.64,1)',
         ios: 'cubic-bezier(0.25,0.46,0.45,0.94)',
-        'ios-in': 'cubic-bezier(0.42,0,1,1)',
-        'ios-out': 'cubic-bezier(0,0,0.58,1)',
       },
     },
   },
