@@ -12,6 +12,7 @@ import Login from '@/pages/Login'
 import Registro from '@/pages/Registro'
 import Onboarding from '@/pages/Onboarding'
 import Reminders from '@/pages/Reminders'
+import Ajustes from '@/pages/Ajustes'
 import ToastContainer from '@/components/ui/Toast'
 
 // Lazy: Recharts pesa ~400KB min; solo se descarga al entrar a Progreso
@@ -48,6 +49,7 @@ export default function App() {
             }
           />
           <Route path="/perfil" element={<Profile />} />
+          <Route path="/ajustes" element={<Ajustes />} />
           <Route path="/recordatorios" element={<Reminders />} />
 
           {/* Panel admin: solo admins */}

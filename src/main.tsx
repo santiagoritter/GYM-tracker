@@ -6,11 +6,19 @@ import { db, seedIfEmpty } from '@/db/schema'
 import { installSyncHooks, setSyncUser } from '@/db/syncHooks'
 import { useAuthStore } from '@/stores/authStore'
 import { initNativeShell } from '@/lib/native'
+import { applyTheme, useThemeStore } from '@/stores/themeStore'
 import '@/index.css'
 
 // No-op en el navegador; en nativo ajusta la barra de estado y oculta el
 // splash cuando la app ya puede dibujar.
 initNativeShell()
+
+// El script inline de index.html ya setea data-theme antes del primer
+// paint (lee localStorage directo, sin poder importar este módulo). Esto
+// sincroniza el store en memoria con lo que quedó en el DOM y cubre el
+// caso de que la rehidratación de zustand complete después del mount.
+applyTheme(useThemeStore.getState().theme)
+useThemeStore.subscribe((state) => applyTheme(state.theme))
 
 // Antes de cualquier escritura: los hooks sellan updatedAt/dirty en todas
 // las tablas sincronizadas. Se instalan acá y no dentro de schema.ts para no

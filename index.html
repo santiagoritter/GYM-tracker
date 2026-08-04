@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" class="dark">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -9,6 +9,26 @@
          iOS, Roboto en Android). Se ve mejor en el dispositivo real, no
          bloquea el render, y no depende de una red que en un gimnasio puede
          no existir. Ver DESIGN.md §2. -->
+    <script>
+      // Setea data-theme ANTES del primer paint. Sin esto, un usuario en modo
+      // claro ve un flash oscuro al cargar mientras React monta y recién ahí
+      // lee la preferencia. No puede importar src/stores/themeStore.ts (ese
+      // código todavía no corrió), así que lee localStorage directo con el
+      // mismo formato que persiste zustand.
+      (function () {
+        try {
+          var raw = localStorage.getItem('gymtracker-theme')
+          var theme = raw ? JSON.parse(raw).state.theme : 'dark'
+          if (theme === 'light') {
+            document.documentElement.dataset.theme = 'light'
+            document.querySelector('meta[name="theme-color"]').setAttribute('content', '#F2F2F7')
+          }
+        } catch (e) {
+          // localStorage inaccesible (modo privado estricto, etc.) — se
+          // queda en oscuro, que es el default de :root.
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -4,40 +4,55 @@ export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      // Los colores que se usan en el código con un modificador de opacidad
+      // (bg-accent/15, bg-surface/60, text-danger/70...) tienen que ir en la
+      // forma `rgb(var(--x) / <alpha-value>)`: es la única sintaxis con la
+      // que Tailwind puede seguir aplicando esos modificadores sobre una
+      // variable CSS. Los que NUNCA se usan con `/NN` (confirmado por grep)
+      // van como `var(--x)` directo, con el alpha ya resuelto adentro —
+      // agregarles un modificador después se rompe en silencio, así que no
+      // se declaran ahí adentro por accidente.
+      //
+      // El valor real de cada variable vive en src/index.css, con un juego
+      // por tema (:root = oscuro, [data-theme="light"] = claro). Este
+      // archivo no sabe qué tema está activo — por diseño.
       colors: {
-        // Fondo: NO es negro puro. #000 con un acento saturado encima es la
-        // firma del "dark mode con glow" generado por IA; un neutro apenas
-        // tintado da profundidad sin necesidad de halos. Ver DESIGN.md §1.
-        bg: '#0B0B0C',
+        bg: 'rgb(var(--color-bg) / <alpha-value>)',
         surface: {
-          DEFAULT: '#16161A',
-          2: '#1F1F25',
-          3: '#2A2A32',
-          glass: 'rgba(22,22,26,0.72)',
+          DEFAULT: 'rgb(var(--color-surface) / <alpha-value>)',
+          2: 'rgb(var(--color-surface-2) / <alpha-value>)',
+          3: 'rgb(var(--color-surface-3) / <alpha-value>)',
+          glass: 'var(--color-surface-glass)',
         },
         line: {
-          DEFAULT: 'rgba(120,120,128,0.28)',
-          2: 'rgba(120,120,128,0.16)',
+          DEFAULT: 'var(--color-line)',
+          2: 'var(--color-line-2)',
         },
         ink: {
-          DEFAULT: '#FFFFFF',
-          2: 'rgba(235,235,245,0.62)',
-          3: 'rgba(235,235,245,0.34)', // piso de contraste AA sobre surface
-          4: 'rgba(235,235,245,0.18)',
+          DEFAULT: 'rgb(var(--color-ink) / <alpha-value>)',
+          2: 'var(--color-ink-2)',
+          3: 'var(--color-ink-3)', // piso de contraste AA sobre surface
+          4: 'var(--color-ink-4)',
         },
         // Acento de marca. Se mantiene el lima: no es ninguno de los tells
         // conocidos (violeta, cyan-sobre-oscuro) y ya es la identidad.
-        accent: { DEFAULT: '#E8FF47', dim: '#C8E030', soft: 'rgba(232,255,71,0.12)' },
+        accent: {
+          DEFAULT: 'rgb(var(--color-accent) / <alpha-value>)',
+          dim: 'rgb(var(--color-accent-dim) / <alpha-value>)',
+          soft: 'var(--color-accent-soft)',
+        },
         // Fill iOS (para estados hover/pressed sutiles)
         fill: {
-          DEFAULT: 'rgba(120,120,128,0.2)',
-          2: 'rgba(120,120,128,0.16)',
-          3: 'rgba(118,118,128,0.12)',
+          DEFAULT: 'var(--color-fill)',
+          2: 'var(--color-fill-2)',
+          3: 'var(--color-fill-3)',
         },
-        success: '#30D158',
-        warning: '#FFD60A',
-        danger: '#FF453A',
-        info: '#0A84FF',
+        success: 'rgb(var(--color-success) / <alpha-value>)',
+        warning: 'rgb(var(--color-warning) / <alpha-value>)',
+        danger: 'rgb(var(--color-danger) / <alpha-value>)',
+        info: 'rgb(var(--color-info) / <alpha-value>)',
+        // Sin variantes de tema: son colores de dominio (grupo muscular),
+        // no de chrome, y no forman parte del sistema claro/oscuro.
         muscle: {
           chest: '#FF6B35',
           back: '#0A84FF',

@@ -1,0 +1,164 @@
+import { useNavigate } from 'react-router-dom'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { ArrowLeft, Bell, ChevronRight, Moon, Settings, Sun } from 'lucide-react'
+import { db } from '@/db/schema'
+import { useCurrentUserId } from '@/hooks/useCurrentUserId'
+import { useThemeStore } from '@/stores/themeStore'
+import { Card, Row, SectionHeader } from '@/components/ui/Card'
+import type { LocalProfile } from '@/types'
+import { cn } from '@/lib/utils'
+
+export default function Ajustes() {
+  const navigate = useNavigate()
+  const userId = useCurrentUserId()
+  const { theme, setTheme } = useThemeStore()
+  const profile = useLiveQuery(
+    () => (userId ? db.profile.get(userId) : undefined),
+    [userId]
+  )
+
+  const update = (patch: Partial<LocalProfile>) => {
+    if (userId) db.profile.update(userId, patch)
+  }
+
+  if (!profile) return null
+
+  const reminderStatus =
+    profile.reminderEnabled === 1
+      ? `Activados, ${profile.reminderTime ?? '18:00'}`
+      : 'Desactivados'
+
+  return (
+    <div className="mx-auto min-h-screen max-w-lg pb-24">
+      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-line bg-bg/95 px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] backdrop-blur">
+        <button
+          onClick={() => navigate('/perfil')}
+          aria-label="Volver"
+          className="flex h-11 w-11 shrink-0 items-center justify-center text-ink-2"
+        >
+          <ArrowLeft size={22} />
+        </button>
+        <div className="flex items-center gap-2">
+          <Settings size={18} className="text-accent" />
+          <h1 className="font-semibold">Ajustes</h1>
+        </div>
+      </header>
+
+      <div className="space-y-5 px-4 py-4">
+        <section>
+          <SectionHeader title="Apariencia" />
+          <Card>
+            <Row>
+              <span className="min-w-0 flex-1 text-[15px]">Tema</span>
+              <div className="flex shrink-0 gap-1 rounded-sm bg-surface-2 p-1">
+                <button
+                  onClick={() => setTheme('dark')}
+                  aria-label="Tema oscuro"
+                  aria-pressed={theme === 'dark'}
+                  className={cn(
+                    'flex h-9 items-center gap-1.5 rounded-xs px-3 text-[13px] font-medium',
+                    theme === 'dark' ? 'bg-surface-3 text-ink' : 'text-ink-3'
+                  )}
+                >
+                  <Moon size={14} /> Oscuro
+                </button>
+                <button
+                  onClick={() => setTheme('light')}
+                  aria-label="Tema claro"
+                  aria-pressed={theme === 'light'}
+                  className={cn(
+                    'flex h-9 items-center gap-1.5 rounded-xs px-3 text-[13px] font-medium',
+                    theme === 'light' ? 'bg-surface-3 text-ink' : 'text-ink-3'
+                  )}
+                >
+                  <Sun size={14} /> Claro
+                </button>
+              </div>
+            </Row>
+          </Card>
+        </section>
+
+        <section>
+          <SectionHeader title="Entrenamiento" />
+          <Card>
+            <Row className="flex-col items-stretch gap-2">
+              <span className="text-[15px]">Unidades</span>
+              <div className="flex gap-2">
+                {(['kg', 'lbs'] as const).map((u) => (
+                  <button
+                    key={u}
+                    onClick={() => update({ units: u })}
+                    className={cn(
+                      'h-11 flex-1 rounded-xs border text-sm font-semibold',
+                      profile.units === u
+                        ? 'border-accent bg-accent text-bg'
+                        : 'border-line-2 text-ink-2'
+                    )}
+                  >
+                    {u === 'kg' ? 'Kilos' : 'Libras'}
+                  </button>
+                ))}
+              </div>
+            </Row>
+            <Row className="flex-col items-stretch gap-2">
+              <span className="text-[15px]">Descanso por defecto</span>
+              <div className="flex gap-2">
+                {[60, 90, 120, 180].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => update({ restTimerDefault: s })}
+                    className={cn(
+                      'h-11 flex-1 rounded-xs border font-mono text-sm font-semibold tabular-nums',
+                      profile.restTimerDefault === s
+                        ? 'border-accent bg-accent text-bg'
+                        : 'border-line-2 text-ink-2'
+                    )}
+                  >
+                    {s}s
+                  </button>
+                ))}
+              </div>
+            </Row>
+            <Row className="flex-col items-stretch gap-2">
+              <span className="text-[15px]">Meta semanal (entrenos)</span>
+              <div className="flex gap-2">
+                {[2, 3, 4, 5, 6].map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => update({ weeklyGoal: n })}
+                    className={cn(
+                      'h-11 flex-1 rounded-xs border font-mono text-sm font-semibold tabular-nums',
+                      (profile.weeklyGoal ?? 3) === n
+                        ? 'border-accent bg-accent text-bg'
+                        : 'border-line-2 text-ink-2'
+                    )}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </Row>
+          </Card>
+        </section>
+
+        <section>
+          <SectionHeader title="Notificaciones" />
+          <Card>
+            <Row onClick={() => navigate('/recordatorios')}>
+              <Bell size={18} className="shrink-0 text-ink-3" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[15px]">Recordatorios</p>
+                <p className="text-[13px] text-ink-3">{reminderStatus}</p>
+              </div>
+              <ChevronRight size={16} className="shrink-0 text-ink-4" />
+            </Row>
+          </Card>
+        </section>
+
+        <p className="px-1 text-center text-xs text-ink-3">
+          GymTracker v0.1 · Modo local
+        </p>
+      </div>
+    </div>
+  )
+}

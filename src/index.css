@@ -2,6 +2,72 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Tokens de color por tema. DESIGN.md §1 documenta cada valor y por qué.
+ *
+ * El mecanismo es CSS custom properties + [data-theme] en <html>, no el
+ * prefijo `dark:` de Tailwind: la mitad de los colores del código ya se usan
+ * con un modificador de opacidad (bg-accent/15, bg-surface/60...), resuelto
+ * en build time — para que el MISMO nombre de clase cambie de color en
+ * runtime hace falta que la variable cambie, no la clase. Ver
+ * tailwind.config.ts para el otro lado de este mecanismo.
+ *
+ * El script inline en index.html lee el tema persistido y setea
+ * data-theme ANTES del primer paint — sin eso, cambiar a claro se ve un
+ * flash oscuro al cargar.
+ */
+:root {
+  --color-bg: 11 11 12; /* #0B0B0C */
+  --color-surface: 22 22 26; /* #16161A */
+  --color-surface-2: 31 31 37; /* #1F1F25 */
+  --color-surface-3: 42 42 50; /* #2A2A32 */
+  --color-surface-glass: rgba(22, 22, 26, 0.72);
+  --color-line: rgba(120, 120, 128, 0.28);
+  --color-line-2: rgba(120, 120, 128, 0.16);
+  --color-ink: 255 255 255;
+  --color-ink-2: rgba(235, 235, 245, 0.62);
+  --color-ink-3: rgba(235, 235, 245, 0.34);
+  --color-ink-4: rgba(235, 235, 245, 0.18);
+  --color-accent: 232 255 71; /* #E8FF47 */
+  --color-accent-dim: 200 224 48; /* #C8E030 */
+  --color-accent-soft: rgba(232, 255, 71, 0.12);
+  --color-fill: rgba(120, 120, 128, 0.2);
+  --color-fill-2: rgba(120, 120, 128, 0.16);
+  --color-fill-3: rgba(118, 118, 128, 0.12);
+  --color-success: 48 209 88;
+  --color-warning: 255 214 10;
+  --color-danger: 255 69 58;
+  --color-info: 10 132 255;
+}
+
+/* Paleta iOS en modo claro: systemGroupedBackground de fondo, tarjetas en
+   blanco puro, labels estándar de Apple. El acento lima se oscurece (no
+   pasa AA sobre blanco tal cual) manteniendo el hue — es el único valor que
+   no viene directo de la paleta de iOS y conviene revisarlo a ojo. */
+:root[data-theme='light'] {
+  --color-bg: 242 242 247; /* #F2F2F7 */
+  --color-surface: 255 255 255;
+  --color-surface-2: 242 242 247;
+  --color-surface-3: 229 229 234; /* #E5E5EA */
+  --color-surface-glass: rgba(255, 255, 255, 0.72);
+  --color-line: rgba(60, 60, 67, 0.29);
+  --color-line-2: rgba(60, 60, 67, 0.16);
+  --color-ink: 0 0 0;
+  --color-ink-2: rgba(60, 60, 67, 0.6);
+  --color-ink-3: rgba(60, 60, 67, 0.3);
+  --color-ink-4: rgba(60, 60, 67, 0.18);
+  --color-accent: 138 154 0; /* lima oscurecido para AA sobre blanco */
+  --color-accent-dim: 118 132 0;
+  --color-accent-soft: rgba(138, 154, 0, 0.12);
+  --color-fill: rgba(120, 120, 128, 0.12);
+  --color-fill-2: rgba(120, 120, 128, 0.08);
+  --color-fill-3: rgba(118, 118, 128, 0.06);
+  --color-success: 52 199 89;
+  --color-warning: 255 149 0;
+  --color-danger: 255 59 48;
+  --color-info: 0 122 255;
+}
+
 @layer utilities {
   /* Pop de set completado */
   @keyframes set-pop {
@@ -61,16 +127,13 @@
     animation: shimmer 1.6s infinite;
   }
 
-  /* Frosted glass — base */
+  /* Frosted glass — únicos dos usos permitidos: cabecera fija y tab bar
+     (DESIGN.md §3). Resuelve un problema real (contenido que scrollea por
+     debajo de un chrome fijo); en cualquier otro lado sería decoración. */
   .glass {
-    background: rgba(28,28,30,0.72);
+    background: var(--color-surface-glass);
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
-  }
-  .glass-light {
-    background: rgba(44,44,46,0.6);
-    backdrop-filter: blur(16px) saturate(160%);
-    -webkit-backdrop-filter: blur(16px) saturate(160%);
   }
 
   /* Highlight superior de tarjetas (efecto de luz) */
@@ -81,30 +144,6 @@
   /* Botón iOS: pressed state */
   .btn-press {
     @apply transition-transform duration-75 active:scale-95;
-  }
-}
-
-@layer components {
-  /* Tarjeta iOS base */
-  .card {
-    @apply rounded-2xl bg-surface card-shine;
-  }
-  /* Input iOS */
-  .input-ios {
-    @apply w-full rounded-xl bg-fill px-4 py-3 text-ink placeholder:text-ink-3
-           outline-none focus:ring-2 focus:ring-accent/40 transition-all;
-  }
-  /* Botón acento primario. Sin box-shadow de color: un halo lima alrededor
-     del botón es exactamente el "aura" que se quiere evitar. El acento ya
-     tiene contraste de sobra contra el fondo. */
-  .btn-accent {
-    @apply flex items-center justify-center gap-2 rounded-2xl bg-accent py-4
-           text-base font-bold text-black btn-press active:bg-accent-dim;
-  }
-  /* Botón secundario (fill) */
-  .btn-secondary {
-    @apply flex items-center justify-center gap-2 rounded-2xl bg-fill px-5 py-3
-           text-sm font-semibold text-ink btn-press;
   }
 }
 
