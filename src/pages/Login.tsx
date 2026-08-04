@@ -101,7 +101,7 @@ export default function Login() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-bg px-6">
         <div className="mb-8 flex flex-col items-center gap-3">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent">
+          <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-accent">
             <Mail size={32} className="text-bg" strokeWidth={2.5} />
           </div>
           <h1 className="text-2xl font-bold">Verificá tu email</h1>
@@ -112,17 +112,19 @@ export default function Login() {
 
         <div className="w-full max-w-sm space-y-6">
           {devCode && (
-            <div className="rounded-xl border border-accent/30 bg-accent/10 px-4 py-3 text-center">
-              <p className="text-xs font-semibold uppercase tracking-wide text-accent">
+            <div className="rounded-md border border-accent/30 bg-accent/10 px-4 py-3 text-center">
+              <p className="text-[13px] font-medium text-accent">
                 Modo prueba — sin envío de email configurado
               </p>
-              <p className="mt-1 font-mono text-2xl font-bold tracking-[0.3em] text-ink">
+              <p className="mt-1 font-mono text-2xl font-bold tracking-[0.3em] tabular-nums text-ink">
                 {devCode}
               </p>
             </div>
           )}
 
-          <div className="flex justify-center gap-3">
+          {/* gap-2, no gap-3: 6 casillas de 48px + 5 gaps de 12px = 348px
+              desborda los ~345px disponibles en un iPhone 14 Pro (393px). */}
+          <div className="flex justify-center gap-2">
             {code.map((digit, i) => (
               <input
                 key={i}
@@ -133,14 +135,14 @@ export default function Login() {
                 value={digit}
                 onChange={(e) => handleCodeInput(i, e.target.value)}
                 onKeyDown={(e) => handleCodeKeyDown(i, e)}
-                className="h-14 w-12 rounded-xl bg-surface text-center text-xl font-bold outline-none ring-1 ring-line-2 transition focus:ring-accent"
+                className="h-14 w-12 rounded-sm bg-surface text-center text-xl font-bold tabular-nums outline-none ring-1 ring-line-2 transition focus:ring-accent"
                 autoFocus={i === 0}
               />
             ))}
           </div>
 
           {error && (
-            <p className="rounded-lg bg-danger/10 px-4 py-2.5 text-center text-sm text-danger">
+            <p className="rounded-sm bg-danger/10 px-4 py-2.5 text-center text-sm text-danger">
               {error}
             </p>
           )}
@@ -148,14 +150,14 @@ export default function Login() {
           <button
             onClick={handleResendFromLogin}
             disabled={loading}
-            className="w-full rounded-xl bg-surface py-3 text-sm text-ink-2 transition active:opacity-70 disabled:opacity-40"
+            className="h-12 w-full rounded-sm bg-surface text-sm text-ink-2 transition active:opacity-70 disabled:opacity-40"
           >
             Reenviar código
           </button>
 
           <button
             onClick={() => setUnverifiedUserId(null)}
-            className="w-full text-center text-sm text-ink-3"
+            className="h-11 w-full text-center text-sm text-ink-3"
           >
             Volver
           </button>
@@ -167,7 +169,7 @@ export default function Login() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-bg px-6">
       <div className="mb-10 flex flex-col items-center gap-3">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent">
+        <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-accent">
           <Dumbbell size={32} className="text-bg" strokeWidth={2.5} />
         </div>
         <h1 className="text-3xl font-bold tracking-tight">GymTracker</h1>
@@ -184,7 +186,7 @@ export default function Login() {
             required
             autoComplete="email"
             placeholder="tu@email.com"
-            className="w-full rounded-xl bg-surface px-4 py-3 text-base outline-none ring-1 ring-line-2 transition focus:ring-accent"
+            className="h-12 w-full rounded-sm bg-surface px-4 text-base outline-none ring-1 ring-line-2 transition focus:ring-accent"
           />
         </div>
 
@@ -198,12 +200,13 @@ export default function Login() {
               required
               autoComplete="current-password"
               placeholder="••••••••"
-              className="w-full rounded-xl bg-surface px-4 py-3 pr-11 text-base outline-none ring-1 ring-line-2 transition focus:ring-accent"
+              className="h-12 w-full rounded-sm bg-surface px-4 pr-11 text-base outline-none ring-1 ring-line-2 transition focus:ring-accent"
             />
             <button
               type="button"
               onClick={() => setShowPw(!showPw)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-3"
+              aria-label={showPw ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              className="absolute right-0 top-0 flex h-12 w-11 items-center justify-center text-ink-3"
             >
               {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
@@ -211,13 +214,13 @@ export default function Login() {
         </div>
 
         {error && (
-          <p className="rounded-lg bg-danger/10 px-4 py-2.5 text-sm text-danger">{error}</p>
+          <p className="rounded-sm bg-danger/10 px-4 py-2.5 text-sm text-danger">{error}</p>
         )}
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-xl bg-accent py-3.5 font-bold text-bg transition active:opacity-80 disabled:opacity-50"
+          className="h-14 w-full rounded-sm bg-accent font-bold text-bg transition active:opacity-80 disabled:opacity-50"
         >
           {loading ? 'Ingresando…' : 'Ingresar'}
         </button>

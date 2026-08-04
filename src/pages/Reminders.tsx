@@ -6,6 +6,7 @@ import type { LocalProfile } from '@/types'
 import { cn } from '@/lib/utils'
 import { toast } from '@/stores/toastStore'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
+import { Card, Row, SectionHeader } from '@/components/ui/Card'
 import {
   notificationsSupported,
   requestNotificationPermission,
@@ -73,8 +74,12 @@ export default function Reminders() {
 
   return (
     <div className="mx-auto min-h-screen max-w-lg pb-24">
-      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-line bg-bg/95 px-4 py-3 backdrop-blur">
-        <button onClick={() => navigate('/perfil')} className="p-1 text-ink-2">
+      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-line bg-bg/95 px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] backdrop-blur">
+        <button
+          onClick={() => navigate('/perfil')}
+          aria-label="Volver"
+          className="flex h-11 w-11 shrink-0 items-center justify-center text-ink-2"
+        >
           <ArrowLeft size={22} />
         </button>
         <div className="flex items-center gap-2">
@@ -85,76 +90,83 @@ export default function Reminders() {
 
       <div className="space-y-5 px-4 py-4">
         {!notificationsSupported() && (
-          <p className="rounded-xl bg-warning/10 p-3 text-sm text-warning">
+          <p className="rounded-sm bg-warning/10 p-3 text-sm text-warning">
             Tu navegador no soporta notificaciones. Instalá la app como PWA para recibir avisos.
           </p>
         )}
 
-        {/* Toggle principal */}
-        <div className="flex items-center justify-between rounded-2xl bg-surface p-4">
-          <div>
-            <p className="font-semibold">Recordatorio de entrenar</p>
-            <p className="text-sm text-ink-3">Notificación local a la hora elegida</p>
-          </div>
-          <button
-            onClick={handleToggle}
-            className={cn(
-              'relative h-7 w-12 rounded-full transition-colors',
-              enabled ? 'bg-accent' : 'bg-surface-3'
-            )}
-            role="switch"
-            aria-checked={enabled}
-          >
+        {/* Toggle principal: toda la fila es el hit target, el switch es
+            solo la representación visual del estado (DESIGN.md: 44px mínimo
+            sin excepciones — un switch de 28px de alto no lo cumple solo). */}
+        <Card>
+          <Row onClick={handleToggle}>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold">Recordatorio de entrenar</p>
+              <p className="text-[13px] text-ink-3">Notificación local a la hora elegida</p>
+            </div>
             <span
               className={cn(
-                'absolute top-1 h-5 w-5 rounded-full bg-white transition-all',
-                enabled ? 'left-6' : 'left-1'
+                'relative h-7 w-12 shrink-0 rounded-full transition-colors',
+                enabled ? 'bg-accent' : 'bg-surface-3'
               )}
-            />
-          </button>
-        </div>
+              role="switch"
+              aria-checked={enabled}
+            >
+              <span
+                className={cn(
+                  'absolute top-1 h-5 w-5 rounded-full bg-white transition-all',
+                  enabled ? 'left-6' : 'left-1'
+                )}
+              />
+            </span>
+          </Row>
+        </Card>
 
         {/* Hora */}
-        <div className="rounded-2xl bg-surface p-4">
-          <label className="mb-2 block text-sm font-medium text-ink-2">Hora del recordatorio</label>
-          <input
-            type="time"
-            value={time}
-            onChange={(e) => update({ reminderTime: e.target.value })}
-            className="w-full rounded-xl bg-surface-2 px-4 py-3 font-mono text-lg outline-none focus:ring-1 focus:ring-accent [color-scheme:dark]"
-          />
-        </div>
+        <section>
+          <SectionHeader title="Hora del recordatorio" />
+          <Card className="p-4">
+            <input
+              type="time"
+              value={time}
+              onChange={(e) => update({ reminderTime: e.target.value })}
+              className="h-12 w-full rounded-sm bg-surface-2 px-4 font-mono text-lg tabular-nums outline-none focus:ring-1 focus:ring-accent [color-scheme:dark]"
+            />
+          </Card>
+        </section>
 
         {/* Días */}
-        <div className="rounded-2xl bg-surface p-4">
-          <label className="mb-3 block text-sm font-medium text-ink-2">Días</label>
-          <div className="flex justify-between gap-1.5">
-            {DAYS.map((d) => (
-              <button
-                key={`${d.value}-${d.label}`}
-                onClick={() => toggleDay(d.value)}
-                className={cn(
-                  'flex h-10 flex-1 items-center justify-center rounded-lg text-sm font-bold transition-colors',
-                  days.includes(d.value)
-                    ? 'bg-accent text-bg'
-                    : 'bg-surface-2 text-ink-3'
-                )}
-              >
-                {d.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <section>
+          <SectionHeader title="Días" />
+          <Card className="p-4">
+            <div className="flex justify-between gap-1.5">
+              {DAYS.map((d) => (
+                <button
+                  key={`${d.value}-${d.label}`}
+                  onClick={() => toggleDay(d.value)}
+                  className={cn(
+                    'flex h-11 flex-1 items-center justify-center rounded-xs text-sm font-bold transition-colors',
+                    days.includes(d.value)
+                      ? 'bg-accent text-bg'
+                      : 'bg-surface-2 text-ink-3'
+                  )}
+                >
+                  {d.label}
+                </button>
+              ))}
+            </div>
+          </Card>
+        </section>
 
         <button
           onClick={testNotification}
-          className="w-full rounded-xl border border-line-2 py-3 text-sm font-semibold text-ink-2 active:bg-surface"
+          className="h-12 w-full rounded-sm border border-line-2 text-sm font-semibold text-ink-2 active:bg-surface"
         >
           Probar notificación
         </button>
 
         {/* Email: requiere backend */}
-        <div className="rounded-2xl border border-info/20 bg-info/5 p-4">
+        <div className="rounded-md border border-info/20 bg-info/5 p-4">
           <div className="flex items-center gap-2 text-info">
             <Mail size={16} />
             <p className="text-sm font-semibold">Recordatorios por email</p>

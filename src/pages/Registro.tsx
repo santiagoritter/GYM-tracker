@@ -106,7 +106,7 @@ export default function Registro() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-bg px-6 py-10">
       <div className="mb-8 flex flex-col items-center gap-3">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent">
+        <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-accent">
           {step === 'verify'
             ? <Mail size={32} className="text-bg" strokeWidth={2.5} />
             : <Dumbbell size={32} className="text-bg" strokeWidth={2.5} />
@@ -134,7 +134,7 @@ export default function Registro() {
               required
               autoComplete="name"
               placeholder="¿Cómo te llamás?"
-              className="w-full rounded-xl bg-surface px-4 py-3 text-base outline-none ring-1 ring-line-2 transition focus:ring-accent"
+              className="h-12 w-full rounded-sm bg-surface px-4 text-base outline-none ring-1 ring-line-2 transition focus:ring-accent"
             />
           </div>
 
@@ -147,7 +147,7 @@ export default function Registro() {
               required
               autoComplete="email"
               placeholder="tu@email.com"
-              className="w-full rounded-xl bg-surface px-4 py-3 text-base outline-none ring-1 ring-line-2 transition focus:ring-accent"
+              className="h-12 w-full rounded-sm bg-surface px-4 text-base outline-none ring-1 ring-line-2 transition focus:ring-accent"
             />
           </div>
 
@@ -161,12 +161,13 @@ export default function Registro() {
                 required
                 autoComplete="new-password"
                 placeholder="Mínimo 6 caracteres"
-                className="w-full rounded-xl bg-surface px-4 py-3 pr-11 text-base outline-none ring-1 ring-line-2 transition focus:ring-accent"
+                className="h-12 w-full rounded-sm bg-surface px-4 pr-11 text-base outline-none ring-1 ring-line-2 transition focus:ring-accent"
               />
               <button
                 type="button"
                 onClick={() => setShowPw(!showPw)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-3"
+                aria-label={showPw ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                className="absolute right-0 top-0 flex h-12 w-11 items-center justify-center text-ink-3"
               >
                 {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -184,18 +185,18 @@ export default function Registro() {
               required
               autoComplete="new-password"
               placeholder="Repetí la contraseña"
-              className="w-full rounded-xl bg-surface px-4 py-3 text-base outline-none ring-1 ring-line-2 transition focus:ring-accent"
+              className="h-12 w-full rounded-sm bg-surface px-4 text-base outline-none ring-1 ring-line-2 transition focus:ring-accent"
             />
           </div>
 
           {error && (
-            <p className="rounded-lg bg-danger/10 px-4 py-2.5 text-sm text-danger">{error}</p>
+            <p className="rounded-sm bg-danger/10 px-4 py-2.5 text-sm text-danger">{error}</p>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-accent py-3.5 font-bold text-bg transition active:opacity-80 disabled:opacity-50"
+            className="h-14 w-full rounded-sm bg-accent font-bold text-bg transition active:opacity-80 disabled:opacity-50"
           >
             {loading ? 'Enviando…' : 'Crear cuenta'}
           </button>
@@ -210,11 +211,11 @@ export default function Registro() {
       ) : (
         <div className="w-full max-w-sm space-y-6">
           {devCode && (
-            <div className="rounded-xl border border-accent/30 bg-accent/10 px-4 py-3 text-center">
-              <p className="text-xs font-semibold uppercase tracking-wide text-accent">
+            <div className="rounded-md border border-accent/30 bg-accent/10 px-4 py-3 text-center">
+              <p className="text-[13px] font-medium text-accent">
                 Modo prueba — sin envío de email configurado
               </p>
-              <p className="mt-1 font-mono text-2xl font-bold tracking-[0.3em] text-ink">
+              <p className="mt-1 font-mono text-2xl font-bold tracking-[0.3em] tabular-nums text-ink">
                 {devCode}
               </p>
               <p className="mt-1 text-[11px] text-ink-3">
@@ -224,8 +225,9 @@ export default function Registro() {
             </div>
           )}
 
-          {/* Inputs de código 6 dígitos */}
-          <div className="flex justify-center gap-3">
+          {/* Inputs de código 6 dígitos. gap-2, no gap-3: a 393px de ancho
+              6 casillas de 48px + gaps de 12px desbordan por ~3px. */}
+          <div className="flex justify-center gap-2">
             {code.map((digit, i) => (
               <input
                 key={i}
@@ -236,14 +238,14 @@ export default function Registro() {
                 value={digit}
                 onChange={(e) => handleCodeInput(i, e.target.value)}
                 onKeyDown={(e) => handleCodeKeyDown(i, e)}
-                className="h-14 w-12 rounded-xl bg-surface text-center text-xl font-bold outline-none ring-1 ring-line-2 transition focus:ring-accent"
+                className="h-14 w-12 rounded-sm bg-surface text-center text-xl font-bold tabular-nums outline-none ring-1 ring-line-2 transition focus:ring-accent"
                 autoFocus={i === 0}
               />
             ))}
           </div>
 
           {error && (
-            <p className="rounded-lg bg-danger/10 px-4 py-2.5 text-sm text-danger text-center">
+            <p className="rounded-sm bg-danger/10 px-4 py-2.5 text-sm text-danger text-center">
               {error}
             </p>
           )}
@@ -256,7 +258,7 @@ export default function Registro() {
           <button
             onClick={handleResend}
             disabled={resendCooldown > 0 || loading}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-surface py-3 text-sm text-ink-2 transition active:opacity-70 disabled:opacity-40"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-sm bg-surface text-sm text-ink-2 transition active:opacity-70 disabled:opacity-40"
           >
             <RefreshCw size={15} />
             {resendCooldown > 0

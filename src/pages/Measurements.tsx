@@ -15,6 +15,7 @@ import { db } from '@/db/schema'
 import { softDelete } from '@/db/mutations'
 import { bodyMeasurementsFor } from '@/db/scoped'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
+import { Card, EmptyState, Row, SectionHeader } from '@/components/ui/Card'
 import type { BodyMeasurement } from '@/types'
 import { nowIso, uid } from '@/lib/utils'
 import { toast } from '@/stores/toastStore'
@@ -97,7 +98,11 @@ export default function Measurements() {
   return (
     <div className="mx-auto min-h-screen max-w-lg pb-24">
       <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-line bg-bg/95 px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] backdrop-blur">
-        <button onClick={() => navigate('/perfil')} className="p-1 text-ink-2">
+        <button
+          onClick={() => navigate('/perfil')}
+          aria-label="Volver"
+          className="flex h-11 w-11 shrink-0 items-center justify-center text-ink-2"
+        >
           <ArrowLeft size={22} />
         </button>
         <div className="flex items-center gap-2">
@@ -110,101 +115,100 @@ export default function Measurements() {
         {/* Gráfico de evolución de peso */}
         {weightSeries.length >= 2 && (
           <section>
-            <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-2">
-              Evolución del peso (kg)
-            </h2>
-            <div className="h-48 rounded-xl bg-surface p-3">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={weightSeries} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
-                  <CartesianGrid stroke="#2A2A2A" strokeDasharray="3 3" />
-                  <XAxis dataKey="label" stroke="#606060" fontSize={11} />
-                  <YAxis stroke="#606060" fontSize={11} domain={['dataMin - 2', 'dataMax + 2']} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#1C1C1C', border: '1px solid #383838', borderRadius: 8, fontSize: 12 }}
-                    labelStyle={{ color: '#A0A0A0' }}
-                    formatter={(v) => [`${v} kg`, 'Peso']}
-                  />
-                  <Line type="monotone" dataKey="kg" stroke="#E8FF47" strokeWidth={2} dot={{ fill: '#E8FF47', r: 3 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            <SectionHeader title="Evolución del peso" />
+            <Card className="p-3">
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={weightSeries} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
+                    <CartesianGrid stroke="#2A2A2A" strokeDasharray="3 3" />
+                    <XAxis dataKey="label" stroke="#606060" fontSize={11} />
+                    <YAxis stroke="#606060" fontSize={11} domain={['dataMin - 2', 'dataMax + 2']} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#1C1C1C', border: '1px solid #383838', borderRadius: 8, fontSize: 12 }}
+                      labelStyle={{ color: '#A0A0A0' }}
+                      formatter={(v) => [`${v} kg`, 'Peso']}
+                    />
+                    <Line type="monotone" dataKey="kg" stroke="#E8FF47" strokeWidth={2} dot={{ fill: '#E8FF47', r: 3 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
           </section>
         )}
 
         {/* Formulario nueva medida */}
-        <section className="rounded-2xl bg-surface p-4">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-2">
-            Nueva medida
-          </h2>
-          <div className="grid grid-cols-2 gap-3">
-            {FIELDS.map((f) => (
-              <div key={f.key as string}>
-                <label className="mb-1 block text-xs text-ink-3">
-                  {f.label} ({f.unit})
-                </label>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  value={form[f.key as string] ?? ''}
-                  onChange={(e) => setForm((s) => ({ ...s, [f.key as string]: e.target.value }))}
-                  placeholder="—"
-                  className="w-full rounded-lg bg-surface-2 px-3 py-2 font-mono text-sm outline-none focus:ring-1 focus:ring-accent"
-                />
-              </div>
-            ))}
-          </div>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 font-bold text-bg disabled:opacity-40"
-          >
-            <Plus size={18} /> {saving ? 'Guardando…' : 'Guardar medida'}
-          </button>
+        <section>
+          <SectionHeader title="Nueva medida" />
+          <Card className="p-4">
+            <div className="grid grid-cols-2 gap-3">
+              {FIELDS.map((f) => (
+                <div key={f.key as string}>
+                  <label className="mb-1 block text-xs text-ink-3">
+                    {f.label} ({f.unit})
+                  </label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={form[f.key as string] ?? ''}
+                    onChange={(e) => setForm((s) => ({ ...s, [f.key as string]: e.target.value }))}
+                    placeholder="—"
+                    className="h-11 w-full rounded-sm bg-surface-2 px-3 font-mono text-[15px] tabular-nums outline-none focus:ring-1 focus:ring-accent"
+                  />
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-sm bg-accent font-bold text-bg disabled:opacity-40"
+            >
+              <Plus size={18} /> {saving ? 'Guardando…' : 'Guardar medida'}
+            </button>
+          </Card>
         </section>
 
         {/* Historial */}
         <section>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-2">
-            Historial
-          </h2>
-          <div className="space-y-2">
-            {(entries ?? []).map((e) => (
-              <div key={e.id} className="flex items-center gap-3 rounded-xl bg-surface p-3">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium">
-                    {new Date(e.takenAt).toLocaleDateString('es-AR', {
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric',
-                    })}
-                  </p>
-                  <p className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-ink-2">
-                    {FIELDS.filter((f) => e[f.key] != null).map((f) => (
-                      <span key={f.key as string}>
-                        <span className="text-ink-3">{f.label}:</span>{' '}
-                        <span className="font-mono">{String(e[f.key])}</span>
-                        {f.unit}
-                      </span>
-                    ))}
-                  </p>
-                </div>
-                <button
-                  onClick={() => handleDelete(e.id)}
-                  className="shrink-0 p-1.5 text-danger/60 active:text-danger"
-                  aria-label="Eliminar"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ))}
-            {entries?.length === 0 && (
-              <p className="rounded-xl bg-surface p-8 text-center text-sm text-ink-3">
-                Todavía no registraste medidas.
-                <br />
-                Empezá con tu peso de hoy.
-              </p>
-            )}
-          </div>
+          <SectionHeader title="Historial" />
+          {(entries?.length ?? 0) === 0 ? (
+            <EmptyState
+              icon={<Ruler size={28} />}
+              title="Todavía no registraste medidas"
+              description="Empezá con tu peso de hoy."
+            />
+          ) : (
+            <Card>
+              {entries!.map((e) => (
+                <Row key={e.id}>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[15px] font-medium">
+                      {new Date(e.takenAt).toLocaleDateString('es-AR', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })}
+                    </p>
+                    <p className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[13px] text-ink-2">
+                      {FIELDS.filter((f) => e[f.key] != null).map((f) => (
+                        <span key={f.key as string}>
+                          <span className="text-ink-3">{f.label}:</span>{' '}
+                          <span className="font-mono tabular-nums">{String(e[f.key])}</span>
+                          {f.unit}
+                        </span>
+                      ))}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleDelete(e.id)}
+                    aria-label="Eliminar medida"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center text-danger/70 active:text-danger"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </Row>
+              ))}
+            </Card>
+          )}
         </section>
       </div>
     </div>
