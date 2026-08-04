@@ -8,9 +8,9 @@ import { useWorkoutStore } from '@/stores/workoutStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { HOME_MESSAGES } from '@/lib/motivational'
-import { formatDate, formatDuration } from '@/lib/utils'
+import { cn, formatDuration } from '@/lib/utils'
 import StreakWeekCard from '@/components/gym/StreakWeekCard'
-import { WorkoutCardSkeleton } from '@/components/ui/Skeleton'
+import { Card, Row, SectionHeader } from '@/components/ui/Card'
 
 export default function Home() {
   const navigate = useNavigate()
@@ -21,18 +21,6 @@ export default function Home() {
 
   const activeWorkout = useLiveQuery(
     () => (userId ? workoutsFor(userId).filter((w) => !w.finishedAt).first() : undefined),
-    [userId]
-  )
-  const recentWorkouts = useLiveQuery(
-    () =>
-      userId
-        ? workoutsFor(userId)
-            .filter((w) => Boolean(w.finishedAt))
-            .toArray()
-            .then((ws) =>
-              ws.sort((a, b) => b.startedAt.localeCompare(a.startedAt)).slice(0, 3)
-            )
-        : [],
     [userId]
   )
   const activeRoutine = useLiveQuery(
@@ -90,16 +78,9 @@ export default function Home() {
         </p>
       </header>
 
-      {/* Racha + meta semanal */}
+      {/* Actividad arriba de todo (Redisenio.md §3.3): lo primero que se
+          quiere ver al abrir es cómo viene la semana. */}
       <StreakWeekCard />
-
-      {/* Frase motivacional del día */}
-      <blockquote className="rounded-xl border border-accent/20 bg-accent/5 px-4 py-3 text-sm italic text-ink-2">
-        "{quote.text}"
-        {quote.author && (
-          <footer className="mt-1 text-xs not-italic text-ink-3">— {quote.author}</footer>
-        )}
-      </blockquote>
 
       {activeWorkout ? (
         <button
@@ -143,20 +124,25 @@ export default function Home() {
 
       {activeRoutine && !activeWorkout && (routineDays?.length ?? 0) > 0 && (
         <section>
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-ink-2">
-            <span
-              className="h-2.5 w-2.5 rounded-full"
-              style={{ backgroundColor: activeRoutine.color }}
-            />
-            {activeRoutine.name}
-          </h2>
-          <div className="space-y-1.5">
+          <SectionHeader
+            title={activeRoutine.name}
+            action={
+              <span
+                className="mb-1.5 h-2 w-2 shrink-0 rounded-full"
+                style={{ backgroundColor: activeRoutine.color }}
+                aria-hidden="true"
+              />
+            }
+          />
+          <Card>
             {routineDays!.map((day) => (
-              <div
-                key={day.id}
-                className="flex items-center justify-between rounded-lg bg-surface px-3 py-2.5"
-              >
-                <span className={day.isRest === 1 ? 'text-sm text-ink-3' : 'text-sm'}>
+              <Row key={day.id}>
+                <span
+                  className={cn(
+                    'min-w-0 flex-1 truncate text-[15px]',
+                    day.isRest === 1 && 'text-ink-3'
+                  )}
+                >
                   {day.name}
                   {day.isRest === 1 && ' · descanso'}
                 </span>
@@ -167,46 +153,24 @@ export default function Home() {
                       const id = await startWorkoutFromDay(userId, day.id)
                       navigate(`/entreno/${id}`)
                     }}
-                    className="flex items-center gap-1 rounded-md bg-accent px-2.5 py-1 text-xs font-bold text-bg"
+                    className="flex h-9 shrink-0 items-center gap-1.5 rounded-xs bg-accent px-3 text-[13px] font-bold text-bg active:bg-accent-dim"
                   >
-                    <Play size={12} fill="currentColor" /> Entrenar
+                    <Play size={13} fill="currentColor" /> Entrenar
                   </button>
                 )}
-              </div>
+              </Row>
             ))}
-          </div>
+          </Card>
         </section>
       )}
 
-      <section>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-2">
-          Últimos entrenos
-        </h2>
-        <div className="space-y-2">
-          {recentWorkouts === undefined &&
-            Array.from({ length: 2 }).map((_, i) => <WorkoutCardSkeleton key={i} />)}
-          {(recentWorkouts ?? []).map((w) => (
-            <div key={w.id} className="rounded-xl bg-surface p-4">
-              <div className="flex items-center justify-between">
-                <p className="font-medium">{w.name}</p>
-                <span className="text-xs text-ink-3">{formatDate(w.startedAt)}</span>
-              </div>
-              <p className="mt-1 text-sm text-ink-2">
-                {formatDuration(w.startedAt, w.finishedAt)} ·{' '}
-                <span className="font-mono">{Math.round(w.totalVolumeKg ?? 0)}</span> kg de
-                volumen
-              </p>
-            </div>
-          ))}
-          {recentWorkouts?.length === 0 && (
-            <p className="rounded-xl bg-surface p-6 text-center text-sm text-ink-3">
-              Todavía no registraste ningún entreno.
-              <br />
-              Arrancá con el botón de arriba.
-            </p>
-          )}
-        </div>
-      </section>
+      {/* La frase va al final: es un cierre, no puede empujar hacia abajo la
+          acción principal de la pantalla. */}
+      <blockquote className="px-1 text-[14px] leading-relaxed text-ink-3">
+        {quote.text}
+        {quote.author && <footer className="mt-1 text-[13px]">— {quote.author}</footer>}
+      </blockquote>
+
     </div>
   )
 }

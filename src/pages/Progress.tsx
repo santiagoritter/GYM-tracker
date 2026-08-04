@@ -21,6 +21,8 @@ import { StrengthLevels } from '@/components/gym/StrengthLevels'
 import { PhotoGallery } from '@/components/gym/PhotoGallery'
 import StatsOverview from '@/components/gym/StatsOverview'
 import CalendarHeatmap from '@/components/gym/CalendarHeatmap'
+import RecentWorkouts from '@/components/gym/RecentWorkouts'
+import { SectionHeader } from '@/components/ui/Card'
 import AchievementsPanel from '@/components/gym/AchievementsPanel'
 import { cn } from '@/lib/utils'
 
@@ -63,10 +65,14 @@ export default function Progress() {
         <div className="space-y-4">
           <StatsOverview />
           <section>
-            <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-2">
-              Actividad
-            </h2>
+            <SectionHeader title="Actividad" />
             <CalendarHeatmap />
+          </section>
+          {/* Mudado desde Inicio (Redisenio.md §3.3): mirar hacia atrás es
+              una actividad de revisión, no de "qué entreno hoy". */}
+          <section>
+            <SectionHeader title="Últimos entrenos" />
+            <RecentWorkouts />
           </section>
         </div>
       )}
