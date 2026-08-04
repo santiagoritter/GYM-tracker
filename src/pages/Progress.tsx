@@ -18,6 +18,7 @@ import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { HistoryList } from '@/components/gym/HistoryList'
 import { MonthlyStats } from '@/components/gym/MonthlyStats'
 import { StrengthLevels } from '@/components/gym/StrengthLevels'
+import { MuscleGroupLevels } from '@/components/gym/MuscleGroupLevels'
 import { PhotoGallery } from '@/components/gym/PhotoGallery'
 import StatsOverview from '@/components/gym/StatsOverview'
 import CalendarHeatmap from '@/components/gym/CalendarHeatmap'
@@ -78,7 +79,15 @@ export default function Progress() {
       )}
       {tab === 'charts' && <Charts />}
       {tab === 'month' && <MonthlyStats />}
-      {tab === 'levels' && <StrengthLevels />}
+      {tab === 'levels' && (
+        <div className="space-y-6">
+          <StrengthLevels />
+          <section>
+            <SectionHeader title="Grupos musculares" />
+            <MuscleGroupLevels />
+          </section>
+        </div>
+      )}
       {tab === 'achievements' && <AchievementsPanel />}
       {tab === 'photos' && <PhotoGallery />}
       {tab === 'prs' && <PRList />}

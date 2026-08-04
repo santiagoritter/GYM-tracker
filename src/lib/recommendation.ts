@@ -87,9 +87,13 @@ const BY_GOAL: Record<FitnessGoal, Prescription> = {
 // arrancar en un peso sensato el primer día y se descartan en cuanto hay
 // historial real.
 
-type RefLift = 'squat' | 'bench-press' | 'deadlift' | 'overhead-press' | 'barbell-row'
+// Exportados: src/lib/muscleGroupStrength.ts los reutiliza para derivar un
+// nivel de fuerza por grupo muscular sin inventar una tabla de estándares
+// nueva — convierte el PR de cualquier ejercicio al 1RM equivalente de su
+// lift de referencia y lo pasa por getStrengthLevel.
+export type RefLift = 'squat' | 'bench-press' | 'deadlift' | 'overhead-press' | 'barbell-row'
 
-interface Coefficient {
+export interface Coefficient {
   ref: RefLift
   /** 1RM del ejercicio ÷ 1RM del lift de referencia. */
   factor: number
@@ -97,7 +101,7 @@ interface Coefficient {
   perHand?: boolean
 }
 
-const COEF: Record<string, Coefficient> = {
+export const COEF: Record<string, Coefficient> = {
   // Pecho
   'bench-press': { ref: 'bench-press', factor: 1.0 },
   'incline-bench-press': { ref: 'bench-press', factor: 0.85 },
