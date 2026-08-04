@@ -3,6 +3,7 @@ import { softDelete, softDeleteMany } from '@/db/mutations'
 import { workoutsFor } from '@/db/scoped'
 import type { Routine, RoutineDay, RoutineExercise, Workout, WorkoutSet } from '@/types'
 import { nowIso, uid } from '@/lib/utils'
+import { progressWeight, recommend } from '@/lib/recommendation'
 
 export const ROUTINE_COLORS = ['#E8FF47', '#60A5FA', '#F97316', '#EC4899', '#4ADE80', '#A855F7']
 
@@ -148,6 +149,49 @@ export async function moveExercise(entryId: string, direction: -1 | 1): Promise<
 }
 
 /**
+ * Qué día de la rutina toca entrenar.
+ *
+ * Se deriva del último entreno terminado: `startWorkoutFromDay` nombra el
+ * entreno con el nombre del día, así que se busca ese nombre entre los días
+ * de la rutina y se devuelve el siguiente que no sea de descanso. Si no hay
+ * historial o el nombre no matchea (rutina renombrada, entreno libre), se
+ * arranca por el primer día entrenable.
+ *
+ * Es una heurística sobre el nombre y no sobre un `dayId` guardado en el
+ * entreno porque agregar esa columna implica migrar Dexie y Postgres; si en
+ * algún momento dos días se llaman igual, el peor caso es proponer el día
+ * equivocado, que el usuario corrige tocando otro de la lista.
+ */
+export async function nextRoutineDay(
+  userId: string,
+  routineId: string
+): Promise<RoutineDay | undefined> {
+  const days = (await db.routineDays.where('routineId').equals(routineId).toArray()).sort(
+    (a, b) => a.dayOrder - b.dayOrder
+  )
+  const trainable = days.filter((d) => d.isRest === 0)
+  if (trainable.length === 0) return undefined
+
+  const dayNames = new Set(days.map((d) => d.name))
+  const lastMatching = (await workoutsFor(userId).toArray())
+    .filter((w) => w.finishedAt && dayNames.has(w.name))
+    .sort((a, b) => a.startedAt.localeCompare(b.startedAt))
+    .at(-1)
+
+  if (!lastMatching) return trainable[0]
+
+  const lastIndex = days.findIndex((d) => d.name === lastMatching.name)
+  if (lastIndex === -1) return trainable[0]
+
+  // Primer día entrenable después del último hecho, dando la vuelta al final
+  for (let step = 1; step <= days.length; step++) {
+    const candidate = days[(lastIndex + step) % days.length]
+    if (candidate.isRest === 0) return candidate
+  }
+  return trainable[0]
+}
+
+/**
  * Crea un workout precargado con los ejercicios del día de rutina.
  * Cada ejercicio arranca con sus series objetivo en repsMin, peso 0
  * (el usuario ajusta; en Fase 5 se autocompleta con el último peso usado).
@@ -172,9 +216,16 @@ export async function startWorkoutFromDay(userId: string, dayId: string): Promis
   // filtra por los workoutId que ya sabemos que son del usuario actual.
   const ownWorkoutIds = new Set((await workoutsFor(userId).toArray()).map((w) => w.id))
 
-  // Autocompletar peso desde el historial + progresión automática:
-  // si la última vez se completaron todas las series objetivo llegando al
-  // máximo de reps, se sugiere +2.5kg.
+  // Peso sugerido para cada ejercicio. Antes esto era `topWeight + 2.5` y
+  // solo funcionaba con historial: un usuario nuevo arrancaba con 0 kg en
+  // todo. Ahora, sin historial, se estima desde el perfil (peso corporal,
+  // sexo, edad, nivel y objetivo) — ver src/lib/recommendation.ts.
+  const profile = await db.profile.get(userId)
+  const exerciseIds = [...new Set(entries.map((e) => e.exerciseId))]
+  const exerciseMap = new Map(
+    (await db.exercises.bulkGet(exerciseIds)).filter(Boolean).map((e) => [e!.id, e!])
+  )
+
   const sets: WorkoutSet[] = []
   for (const entry of entries) {
     const history = await db.workoutSets
@@ -183,18 +234,22 @@ export async function startWorkoutFromDay(userId: string, dayId: string): Promis
       .filter((s) => s.completed === 1 && s.isWarmup === 0 && ownWorkoutIds.has(s.workoutId))
       .toArray()
 
+    const exercise = exerciseMap.get(entry.exerciseId)
     let suggestedKg = 0
-    if (history.length > 0) {
-      // Series del entreno más reciente donde se hizo este ejercicio
-      const lastWorkoutId = history.sort((a, b) =>
-        a.updatedAt.localeCompare(b.updatedAt)
-      ).at(-1)!.workoutId
+
+    if (history.length > 0 && exercise) {
+      // Progresión sobre el último entreno donde se hizo este ejercicio
+      const lastWorkoutId = history
+        .slice()
+        .sort((a, b) => a.updatedAt.localeCompare(b.updatedAt))
+        .at(-1)!.workoutId
       const lastSets = history.filter((s) => s.workoutId === lastWorkoutId)
       const topWeight = Math.max(...lastSets.map((s) => s.weightKg))
       const metTarget =
-        lastSets.length >= entry.setsTarget &&
-        lastSets.every((s) => s.reps >= entry.repsMax)
-      suggestedKg = metTarget && topWeight > 0 ? topWeight + 2.5 : topWeight
+        lastSets.length >= entry.setsTarget && lastSets.every((s) => s.reps >= entry.repsMax)
+      suggestedKg = progressWeight(topWeight, metTarget, exercise.equipment)
+    } else if (exercise) {
+      suggestedKg = recommend(exercise, profile, []).weightKg
     }
 
     for (let n = 1; n <= entry.setsTarget; n++) {

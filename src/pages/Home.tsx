@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ChevronRight, Play, Flame } from 'lucide-react'
 import { routinesFor, routineDaysOf, workoutsFor } from '@/db/scoped'
-import { startWorkoutFromDay } from '@/db/routines'
+import { nextRoutineDay, startWorkoutFromDay } from '@/db/routines'
 import { useWorkoutStore } from '@/stores/workoutStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
@@ -47,7 +47,28 @@ export default function Home() {
     [activeRoutine?.id]
   )
 
+  // Qué día propone el botón grande. Antes arrancaba SIEMPRE un entreno
+  // vacío, ignorando la rutina favorita — y ese camino es además el único
+  // que precarga ejercicios y pesos sugeridos.
+  const nextDay = useLiveQuery(
+    () => (userId && activeRoutine ? nextRoutineDay(userId, activeRoutine.id) : undefined),
+    [userId, activeRoutine?.id]
+  )
+
   const handleStart = async () => {
+    if (!userId) return
+    if (nextDay) {
+      const id = await startWorkoutFromDay(userId, nextDay.id)
+      navigate(`/entreno/${id}`)
+      return
+    }
+    const name = new Date().toLocaleDateString('es-AR', { weekday: 'long' })
+    const id = await startWorkout(userId, `Entreno del ${name}`)
+    navigate(`/entreno/${id}`)
+  }
+
+  /** Entreno suelto, sin rutina. Queda como acceso secundario. */
+  const handleStartEmpty = async () => {
     if (!userId) return
     const name = new Date().toLocaleDateString('es-AR', { weekday: 'long' })
     const id = await startWorkout(userId, `Entreno del ${name}`)
@@ -95,12 +116,29 @@ export default function Home() {
           <ChevronRight className="text-accent" />
         </button>
       ) : (
-        <button
-          onClick={handleStart}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-accent py-5 text-lg font-bold text-bg active:bg-accent-dim"
-        >
-          <Play size={22} fill="currentColor" /> Iniciar entrenamiento
-        </button>
+        <div className="space-y-2">
+          <button
+            onClick={handleStart}
+            className="flex w-full flex-col items-center gap-0.5 rounded-2xl bg-accent py-5 font-bold text-bg active:bg-accent-dim"
+          >
+            <span className="flex items-center gap-2 text-lg">
+              <Play size={22} fill="currentColor" /> Iniciar entrenamiento
+            </span>
+            {nextDay && (
+              <span className="text-[13px] font-semibold opacity-70">
+                {activeRoutine?.name} · {nextDay.name}
+              </span>
+            )}
+          </button>
+          {nextDay && (
+            <button
+              onClick={handleStartEmpty}
+              className="w-full py-1 text-[13px] font-medium text-ink-3 active:text-ink-2"
+            >
+              o entrenar sin rutina
+            </button>
+          )}
+        </div>
       )}
 
       {activeRoutine && !activeWorkout && (routineDays?.length ?? 0) > 0 && (

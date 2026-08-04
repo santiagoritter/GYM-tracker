@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Calendar, Play, QrCode, ScanLine, Star, Trash2 } from 'lucide-react'
+import { Calendar, Play, QrCode, ScanLine, Sparkles, Star, Trash2 } from 'lucide-react'
 import { db } from '@/db/schema'
 import { routinesFor, workoutsFor } from '@/db/scoped'
 import {
@@ -22,6 +22,9 @@ const QRShareModal = lazy(() =>
 const QRScanner = lazy(() =>
   import('@/components/gym/QRScanner').then((m) => ({ default: m.QRScanner }))
 )
+// Lazy: las 6 plantillas con todos sus ejercicios son ~8KB que solo hacen
+// falta si el usuario abre el selector.
+const TemplatePicker = lazy(() => import('@/components/gym/TemplatePicker'))
 
 export default function Routines() {
   const navigate = useNavigate()
@@ -30,6 +33,7 @@ export default function Routines() {
   const [name, setName] = useState('')
   const [sharing, setSharing] = useState<Routine | null>(null)
   const [scanning, setScanning] = useState(false)
+  const [pickingTemplate, setPickingTemplate] = useState(false)
 
   const routines = useLiveQuery(
     () => (userId ? routinesFor(userId).filter((r) => r.isArchived === 0).toArray() : []),
@@ -90,12 +94,20 @@ export default function Routines() {
           </button>
         </div>
       ) : (
-        <button
-          onClick={() => setCreating(true)}
-          className="w-full rounded-2xl border border-dashed border-line-2 py-4 font-semibold text-ink-2 active:bg-surface"
-        >
-          + Nueva rutina
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setCreating(true)}
+            className="flex-1 rounded-2xl border border-dashed border-line-2 py-4 font-semibold text-ink-2 active:bg-surface"
+          >
+            + Nueva rutina
+          </button>
+          <button
+            onClick={() => setPickingTemplate(true)}
+            className="flex items-center gap-1.5 rounded-2xl border border-line-2 px-4 font-semibold text-ink-2 active:bg-surface"
+          >
+            <Sparkles size={16} /> Clásicas
+          </button>
+        </div>
       )}
 
       {(routines ?? []).map((routine) => {
@@ -180,6 +192,16 @@ export default function Routines() {
       <Suspense fallback={null}>
         {sharing && <QRShareModal routine={sharing} onClose={() => setSharing(null)} />}
         {scanning && <QRScanner onClose={() => setScanning(false)} />}
+        {pickingTemplate && userId && (
+          <TemplatePicker
+            userId={userId}
+            onClose={() => setPickingTemplate(false)}
+            onImported={(routineId) => {
+              setPickingTemplate(false)
+              navigate(`/rutina/${routineId}`)
+            }}
+          />
+        )}
       </Suspense>
 
       {routines?.length === 0 && !creating && (

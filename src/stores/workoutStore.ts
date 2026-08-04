@@ -3,6 +3,7 @@ import { db } from '@/db/schema'
 import { softDelete, softDeleteMany } from '@/db/mutations'
 import type { PersonalRecord, Workout, WorkoutSet } from '@/types'
 import { calc1RM, nowIso, uid } from '@/lib/utils'
+import { recommend } from '@/lib/recommendation'
 
 interface RestTimerState {
   endsAt: number | null // epoch ms
@@ -58,13 +59,29 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
   },
 
   addExercise: async (workoutId, exerciseId) => {
-    // Agregar un ejercicio libremente arranca con 3 series vacías (el
-    // objetivo típico de trabajo) en vez de 1 sola, para que el usuario
-    // tenga que completar/editar series existentes en vez de acordarse
-    // de ir agregándolas una por una.
-    await get().addSet(workoutId, exerciseId)
-    await get().addSet(workoutId, exerciseId)
-    await get().addSet(workoutId, exerciseId)
+    // Agregar un ejercicio libremente arranca con las series que corresponden
+    // al objetivo del usuario, ya precargadas con reps y peso sugeridos. Sin
+    // esto el ejercicio aparecía con 0 kg y había que armarlo a mano.
+    const workout = await db.workouts.get(workoutId)
+    const exercise = await db.exercises.get(exerciseId)
+    if (!workout || !exercise) return
+
+    const [profile, history] = await Promise.all([
+      db.profile.get(workout.userId),
+      db.workoutSets
+        .where('exerciseId')
+        .equals(exerciseId)
+        .filter((s) => s.userId === workout.userId && s.completed === 1 && s.isWarmup === 0)
+        .toArray(),
+    ])
+
+    const rec = recommend(exercise, profile, history)
+    for (let i = 0; i < rec.sets; i++) {
+      await get().addSet(workoutId, exerciseId, {
+        reps: rec.repsMin,
+        weightKg: rec.weightKg,
+      })
+    }
   },
 
   addSet: async (workoutId, exerciseId, template) => {
