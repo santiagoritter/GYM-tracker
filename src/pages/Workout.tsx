@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ArrowLeft, Check, Minus, Plus, Trash2, Trophy } from 'lucide-react'
+import { ArrowLeft, Check, CopyCheck, Trash2, Trophy } from 'lucide-react'
 import { db } from '@/db/schema'
 import { workoutSetsOf, workoutsFor, personalRecordsFor } from '@/db/scoped'
 import { useWorkoutStore } from '@/stores/workoutStore'
@@ -10,8 +10,10 @@ import { ExercisePicker } from '@/components/gym/ExercisePicker'
 import { RestTimer } from '@/components/gym/RestTimer'
 import { MuscleChip } from '@/components/gym/MuscleChip'
 import Confetti from '@/components/ui/Confetti'
+import NumberStepper from '@/components/ui/NumberStepper'
 import type { Exercise, PersonalRecord, WorkoutSet } from '@/types'
-import { cn, formatDuration } from '@/lib/utils'
+import { cn, displayToKg, formatDuration, formatWeight } from '@/lib/utils'
+import { WEIGHT_INCREMENT, isBodyweight } from '@/lib/loading'
 import { computeStats } from '@/lib/stats'
 import { syncAchievements, type AchievementDef } from '@/lib/achievements'
 import { toast } from '@/stores/toastStore'
@@ -26,6 +28,9 @@ export default function Workout() {
   const [elapsed, setElapsed] = useState('')
   const [newPRs, setNewPRs] = useState<PersonalRecord[] | null>(null)
   const [newAchievements, setNewAchievements] = useState<AchievementDef[]>([])
+  // Qué serie muestra los steppers grandes. null = la serie activa (primera
+  // sin completar), que es lo que uno quiere el 90% de las veces.
+  const [editingSetId, setEditingSetId] = useState<string | null>(null)
 
   const workout = useLiveQuery(
     () => (workoutId ? db.workouts.get(workoutId) : undefined),
@@ -59,6 +64,22 @@ export default function Workout() {
     }
     return order.map((id) => ({ exercise: exerciseMap.get(id), sets: map.get(id)! }))
   }, [sets, exerciseMap])
+
+  const units = profile?.units ?? 'kg'
+
+  /**
+   * Copia reps y peso de la primera serie a todas las que faltan completar.
+   * Las ya completadas no se tocan: son un registro de lo que pasó.
+   */
+  const applyFirstSetToRest = (exSets: WorkoutSet[]) => {
+    const [first, ...rest] = exSets
+    if (!first) return
+    for (const s of rest) {
+      if (s.completed === 1) continue
+      if (s.reps === first.reps && s.weightKg === first.weightKg) continue
+      store.updateSet(s.id, { reps: first.reps, weightKg: first.weightKg })
+    }
+  }
 
   useEffect(() => {
     if (!workout) return
@@ -190,7 +211,7 @@ export default function Workout() {
 
   return (
     <div className="mx-auto min-h-screen max-w-lg pb-40">
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-bg/95 px-4 py-3 backdrop-blur">
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-bg/95 px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] backdrop-blur">
         <button onClick={() => navigate('/')} className="p-2 text-ink-2">
           <ArrowLeft size={22} />
         </button>
@@ -232,10 +253,12 @@ export default function Workout() {
               </span>
             </div>
 
-            <div className="mb-2 grid grid-cols-[2rem_1fr_1fr_2.5rem] gap-2 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
+            <div className="mb-1.5 grid grid-cols-[2rem_1fr_1fr_2.75rem] gap-2 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
               <span>#</span>
               <span className="text-center">Reps</span>
-              <span className="text-center">Kg</span>
+              <span className="text-center">
+                {exercise && isBodyweight(exercise.equipment) ? 'Lastre' : units.toUpperCase()}
+              </span>
               <span />
             </div>
 
@@ -243,7 +266,14 @@ export default function Workout() {
               <SetRow
                 key={s.id}
                 set={s}
+                equipment={exercise?.equipment ?? 'other'}
+                units={units}
                 isActive={s.id === exSets.find((x) => x.completed === 0)?.id}
+                expanded={
+                  editingSetId === s.id ||
+                  (editingSetId === null && s.id === exSets.find((x) => x.completed === 0)?.id)
+                }
+                onExpand={() => setEditingSetId(s.id)}
                 onComplete={() => handleCompleteSet(s)}
                 onUpdate={(patch) => store.updateSet(s.id, patch)}
               />
@@ -252,14 +282,26 @@ export default function Workout() {
             <div className="mt-2 flex gap-2">
               <button
                 onClick={() => store.addSet(workoutId, exercise!.id)}
-                className="flex-1 rounded-lg border border-dashed border-line-2 py-2 text-sm font-medium text-ink-2 active:bg-surface-2"
+                className="flex-1 rounded-lg border border-dashed border-line-2 py-2.5 text-sm font-medium text-ink-2 active:bg-surface-2"
               >
                 + Agregar serie
               </button>
+              {/* Igualar evita el peor caso del stepper: cambiar el peso en
+                  4 series es hoy repetir el mismo viaje 4 veces. */}
+              {exSets.length > 1 && (
+                <button
+                  onClick={() => applyFirstSetToRest(exSets)}
+                  className="flex items-center gap-1.5 rounded-lg border border-dashed border-line-2 px-3 py-2.5 text-sm font-medium text-ink-2 active:bg-surface-2"
+                  title="Copiar reps y peso de la 1ª serie a las que faltan"
+                >
+                  <CopyCheck size={15} /> Igualar
+                </button>
+              )}
               {exSets.length > 0 && (
                 <button
                   onClick={() => store.removeSet(exSets[exSets.length - 1].id)}
-                  className="rounded-lg border border-dashed border-line-2 px-4 py-2 text-sm font-medium text-danger/70 active:bg-surface-2"
+                  aria-label="Quitar la última serie"
+                  className="rounded-lg border border-dashed border-line-2 px-4 py-2.5 text-sm font-medium text-danger/70 active:bg-surface-2"
                 >
                   −
                 </button>
@@ -297,76 +339,134 @@ export default function Workout() {
   )
 }
 
+/**
+ * Fila de serie con dos presentaciones.
+ *
+ * Compacta por defecto, y con steppers a ancho completo en la serie que se
+ * está editando. El motivo no es estético: en un iPhone 14 Pro la tarjeta
+ * deja 329px útiles, y dos steppers con botones de 44px (el mínimo táctil de
+ * Apple) ocupan 96px fijos cada uno — al input le quedarían 16px. O los
+ * botones son diminutos, o solo entra un stepper por fila.
+ */
 function SetRow({
   set,
+  equipment,
+  units,
   isActive,
+  expanded,
+  onExpand,
   onComplete,
   onUpdate,
 }: {
   set: WorkoutSet
+  equipment: Exercise['equipment']
+  units: 'kg' | 'lbs'
   isActive: boolean
+  expanded: boolean
+  onExpand: () => void
   onComplete: () => void
   onUpdate: (patch: Partial<WorkoutSet>) => void
 }) {
+  // Todo se guarda en kg; la conversión es solo de presentación.
+  const stepKg = WEIGHT_INCREMENT[equipment]
+  const displayWeight = Number(formatWeight(set.weightKg, units))
+  const displayStep = units === 'lbs' ? Math.max(1, Math.round(stepKg / 0.45359237)) : stepKg
+  const weightLabel = isBodyweight(equipment) ? 'Lastre' : 'Peso'
+
   return (
     <div
       className={cn(
-        'mb-1 grid grid-cols-[2rem_1fr_1fr_2.5rem] items-center gap-2 rounded-lg px-1 py-1.5 transition-colors',
+        'mb-1.5 rounded-xl px-1 py-1 transition-colors',
         set.completed === 1 && 'opacity-60',
-        // El set activo (primer pendiente) se resalta según docs/04
-        isActive && 'border-l-2 border-accent bg-surface-2'
+        isActive && 'border-l-2 border-accent bg-surface-2',
+        expanded && !isActive && 'bg-surface-2'
       )}
     >
-      {/* Tap en el número alterna serie de calentamiento (C) */}
-      <button
-        onClick={() => onUpdate({ isWarmup: set.isWarmup === 1 ? 0 : 1 })}
-        className={cn(
-          'flex h-7 w-7 items-center justify-center rounded-md text-sm font-bold',
-          set.isWarmup === 1 ? 'bg-warning/20 text-warning' : 'text-ink-3'
-        )}
-        title={set.isWarmup === 1 ? 'Serie de calentamiento' : 'Serie de trabajo'}
-      >
-        {set.isWarmup === 1 ? 'C' : set.setNumber}
-      </button>
+      <div className="grid grid-cols-[2rem_1fr_1fr_2.75rem] items-center gap-2">
+        {/* Tap en el número alterna serie de calentamiento (C) */}
+        <button
+          onClick={() => onUpdate({ isWarmup: set.isWarmup === 1 ? 0 : 1 })}
+          className={cn(
+            'flex h-11 w-8 items-center justify-center rounded-md text-sm font-bold',
+            set.isWarmup === 1 ? 'bg-warning/20 text-warning' : 'text-ink-3'
+          )}
+          title={set.isWarmup === 1 ? 'Serie de calentamiento' : 'Serie de trabajo'}
+        >
+          {set.isWarmup === 1 ? 'C' : set.setNumber}
+        </button>
 
-      <Stepper
-        value={set.reps}
-        step={1}
-        min={1}
-        onChange={(reps) => onUpdate({ reps })}
-      />
-      <Stepper
-        value={set.weightKg}
-        step={2.5}
-        min={0}
-        onChange={(weightKg) => onUpdate({ weightKg })}
-      />
+        <button
+          onClick={onExpand}
+          aria-label={`Editar la serie ${set.setNumber}`}
+          aria-expanded={expanded}
+          className="col-span-2 grid grid-cols-2 gap-2"
+        >
+          <span className="rounded-lg py-2 text-center font-mono text-base font-bold">
+            {set.reps}
+          </span>
+          <span className="rounded-lg py-2 text-center font-mono text-base font-bold">
+            {displayWeight}
+          </span>
+        </button>
 
-      <button
-        onClick={onComplete}
-        className={cn(
-          'flex h-9 w-9 items-center justify-center rounded-lg border transition-colors',
-          set.completed === 1
-            ? 'animate-set-pop border-success bg-success text-bg'
-            : 'border-line-2 text-ink-3'
-        )}
-      >
-        <Check size={18} strokeWidth={3} />
-      </button>
+        <button
+          onClick={onComplete}
+          aria-label={set.completed === 1 ? 'Desmarcar serie' : 'Completar serie'}
+          className={cn(
+            'flex h-11 w-11 items-center justify-center rounded-lg border transition-colors',
+            set.completed === 1
+              ? 'animate-set-pop border-success bg-success text-bg'
+              : 'border-line-2 text-ink-3'
+          )}
+        >
+          <Check size={18} strokeWidth={3} />
+        </button>
+      </div>
+
+      {/* Controles grandes: solo para la serie en edición, a ancho completo */}
+      {expanded && (
+        <div className="mt-1 space-y-1.5 px-1 pb-1.5">
+          <div className="grid grid-cols-[3.25rem_1fr] items-center gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-3">
+              Reps
+            </span>
+            <NumberStepper
+              value={set.reps}
+              step={1}
+              min={1}
+              max={100}
+              decimals={0}
+              label="repeticiones"
+              onChange={(reps) => onUpdate({ reps })}
+            />
+          </div>
+          <div className="grid grid-cols-[3.25rem_1fr] items-center gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-3">
+              {weightLabel}
+            </span>
+            <NumberStepper
+              value={displayWeight}
+              step={displayStep}
+              min={0}
+              decimals={1}
+              label={weightLabel.toLowerCase()}
+              onChange={(shown) => onUpdate({ weightKg: displayToKg(shown, units) })}
+            />
+          </div>
+        </div>
+      )}
 
       {/* RPE: aparece al completar la serie de trabajo (opcional, un tap) */}
       {set.completed === 1 && set.isWarmup === 0 && (
-        <div className="col-span-4 mt-1 flex items-center gap-1.5">
+        <div className="mt-1 flex items-center gap-1.5 px-1 pb-1">
           <span className="text-[10px] font-semibold uppercase text-ink-3">RPE</span>
           {[6, 7, 8, 8.5, 9, 10].map((value) => (
             <button
               key={value}
               onClick={() => onUpdate({ rpe: set.rpe === value ? undefined : value })}
               className={cn(
-                'rounded-md px-2 py-0.5 font-mono text-xs font-bold',
-                set.rpe === value
-                  ? 'bg-accent text-bg'
-                  : 'bg-surface-2 text-ink-3'
+                'rounded-md px-2 py-1 font-mono text-xs font-bold',
+                set.rpe === value ? 'bg-accent text-bg' : 'bg-surface-2 text-ink-3'
               )}
             >
               {value}
@@ -378,37 +478,3 @@ function SetRow({
   )
 }
 
-function Stepper({
-  value,
-  step,
-  min,
-  onChange,
-}: {
-  value: number
-  step: number
-  min: number
-  onChange: (v: number) => void
-}) {
-  return (
-    <div className="flex items-center justify-center gap-1">
-      <button
-        onClick={() => onChange(Math.max(min, Math.round((value - step) * 10) / 10))}
-        className="flex h-8 w-8 items-center justify-center rounded-md bg-surface-2 text-ink-2 active:bg-surface-3"
-      >
-        <Minus size={14} />
-      </button>
-      <input
-        type="number"
-        value={value}
-        onChange={(e) => onChange(Math.max(min, Number(e.target.value) || 0))}
-        className="w-14 rounded-md bg-surface-2 py-1.5 text-center font-mono text-sm font-bold outline-none focus:ring-1 focus:ring-accent"
-      />
-      <button
-        onClick={() => onChange(Math.round((value + step) * 10) / 10)}
-        className="flex h-8 w-8 items-center justify-center rounded-md bg-surface-2 text-ink-2 active:bg-surface-3"
-      >
-        <Plus size={14} />
-      </button>
-    </div>
-  )
-}
