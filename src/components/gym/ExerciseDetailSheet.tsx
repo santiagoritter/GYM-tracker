@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { X, CheckCircle2, AlertTriangle, Camera, Trash2 } from 'lucide-react'
+import { X, CheckCircle2, AlertTriangle, Camera, Trash2, PlayCircle } from 'lucide-react'
 import type { Exercise } from '@/types'
-import { getExerciseInfo } from '@/data/exerciseInfo'
+import { getExerciseInfo, getTechniqueVideoUrl } from '@/data/exerciseInfo'
+import { getExerciseSetup, SETUP_LABEL } from '@/data/exerciseSetup'
+import SetupIllustration from './SetupIllustration'
 import { db } from '@/db/schema'
 import { softDelete } from '@/db/mutations'
 import { exercisePhotoFor } from '@/db/scoped'
@@ -168,6 +170,22 @@ function ExercisePhotoSection({ exerciseId }: { exerciseId: string }) {
   )
 }
 
+/** Cómo identificar la máquina o el puesto al llegar al gimnasio. */
+function SetupSection({ exercise }: { exercise: Exercise }) {
+  const kind = getExerciseSetup(exercise.id, exercise.equipment)
+  return (
+    <div className="flex items-center gap-4 rounded-2xl bg-surface-2 p-4">
+      <SetupIllustration kind={kind} className="h-20 w-24 shrink-0" />
+      <div className="min-w-0">
+        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-ink-3">
+          Dónde se hace
+        </h3>
+        <p className="mt-1 text-[15px] font-medium leading-snug">{SETUP_LABEL[kind]}</p>
+      </div>
+    </div>
+  )
+}
+
 export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
   const info = exercise ? getExerciseInfo(exercise.id) : null
 
@@ -235,6 +253,21 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
 
         {/* Contenido scrolleable */}
         <div className="max-h-[70vh] overflow-y-auto overscroll-contain px-5 pb-8 space-y-6">
+          {/* Ver la técnica en video. Es una búsqueda y no un ID de video a
+              propósito: con 107 ejercicios, un ID que el autor borra deja un
+              link muerto que nadie va a notar hasta que alguien lo toque. */}
+          <a
+            href={getTechniqueVideoUrl(exercise.name, info)}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="flex items-center justify-center gap-2 rounded-xl bg-accent py-3 text-[15px] font-bold text-bg active:bg-accent-dim"
+          >
+            <PlayCircle size={18} /> Ver la técnica en video
+          </a>
+
+          {/* Cómo reconocer la máquina */}
+          <SetupSection exercise={exercise} />
+
           {/* Foto de referencia */}
           <ExercisePhotoSection exerciseId={exercise.id} />
 
