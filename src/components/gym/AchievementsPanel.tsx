@@ -5,6 +5,7 @@ import { personalRecordsFor, achievementsFor } from '@/db/scoped'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { ACHIEVEMENTS, syncAchievements } from '@/lib/achievements'
 import { useTrainingStats } from '@/hooks/useTrainingStats'
+import AchievementIcon from '@/components/gym/AchievementIcon'
 import { cn } from '@/lib/utils'
 
 export default function AchievementsPanel() {
@@ -56,8 +57,8 @@ export default function AchievementsPanel() {
                 has ? 'border-accent/30 bg-accent/5' : 'border-line bg-surface opacity-60'
               )}
             >
-              <span className={cn('text-2xl', !has && 'grayscale')}>
-                {has ? a.emoji : <Lock size={20} className="text-ink-3" />}
+              <span className={cn('shrink-0', has ? 'text-accent' : 'text-ink-3')}>
+                {has ? <AchievementIcon name={a.icon} size={22} /> : <Lock size={20} />}
               </span>
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold">{a.name}</p>

@@ -52,7 +52,7 @@ export default function StreakWeekCard() {
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wide text-ink-3">Esta semana</p>
           <p className="mt-1 text-sm font-medium leading-tight">
-            {metGoal ? '¡Meta cumplida! 🎉' : `Faltan ${goal - done}`}
+            {metGoal ? 'Meta cumplida' : `Faltan ${goal - done}`}
           </p>
         </div>
       </div>

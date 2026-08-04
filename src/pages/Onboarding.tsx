@@ -1,18 +1,30 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronRight, Flame, Target, Trophy, User } from 'lucide-react'
+import {
+  ChevronRight,
+  Dumbbell,
+  Flame,
+  HeartPulse,
+  Layers,
+  Target,
+  Timer,
+  TrendingUp,
+  Trophy,
+  User,
+  type LucideIcon,
+} from 'lucide-react'
 import { db } from '@/db/schema'
 import { useAuthStore } from '@/stores/authStore'
 import { ONBOARDING_MESSAGES, getRandomMessage } from '@/lib/motivational'
 import { cn, nowIso } from '@/lib/utils'
 import type { FitnessGoal, ExperienceLevel } from '@/types'
 
-const GOALS: { key: FitnessGoal; label: string; icon: string }[] = [
-  { key: 'strength', label: 'Fuerza máxima', icon: '🏋️' },
-  { key: 'mass', label: 'Ganar masa', icon: '💪' },
-  { key: 'endurance', label: 'Resistencia', icon: '🏃' },
-  { key: 'health', label: 'Salud general', icon: '❤️' },
-  { key: 'general', label: 'Todo un poco', icon: '⚡' },
+const GOALS: { key: FitnessGoal; label: string; Icon: LucideIcon }[] = [
+  { key: 'strength', label: 'Fuerza máxima', Icon: Dumbbell },
+  { key: 'mass', label: 'Ganar masa', Icon: TrendingUp },
+  { key: 'endurance', label: 'Resistencia', Icon: Timer },
+  { key: 'health', label: 'Salud general', Icon: HeartPulse },
+  { key: 'general', label: 'Todo un poco', Icon: Layers },
 ]
 
 const LEVELS: { key: ExperienceLevel; label: string; desc: string }[] = [
@@ -192,7 +204,7 @@ function StepPersonal({
         <div>
           <label className="mb-3 block text-sm font-semibold text-ink-2">Sexo biológico</label>
           <div className="grid grid-cols-2 gap-3">
-            {[['male', '♂', 'Masculino'], ['female', '♀', 'Femenino']] .map(([val, icon, label]) => (
+            {[['male', 'Masculino'], ['female', 'Femenino']].map(([val, label]) => (
               <button
                 key={val}
                 onClick={() => onSex(val as 'male' | 'female')}
@@ -203,8 +215,7 @@ function StepPersonal({
                     : 'border-line-2 text-ink-2'
                 )}
               >
-                <div className="text-2xl">{icon}</div>
-                <div className="mt-1 text-sm font-semibold">{label}</div>
+                <div className="text-base font-semibold">{label}</div>
               </button>
             ))}
           </div>
@@ -304,7 +315,7 @@ function StepBody({
             ¿Cuál es tu objetivo? <span className="text-accent">*</span>
           </label>
           <div className="grid grid-cols-1 gap-2">
-            {GOALS.map(({ key, label, icon }) => (
+            {GOALS.map(({ key, label, Icon }) => (
               <button
                 key={key}
                 onClick={() => onGoal(key)}
@@ -315,7 +326,7 @@ function StepBody({
                     : 'border-line-2 text-ink-2'
                 )}
               >
-                <span className="text-xl">{icon}</span>
+                <Icon size={20} strokeWidth={1.8} />
                 <span className="font-semibold">{label}</span>
               </button>
             ))}
@@ -381,7 +392,7 @@ function StepLevel({
       {isAdmin && (
         <div className="mt-4 rounded-xl bg-accent/10 p-4">
           <p className="text-sm font-semibold text-accent">
-            ✦ Sos el administrador de esta instalación.
+            Sos el administrador de esta instalación.
           </p>
           <p className="mt-0.5 text-xs text-ink-3">
             Podés gestionar usuarios desde el panel de administración en tu perfil.

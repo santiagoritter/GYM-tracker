@@ -202,7 +202,7 @@ export default function Home() {
             <p className="rounded-xl bg-surface p-6 text-center text-sm text-ink-3">
               Todavía no registraste ningún entreno.
               <br />
-              Arrancá con el botón de arriba 💪
+              Arrancá con el botón de arriba.
             </p>
           )}
         </div>

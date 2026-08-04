@@ -74,7 +74,7 @@ export default function Exercises() {
               className={cn(
                 'whitespace-nowrap rounded-full px-3.5 py-1.5 text-[12px] font-medium transition-all duration-150',
                 muscle === m
-                  ? 'bg-accent text-black shadow-accent'
+                  ? 'bg-accent text-black'
                   : 'bg-fill text-ink-2 active:bg-fill-2'
               )}
             >

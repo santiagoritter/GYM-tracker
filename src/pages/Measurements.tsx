@@ -83,7 +83,7 @@ export default function Measurements() {
       // Si registraste peso, actualizá el peso corporal del perfil también
       if (numbers.weightKg) await db.profile.update(userId, { bodyWeightKg: numbers.weightKg })
       setForm({})
-      toast.success('Medida registrada', 'Seguí midiendo tu progreso 📏')
+      toast.success('Medida registrada', 'Seguí midiendo tu progreso.')
     } finally {
       setSaving(false)
     }
@@ -201,7 +201,7 @@ export default function Measurements() {
               <p className="rounded-xl bg-surface p-8 text-center text-sm text-ink-3">
                 Todavía no registraste medidas.
                 <br />
-                Empezá con tu peso de hoy 💪
+                Empezá con tu peso de hoy.
               </p>
             )}
           </div>

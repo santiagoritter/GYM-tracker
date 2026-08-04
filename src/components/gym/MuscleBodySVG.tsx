@@ -80,15 +80,6 @@ function BodySvg({ children }: { children: React.ReactNode }) {
       aria-hidden="true"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <defs>
-        <filter id="muscle-glow" x="-40%" y="-40%" width="180%" height="180%">
-          <feGaussianBlur stdDeviation="1.4" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
       {children}
     </svg>
   )
@@ -102,7 +93,7 @@ type FillFn = (...groups: MuscleGroup[]) => string
  */
 function Pair({ d, color }: { d: string; color: string }) {
   return (
-    <g fill={color} filter={color === COLOR_PRIMARY ? 'url(#muscle-glow)' : undefined}>
+    <g fill={color}>
       <path d={d} />
       <path d={d} transform="scale(-1,1)" />
     </g>
@@ -112,7 +103,7 @@ function Pair({ d, color }: { d: string; color: string }) {
 /** Músculo único sobre la línea media (abdomen, lumbar, trapecio central). */
 function Center({ d, color }: { d: string; color: string }) {
   return (
-    <path d={d} fill={color} filter={color === COLOR_PRIMARY ? 'url(#muscle-glow)' : undefined} />
+    <path d={d} fill={color} />
   )
 }
 
@@ -142,7 +133,7 @@ function Silhouette() {
 /** Latido: los ejercicios de cardio no tienen un músculo diana que marcar. */
 function CardioPulse() {
   return (
-    <g filter="url(#muscle-glow)">
+    <g>
       <path
         d="M-17 68 h8 l4 -10 l6 20 l5 -12 h11"
         fill="none"

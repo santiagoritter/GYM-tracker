@@ -10,7 +10,8 @@
     "typecheck": "tsc -b --noEmit",
     "test:db": "node scripts/test-migration.mjs && node scripts/test-sync-hooks.mjs",
     "test:rec": "esbuild scripts/test-recommendation.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/rec.mjs --log-level=error && node node_modules/.tmp/rec.mjs",
-    "test": "npm run test:db && npm run test:rec"
+    "test:style": "node scripts/test-style-rules.mjs",
+    "test": "npm run test:style && npm run test:db && npm run test:rec"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",

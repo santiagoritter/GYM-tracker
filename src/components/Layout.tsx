@@ -43,7 +43,7 @@ export default function Layout() {
       <header className="sticky top-0 z-30 flex items-center justify-between px-4 pt-[env(safe-area-inset-top)] pb-0">
         <div className="glass absolute inset-0 -z-10 border-b border-line" />
         <div className="flex items-center gap-2.5 py-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-[11px] font-bold text-black shadow-accent">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-[11px] font-bold text-black">
             {initials}
           </div>
           <span className="max-w-[140px] truncate text-[15px] font-semibold text-ink">
@@ -83,7 +83,7 @@ export default function Layout() {
           onClick={() => navigate(`/entreno/${activeWorkout.id}`)}
           className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] left-1/2 z-50 animate-scale-in"
         >
-          <div className="flex items-center gap-2.5 rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-black shadow-accent">
+          <div className="flex items-center gap-2.5 rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-black">
             <Flame size={15} fill="currentColor" />
             <span>Entreno en curso</span>
             <span className="opacity-70">·</span>
@@ -116,11 +116,9 @@ export default function Layout() {
                       'flex h-7 w-7 items-center justify-center rounded-xl transition-all duration-150',
                       isActive && 'bg-accent/10'
                     )}>
-                      <Icon
-                        size={20}
-                        strokeWidth={isActive ? 2.2 : 1.8}
-                        className={cn(isActive && 'drop-shadow-[0_0_6px_rgba(232,255,71,0.5)]')}
-                      />
+                      {/* El estado activo se marca con color, fondo y grosor
+                          de trazo, no con un halo lima alrededor del icono. */}
+                      <Icon size={20} strokeWidth={isActive ? 2.2 : 1.8} />
                     </span>
                     {label}
                   </>

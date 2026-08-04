@@ -108,7 +108,7 @@ export default function RoutineEditor() {
               </div>
 
               {day.isRest === 1 ? (
-                <p className="mt-2 text-sm text-ink-3">Día de descanso 😴</p>
+                <p className="mt-2 text-sm text-ink-3">Día de descanso</p>
               ) : (
                 <>
                   <div className="mt-3 space-y-2">

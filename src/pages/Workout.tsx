@@ -11,6 +11,7 @@ import { RestTimer } from '@/components/gym/RestTimer'
 import { MuscleChip } from '@/components/gym/MuscleChip'
 import Confetti from '@/components/ui/Confetti'
 import NumberStepper from '@/components/ui/NumberStepper'
+import AchievementIcon from '@/components/gym/AchievementIcon'
 import type { Exercise, PersonalRecord, WorkoutSet } from '@/types'
 import { cn, displayToKg, formatDuration, formatWeight } from '@/lib/utils'
 import { WEIGHT_INCREMENT, isBodyweight } from '@/lib/loading'
@@ -136,10 +137,10 @@ export default function Workout() {
     const msg = getRandomMessage(WORKOUT_COMPLETE_MESSAGES)
     toast.success('¡Entreno completado!', msg.text)
     for (const pr of prs) {
-      toast.pr('¡Nuevo PR! 🏆', `${exerciseMap.get(pr.exerciseId)?.name}: ${pr.weightKg} kg × ${pr.reps}`)
+      toast.pr('Nuevo récord', `${exerciseMap.get(pr.exerciseId)?.name}: ${pr.weightKg} kg × ${pr.reps}`)
     }
     for (const a of unlocked) {
-      toast.pr(`Logro: ${a.emoji} ${a.name}`, a.description)
+      toast.pr(`Logro: ${a.name}`, a.description)
     }
   }
 
@@ -156,7 +157,7 @@ export default function Workout() {
     return (
       <div className="mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center gap-6 px-6 py-10 text-center">
         {celebrate && <Confetti />}
-        <h1 className="text-3xl font-bold">Entreno terminado 🎉</h1>
+        <h1 className="text-3xl font-bold">Entreno terminado</h1>
 
         {newAchievements.length > 0 && (
           <div className="w-full space-y-2">
@@ -166,7 +167,9 @@ export default function Workout() {
                 style={{ animationDelay: `${i * 120}ms` }}
                 className="animate-pr-appear flex items-center gap-3 rounded-2xl border border-accent/40 bg-accent/10 p-3 text-left"
               >
-                <span className="text-2xl">{a.emoji}</span>
+                <span className="shrink-0 text-accent">
+                  <AchievementIcon name={a.icon} size={24} />
+                </span>
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wide text-accent">Logro desbloqueado</p>
                   <p className="font-semibold">{a.name}</p>

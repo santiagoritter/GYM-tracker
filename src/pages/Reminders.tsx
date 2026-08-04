@@ -65,7 +65,7 @@ export default function Reminders() {
       toast.error('Permiso denegado', 'Habilitá las notificaciones en tu navegador.')
       return
     }
-    new Notification('💪 Hora de entrenar', {
+    new Notification('Hora de entrenar', {
       body: 'Así se va a ver tu recordatorio. ¡A darle!',
       icon: '/icons/icon-192.png',
     })

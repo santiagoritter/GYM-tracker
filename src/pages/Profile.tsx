@@ -8,11 +8,11 @@ import { cn } from '@/lib/utils'
 import { getDailyMessage } from '@/lib/motivational'
 
 const GOAL_LABELS: Record<string, string> = {
-  strength: '🏋️ Fuerza máxima',
-  mass: '💪 Ganar masa',
-  endurance: '🏃 Resistencia',
-  health: '❤️ Salud general',
-  general: '⚡ Todo un poco',
+  strength: 'Fuerza máxima',
+  mass: 'Ganar masa',
+  endurance: 'Resistencia',
+  health: 'Salud general',
+  general: 'Todo un poco',
 }
 
 const LEVEL_LABELS: Record<string, string> = {

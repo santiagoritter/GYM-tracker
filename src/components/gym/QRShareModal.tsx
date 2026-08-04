@@ -70,7 +70,7 @@ export function QRShareModal({ routine, onClose }: { routine: Routine; onClose: 
                   : 'border-line-2 text-ink-3'
               )}
             >
-              {includeWeights ? '✓ Incluye tus pesos' : 'Sin pesos'}
+              {includeWeights ? 'Incluye tus pesos' : 'Sin pesos'}
             </button>
 
             <div className="flex w-full gap-2">

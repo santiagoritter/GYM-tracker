@@ -20,7 +20,7 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
 function fireNotification() {
   if (!notificationsSupported() || Notification.permission !== 'granted') return
   const msg = getRandomMessage(HOME_MESSAGES)
-  const notif = new Notification('💪 Hora de entrenar', {
+  const notif = new Notification('Hora de entrenar', {
     body: msg.text,
     icon: '/icons/icon-192.png',
     badge: '/icons/icon-192.png',
