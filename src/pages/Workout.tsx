@@ -15,6 +15,7 @@ import AchievementIcon from '@/components/gym/AchievementIcon'
 import type { Exercise, PersonalRecord, WorkoutSet } from '@/types'
 import { cn, displayToKg, formatDuration, formatWeight } from '@/lib/utils'
 import { WEIGHT_INCREMENT, isBodyweight } from '@/lib/loading'
+import { hapticSuccess, hapticTick } from '@/lib/native'
 import { computeStats } from '@/lib/stats'
 import { syncAchievements, type AchievementDef } from '@/lib/achievements'
 import { toast } from '@/stores/toastStore'
@@ -101,7 +102,7 @@ export default function Workout() {
     const next = s.completed === 1 ? 0 : 1
     store.updateSet(s.id, { completed: next as 0 | 1 })
     if (next !== 1) return
-    navigator.vibrate?.(50)
+    hapticTick()
 
     // En superserie: sin descanso hasta cerrar la vuelta (cuando el compañero
     // del grupo todavía tiene pendiente la serie del mismo número)
@@ -122,6 +123,7 @@ export default function Workout() {
   const handleFinish = async () => {
     if (!userId) return
     const prs = await store.finishWorkout(userId, workoutId)
+    hapticSuccess()
     setNewPRs(prs)
 
     // Métricas + logros a partir del estado ya persistido

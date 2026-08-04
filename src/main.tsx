@@ -5,7 +5,12 @@ import App from '@/App'
 import { db, seedIfEmpty } from '@/db/schema'
 import { installSyncHooks, setSyncUser } from '@/db/syncHooks'
 import { useAuthStore } from '@/stores/authStore'
+import { initNativeShell } from '@/lib/native'
 import '@/index.css'
+
+// No-op en el navegador; en nativo ajusta la barra de estado y oculta el
+// splash cuando la app ya puede dibujar.
+initNativeShell()
 
 // Antes de cualquier escritura: los hooks sellan updatedAt/dirty en todas
 // las tablas sincronizadas. Se instalan acá y no dentro de schema.ts para no

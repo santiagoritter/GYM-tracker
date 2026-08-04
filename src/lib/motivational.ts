@@ -3,6 +3,23 @@ export interface MotivationalMessage {
   author?: string
 }
 
+/**
+ * Fin del descanso. Tono directo, corto: se leen de reojo en la pantalla de
+ * bloqueo con la respiración todavía agitada, no son para contemplar.
+ */
+export const REST_END_MESSAGES: MotivationalMessage[] = [
+  { text: 'Se acabó el descanso. A la barra.' },
+  { text: 'Listo. La serie que viene es la que cuenta.' },
+  { text: 'Tiempo. Volvé antes de que se enfríe.' },
+  { text: 'Arrancá. Una más y estás más cerca.' },
+  { text: 'Se terminó. Agarrá el peso.' },
+  { text: 'Descanso completo. Ahora la parte difícil.' },
+  { text: 'Vamos. Nadie levantó nada sentado.' },
+  { text: 'Listo para la próxima. Sin excusas.' },
+  { text: 'Se cumplió el tiempo. Metele.' },
+  { text: 'De vuelta al trabajo.' },
+]
+
 export const ONBOARDING_MESSAGES: MotivationalMessage[] = [
   { text: 'El único entrenamiento malo es el que no hiciste.', author: 'Joe Weider' },
   { text: 'No te limites. Mucha gente se limita a lo que piensa que puede hacer. Podés llegar tan lejos como tu mente te deje.', author: 'Mary Kay Ash' },
