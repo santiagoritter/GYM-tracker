@@ -48,7 +48,13 @@ export async function syncAchievements(
   const newly: AchievementDef[] = []
   for (const def of ACHIEVEMENTS) {
     if (!unlockedDefIds.has(def.id) && def.test(ctx)) {
-      await db.achievements.put({ id: `${userId}_${def.id}`, userId, unlockedAt: nowIso() })
+      await db.achievements.put({
+        id: `${userId}_${def.id}`,
+        userId,
+        unlockedAt: nowIso(),
+        dirty: 1,
+        updatedAt: nowIso(),
+      })
       newly.push(def)
     }
   }

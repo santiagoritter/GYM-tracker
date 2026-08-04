@@ -130,7 +130,7 @@ export async function importPayload(
     color: '#60A5FA',
     isActive: 0,
     isArchived: 0,
-    synced: 0,
+    dirty: 1,
     updatedAt: nowIso(),
   }
 
@@ -141,9 +141,12 @@ export async function importPayload(
     const day: RoutineDay = {
       id: uid(),
       routineId: routine.id,
+      userId,
       name: qrDay.n,
       dayOrder: dayIndex + 1,
       isRest: qrDay.r ? 1 : 0,
+      dirty: 1,
+      updatedAt: nowIso(),
     }
     days.push(day)
     qrDay.e?.forEach((qrEx, exIndex) => {
@@ -154,6 +157,7 @@ export async function importPayload(
       entries.push({
         id: uid(),
         dayId: day.id,
+        userId,
         exerciseId: qrEx.id,
         exerciseOrder: exIndex + 1,
         setsTarget: qrEx.s,
@@ -161,6 +165,8 @@ export async function importPayload(
         repsMax: qrEx.r[1],
         restSeconds: qrEx.rs ?? 90,
         notes: qrEx.w ? `Peso de referencia: ${qrEx.w} kg` : undefined,
+        dirty: 1,
+        updatedAt: nowIso(),
       })
     })
   })

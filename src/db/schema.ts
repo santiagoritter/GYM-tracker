@@ -11,11 +11,33 @@ import type {
   Routine,
   RoutineDay,
   RoutineExercise,
+  SyncedTable,
+  SyncStateRow,
+  Tombstone,
   User,
   Workout,
   WorkoutSet,
 } from '@/types'
 import { EXERCISES_SEED } from '@/data/exercises'
+
+/**
+ * Tablas que viajan a Postgres, en orden de dependencia: los padres antes
+ * que las hijas. El push respeta este orden porque la FK compuesta del
+ * servidor rechaza una `workout_set` cuyo `workout` todavía no llegó.
+ */
+export const SYNC_ORDER: readonly SyncedTable[] = [
+  'profile',
+  'routines',
+  'routineDays',
+  'routineExercises',
+  'workouts',
+  'workoutSets',
+  'personalRecords',
+  'bodyMeasurements',
+  'achievements',
+  'progressPhotos',
+  'exercisePhotos',
+] as const
 
 export class GymTrackerDB extends Dexie {
   workouts!: Table<Workout, string>
@@ -32,6 +54,8 @@ export class GymTrackerDB extends Dexie {
   achievements!: Table<Achievement, string>
   emailVerifications!: Table<EmailVerification, string>
   exercisePhotos!: Table<ExercisePhoto, string>
+  tombstones!: Table<Tombstone, string>
+  syncState!: Table<SyncStateRow, string>
 
   constructor() {
     super('GymTrackerDB')
@@ -122,6 +146,77 @@ export class GymTrackerDB extends Dexie {
     this.version(8).stores({
       exercisePhotos: 'id, userId, exerciseId, [userId+exerciseId]',
     })
+    // v9: preparación para el sync con Supabase.
+    //
+    //  - `dirty` reemplaza al flag `synced`, que era vestigial: solo existía
+    //    en workouts/workoutSets/routines y la mayoría de los call sites ni
+    //    lo escribían (setActiveRoutine, los update de RoutineEditor, las
+    //    altas de medidas y fotos…). Usarlo como cola de push habría perdido
+    //    escrituras en silencio. Ahora lo sellan los hooks (ver syncHooks.ts).
+    //  - Las tablas hijas ganan `userId` propio: el RLS del servidor filtra
+    //    por columna en vez de por join de dos saltos, y el pull incremental
+    //    puede usar el índice (userId, server_updated_at).
+    //  - `tombstones` hace que los borrados se puedan propagar (ver el tipo).
+    this.version(9).stores({
+      routines: 'id, userId, isActive, isArchived, dirty',
+      routineDays: 'id, routineId, userId, dayOrder, dirty',
+      routineExercises: 'id, dayId, userId, exerciseOrder, dirty',
+      workouts: 'id, userId, startedAt, finishedAt, dirty',
+      workoutSets: 'id, workoutId, userId, exerciseId, dirty, [workoutId+exerciseId]',
+      personalRecords: 'id, userId, exerciseId, dirty',
+      bodyMeasurements: 'id, userId, takenAt, dirty',
+      achievements: 'id, userId, unlockedAt, dirty',
+      progressPhotos: 'id, userId, takenAt, dirty, uploaded',
+      exercisePhotos: 'id, userId, exerciseId, [userId+exerciseId], dirty, uploaded',
+      profile: 'id, dirty',
+      tombstones: 'id, userId, tableName, dirty',
+      syncState: 'key',
+    }).upgrade(async (tx) => {
+      const now = new Date().toISOString()
+
+      // 1. Backfill de userId en las hijas, resolviendo la FK hacia el padre.
+      const routineUser = new Map<string, string>(
+        (await tx.table('routines').toArray()).map((r) => [r.id, r.userId])
+      )
+      const dayUser = new Map<string, string>()
+      await tx.table('routineDays').toCollection().modify((d) => {
+        d.userId = routineUser.get(d.routineId) ?? ''
+        dayUser.set(d.id, d.userId)
+      })
+      await tx.table('routineExercises').toCollection().modify((e) => {
+        e.userId = dayUser.get(e.dayId) ?? ''
+      })
+      const workoutUser = new Map<string, string>(
+        (await tx.table('workouts').toArray()).map((w) => [w.id, w.userId])
+      )
+      await tx.table('workoutSets').toCollection().modify((s) => {
+        s.userId = workoutUser.get(s.workoutId) ?? ''
+      })
+
+      // 2. Todo lo preexistente arranca sucio: nunca se subió a ningún lado.
+      for (const table of SYNC_ORDER) {
+        await tx.table(table).toCollection().modify((row) => {
+          row.updatedAt ??= now
+          row.dirty = 1
+          delete row.synced
+        })
+      }
+      for (const table of ['progressPhotos', 'exercisePhotos']) {
+        await tx.table(table).toCollection().modify((p) => { p.uploaded = 0 })
+      }
+
+      // 3. onboardingComplete vivía en `users`, que desaparece al migrar a
+      //    Supabase Auth. Se mueve al perfil, que sí se sincroniza.
+      const users = await tx.table('users').toArray()
+      for (const u of users) {
+        const profile = await tx.table('profile').get(u.id)
+        if (profile) {
+          await tx.table('profile').update(u.id, {
+            onboardingComplete: u.onboardingComplete ?? 0,
+          })
+        }
+      }
+    })
   }
 }
 
@@ -142,6 +237,12 @@ export async function seedIfEmpty(): Promise<void> {
 export async function ensureProfile(userId: string): Promise<void> {
   const profile = await db.profile.get(userId)
   if (!profile) {
-    await db.profile.add({ id: userId, units: 'kg', restTimerDefault: 90 })
+    // updatedAt/dirty los sella el hook `creating` de syncHooks.ts
+    await db.profile.add({
+      id: userId,
+      units: 'kg',
+      restTimerDefault: 90,
+      onboardingComplete: 0,
+    } as LocalProfile)
   }
 }

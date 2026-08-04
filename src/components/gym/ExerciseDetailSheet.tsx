@@ -4,6 +4,7 @@ import { X, CheckCircle2, AlertTriangle, Camera, Trash2 } from 'lucide-react'
 import type { Exercise } from '@/types'
 import { getExerciseInfo } from '@/data/exerciseInfo'
 import { db } from '@/db/schema'
+import { softDelete } from '@/db/mutations'
 import { exercisePhotoFor } from '@/db/scoped'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { compressImage } from '@/lib/photos'
@@ -79,7 +80,9 @@ function ExercisePhotoSection({ exerciseId }: { exerciseId: string }) {
   )
 
   useEffect(() => {
-    if (!photo) {
+    // El blob es opcional desde v9: en un dispositivo nuevo la fila baja del
+    // servidor sin los bytes y se descargan aparte (cola de Storage).
+    if (!photo?.blob) {
       setUrl(null)
       return
     }
@@ -98,7 +101,10 @@ function ExercisePhotoSection({ exerciseId }: { exerciseId: string }) {
         userId,
         exerciseId,
         blob,
+        uploaded: 0,
         createdAt: nowIso(),
+        dirty: 1,
+        updatedAt: nowIso(),
       })
     } catch {
       alert('No se pudo procesar la imagen')
@@ -109,7 +115,7 @@ function ExercisePhotoSection({ exerciseId }: { exerciseId: string }) {
 
   const handleDelete = async () => {
     if (!userId) return
-    await db.exercisePhotos.delete(`${userId}_${exerciseId}`)
+    await softDelete('exercisePhotos', `${userId}_${exerciseId}`)
   }
 
   return (

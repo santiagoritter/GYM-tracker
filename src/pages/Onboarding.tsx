@@ -4,7 +4,7 @@ import { ChevronRight, Flame, Target, Trophy, User } from 'lucide-react'
 import { db } from '@/db/schema'
 import { useAuthStore } from '@/stores/authStore'
 import { ONBOARDING_MESSAGES, getRandomMessage } from '@/lib/motivational'
-import { cn } from '@/lib/utils'
+import { cn, nowIso } from '@/lib/utils'
 import type { FitnessGoal, ExperienceLevel } from '@/types'
 
 const GOALS: { key: FitnessGoal; label: string; icon: string }[] = [
@@ -51,12 +51,22 @@ export default function Onboarding() {
         ...(goal && { goal }),
         ...(level && { level }),
       }
+      // onboardingComplete vive en el perfil, no en `users`: la tabla local
+      // de usuarios desaparece al migrar a Supabase Auth, y el perfil es lo
+      // que se sincroniza a la nube.
       if (profile) {
-        await db.profile.update(userId, patch)
+        await db.profile.update(userId, { ...patch, onboardingComplete: 1 })
       } else {
-        await db.profile.add({ id: userId, units: 'kg', restTimerDefault: 90, ...patch })
+        await db.profile.add({
+          id: userId,
+          units: 'kg',
+          restTimerDefault: 90,
+          onboardingComplete: 1,
+          ...patch,
+          dirty: 1,
+          updatedAt: nowIso(),
+        })
       }
-      await db.users.update(userId, { onboardingComplete: 1 })
       navigate('/', { replace: true })
     } finally {
       setSaving(false)

@@ -11,6 +11,7 @@ import {
   YAxis,
 } from 'recharts'
 import { db } from '@/db/schema'
+import { softDelete } from '@/db/mutations'
 import { progressPhotosFor } from '@/db/scoped'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { compressImage } from '@/lib/photos'
@@ -85,6 +86,9 @@ export function PhotoGallery() {
         takenAt: nowIso(),
         weightKg: profile?.bodyWeightKg,
         blob,
+        uploaded: 0,
+        dirty: 1,
+        updatedAt: nowIso(),
       })
     } catch {
       alert('No se pudo procesar la imagen')
@@ -207,9 +211,18 @@ export function PhotoGallery() {
   )
 }
 
-function usePhotoUrl(blob: Blob): string | null {
+/**
+ * El blob es opcional desde v9: en un dispositivo nuevo la metadata baja del
+ * servidor sin los bytes, que se descargan aparte por la cola de Storage.
+ * Mientras tanto devuelve null y el componente muestra un placeholder.
+ */
+function usePhotoUrl(blob: Blob | undefined): string | null {
   const [url, setUrl] = useState<string | null>(null)
   useEffect(() => {
+    if (!blob) {
+      setUrl(null)
+      return
+    }
     const objectUrl = URL.createObjectURL(blob)
     setUrl(objectUrl)
     return () => URL.revokeObjectURL(objectUrl)
@@ -330,7 +343,7 @@ function PhotoViewer({ photo, onClose }: { photo: ProgressPhoto; onClose: () => 
           <button
             onClick={async () => {
               if (confirm('¿Eliminar esta foto?')) {
-                await db.progressPhotos.delete(photo.id)
+                await softDelete('progressPhotos', photo.id)
                 onClose()
               }
             }}

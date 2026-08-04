@@ -12,6 +12,7 @@ import {
   YAxis,
 } from 'recharts'
 import { db } from '@/db/schema'
+import { softDelete } from '@/db/mutations'
 import { bodyMeasurementsFor } from '@/db/scoped'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import type { BodyMeasurement } from '@/types'
@@ -70,7 +71,14 @@ export default function Measurements() {
     }
     setSaving(true)
     try {
-      const entry: BodyMeasurement = { id: uid(), userId, takenAt: nowIso(), ...numbers }
+      const entry: BodyMeasurement = {
+        id: uid(),
+        userId,
+        takenAt: nowIso(),
+        ...numbers,
+        dirty: 1,
+        updatedAt: nowIso(),
+      }
       await db.bodyMeasurements.add(entry)
       // Si registraste peso, actualizá el peso corporal del perfil también
       if (numbers.weightKg) await db.profile.update(userId, { bodyWeightKg: numbers.weightKg })
@@ -82,7 +90,7 @@ export default function Measurements() {
   }
 
   const handleDelete = async (id: string) => {
-    await db.bodyMeasurements.delete(id)
+    await softDelete('bodyMeasurements', id)
     toast.info('Medida eliminada')
   }
 

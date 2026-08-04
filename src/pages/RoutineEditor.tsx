@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ArrowDown, ArrowLeft, ArrowUp, Link2, Moon, Plus, Trash2, X } from 'lucide-react'
 import { db } from '@/db/schema'
+import { softDelete } from '@/db/mutations'
 import {
   ROUTINE_COLORS,
   addDay,
@@ -40,7 +41,7 @@ export default function RoutineEditor() {
   if (!routineId || !routine) return null
 
   const handleSelectExercise = (exercise: Exercise) => {
-    if (pickerDayId) addExerciseToDay(pickerDayId, exercise.id)
+    if (pickerDayId && routine) addExerciseToDay(pickerDayId, routine.userId, exercise.id)
     setPickerDayId(null)
   }
 
@@ -139,7 +140,7 @@ export default function RoutineEditor() {
         })}
 
         <button
-          onClick={() => addDay(routineId, `Día ${(days?.length ?? 0) + 1}`)}
+          onClick={() => addDay(routineId, routine.userId, `Día ${(days?.length ?? 0) + 1}`)}
           className="w-full rounded-2xl border border-line-2 py-4 font-semibold text-ink-2 active:bg-surface"
         >
           + Agregar día
@@ -218,7 +219,7 @@ function RoutineExerciseRow({
             <ArrowDown size={16} />
           </button>
           <button
-            onClick={() => db.routineExercises.delete(entry.id)}
+            onClick={() => softDelete('routineExercises', entry.id)}
             className="rounded p-1.5 text-ink-3"
           >
             <X size={16} />

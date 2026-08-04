@@ -21,8 +21,8 @@ export default function Login() {
   const finishLogin = async (userId: string, role: 'admin' | 'user', name: string) => {
     setSession(userId, role, name)
     await ensureProfile(userId)
-    const u = await db.users.get(userId)
-    navigate(u?.onboardingComplete === 0 ? '/onboarding' : '/', { replace: true })
+    const profile = await db.profile.get(userId)
+    navigate(profile?.onboardingComplete === 1 ? '/' : '/onboarding', { replace: true })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { db } from '@/db/schema'
+import { softDelete, softDeleteMany } from '@/db/mutations'
 import type { PersonalRecord, Workout, WorkoutSet } from '@/types'
 import { calc1RM, nowIso, uid } from '@/lib/utils'
 
@@ -49,7 +50,7 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
       userId,
       name,
       startedAt: nowIso(),
-      synced: 0,
+      dirty: 1,
       updatedAt: nowIso(),
     }
     await db.workouts.add(workout)
@@ -67,32 +68,36 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
   },
 
   addSet: async (workoutId, exerciseId, template) => {
-    const existing = await db.workoutSets
-      .where('[workoutId+exerciseId]')
-      .equals([workoutId, exerciseId])
-      .toArray()
+    const [workout, existing] = await Promise.all([
+      db.workouts.get(workoutId),
+      db.workoutSets.where('[workoutId+exerciseId]').equals([workoutId, exerciseId]).toArray(),
+    ])
+    if (!workout) throw new Error('Entreno no encontrado')
     const last = existing.sort((a, b) => a.setNumber - b.setNumber).at(-1)
     const newSet: WorkoutSet = {
       id: uid(),
       workoutId,
+      // Se toma del entreno padre, no de la sesión: así una serie nunca
+      // queda huérfana de dueño aunque el store de auth todavía no cargó.
+      userId: workout.userId,
       exerciseId,
       setNumber: (last?.setNumber ?? 0) + 1,
       reps: template?.reps ?? last?.reps ?? 10,
       weightKg: template?.weightKg ?? last?.weightKg ?? 0,
       isWarmup: template?.isWarmup ?? 0,
       completed: 0,
-      synced: 0,
+      dirty: 1,
       updatedAt: nowIso(),
     }
     await db.workoutSets.add(newSet)
   },
 
   updateSet: async (setId, patch) => {
-    await db.workoutSets.update(setId, { ...patch, updatedAt: nowIso(), synced: 0 })
+    await db.workoutSets.update(setId, patch)
   },
 
   removeSet: async (setId) => {
-    await db.workoutSets.delete(setId)
+    await softDelete('workoutSets', setId)
   },
 
   finishWorkout: async (userId, workoutId, notes) => {
@@ -104,8 +109,6 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
       finishedAt: nowIso(),
       notes,
       totalVolumeKg,
-      updatedAt: nowIso(),
-      synced: 0,
     })
 
     // Detección de PRs: mejor 1RM estimado por ejercicio
@@ -136,6 +139,8 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
           oneRmKg: oneRm,
           achievedAt: nowIso(),
           workoutId,
+          dirty: 1,
+          updatedAt: nowIso(),
         }
         await db.personalRecords.put(pr)
         newPRs.push(pr)
@@ -146,7 +151,8 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
   },
 
   discardWorkout: async (workoutId) => {
-    await db.workoutSets.where('workoutId').equals(workoutId).delete()
-    await db.workouts.delete(workoutId)
+    const sets = await db.workoutSets.where('workoutId').equals(workoutId).toArray()
+    await softDeleteMany('workoutSets', sets.map((s) => s.id))
+    await softDelete('workouts', workoutId)
   },
 }))

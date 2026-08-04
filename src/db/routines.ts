@@ -1,4 +1,5 @@
 import { db } from '@/db/schema'
+import { softDelete, softDeleteMany } from '@/db/mutations'
 import { workoutsFor } from '@/db/scoped'
 import type { Routine, RoutineDay, RoutineExercise, Workout, WorkoutSet } from '@/types'
 import { nowIso, uid } from '@/lib/utils'
@@ -13,17 +14,17 @@ export async function createRoutine(userId: string, name: string): Promise<strin
     color: ROUTINE_COLORS[0],
     isActive: 0,
     isArchived: 0,
-    synced: 0,
+    dirty: 1,
     updatedAt: nowIso(),
   }
   await db.routines.add(routine)
   // Arranca con un día para que el editor no quede vacío
-  await addDay(routine.id, 'Día 1')
+  await addDay(routine.id, userId, 'Día 1')
   return routine.id
 }
 
 export async function updateRoutine(id: string, patch: Partial<Routine>): Promise<void> {
-  await db.routines.update(id, { ...patch, updatedAt: nowIso(), synced: 0 })
+  await db.routines.update(id, patch)
 }
 
 /** Solo una rutina activa a la vez (por usuario). */
@@ -34,48 +35,62 @@ export async function setActiveRoutine(userId: string, id: string): Promise<void
   })
 }
 
+/**
+ * Borra la rutina completa. Cada fila deja lápida (incluidas las hijas):
+ * en el servidor el ON DELETE CASCADE ya se lleva puestas las hijas, así que
+ * pushear sus lápidas es un no-op inofensivo — pero mantiene la regla
+ * uniforme "toda fila borrada deja lápida", sin casos especiales.
+ */
 export async function deleteRoutine(id: string): Promise<void> {
   const days = await db.routineDays.where('routineId').equals(id).toArray()
-  await db.transaction('rw', [db.routines, db.routineDays, db.routineExercises], async () => {
-    for (const day of days) {
-      await db.routineExercises.where('dayId').equals(day.id).delete()
-    }
-    await db.routineDays.where('routineId').equals(id).delete()
-    await db.routines.delete(id)
-  })
+  for (const day of days) {
+    const entries = await db.routineExercises.where('dayId').equals(day.id).toArray()
+    await softDeleteMany('routineExercises', entries.map((e) => e.id))
+  }
+  await softDeleteMany('routineDays', days.map((d) => d.id))
+  await softDelete('routines', id)
 }
 
-export async function addDay(routineId: string, name: string): Promise<string> {
+export async function addDay(routineId: string, userId: string, name: string): Promise<string> {
   const existing = await db.routineDays.where('routineId').equals(routineId).toArray()
   const day: RoutineDay = {
     id: uid(),
     routineId,
+    userId,
     name,
     dayOrder: existing.length + 1,
     isRest: 0,
+    dirty: 1,
+    updatedAt: nowIso(),
   }
   await db.routineDays.add(day)
   return day.id
 }
 
 export async function deleteDay(dayId: string): Promise<void> {
-  await db.transaction('rw', [db.routineDays, db.routineExercises], async () => {
-    await db.routineExercises.where('dayId').equals(dayId).delete()
-    await db.routineDays.delete(dayId)
-  })
+  const entries = await db.routineExercises.where('dayId').equals(dayId).toArray()
+  await softDeleteMany('routineExercises', entries.map((e) => e.id))
+  await softDelete('routineDays', dayId)
 }
 
-export async function addExerciseToDay(dayId: string, exerciseId: string): Promise<void> {
+export async function addExerciseToDay(
+  dayId: string,
+  userId: string,
+  exerciseId: string
+): Promise<void> {
   const existing = await db.routineExercises.where('dayId').equals(dayId).toArray()
   const entry: RoutineExercise = {
     id: uid(),
     dayId,
+    userId,
     exerciseId,
     exerciseOrder: existing.length + 1,
     setsTarget: 3,
     repsMin: 8,
     repsMax: 12,
     restSeconds: 90,
+    dirty: 1,
+    updatedAt: nowIso(),
   }
   await db.routineExercises.add(entry)
 }
@@ -149,7 +164,7 @@ export async function startWorkoutFromDay(userId: string, dayId: string): Promis
     userId,
     name: day.name,
     startedAt: nowIso(),
-    synced: 0,
+    dirty: 1,
     updatedAt: nowIso(),
   }
 
@@ -186,13 +201,14 @@ export async function startWorkoutFromDay(userId: string, dayId: string): Promis
       sets.push({
         id: uid(),
         workoutId: workout.id,
+        userId,
         exerciseId: entry.exerciseId,
         setNumber: n,
         reps: entry.repsMin,
         weightKg: suggestedKg,
         isWarmup: 0,
         completed: 0,
-        synced: 0,
+        dirty: 1,
         updatedAt: nowIso(),
         supersetGroup: entry.supersetGroup,
       })
