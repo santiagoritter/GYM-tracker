@@ -159,11 +159,11 @@ export function ExercisePicker({ onSelect, onClose, excludeIds = [] }: Props) {
         <div className="flex-1 overflow-y-auto px-4 pb-6">
           {!hasActiveFilter && recentExercises.length > 0 && (
             <div className="mb-2">
-              <p className="pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
+              <p className="pb-1 pt-2 text-[13px] font-medium text-ink-3">
                 Recientes
               </p>
               {recentExercises.map(renderRow)}
-              <p className="pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
+              <p className="pb-1 pt-4 text-[13px] font-medium text-ink-3">
                 Todos
               </p>
             </div>

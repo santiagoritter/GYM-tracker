@@ -15,8 +15,11 @@ import {
 } from '@/db/routines'
 import { ExercisePicker } from '@/components/gym/ExercisePicker'
 import { MuscleChip } from '@/components/gym/MuscleChip'
-import type { Exercise, RoutineExercise } from '@/types'
+import { Card, Row } from '@/components/ui/Card'
+import type { Exercise, RoutineDay, RoutineExercise } from '@/types'
 import { cn } from '@/lib/utils'
+
+const REST_OPTIONS = [60, 90, 120, 180]
 
 export default function RoutineEditor() {
   const { routineId } = useParams<{ routineId: string }>()
@@ -48,28 +51,37 @@ export default function RoutineEditor() {
   return (
     <div className="mx-auto min-h-screen max-w-lg pb-16">
       <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-line bg-bg/95 px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] backdrop-blur">
-        <button onClick={() => navigate('/rutinas')} className="p-1 text-ink-2">
+        <button
+          onClick={() => navigate('/rutinas')}
+          aria-label="Volver"
+          className="flex h-11 w-11 shrink-0 items-center justify-center text-ink-2"
+        >
           <ArrowLeft size={22} />
         </button>
         <input
           value={routine.name}
           onChange={(e) => updateRoutine(routineId, { name: e.target.value })}
-          className="flex-1 bg-transparent text-lg font-semibold outline-none"
+          className="h-11 flex-1 bg-transparent text-lg font-semibold outline-none"
         />
       </header>
 
-      <div className="space-y-4 px-4 py-4">
-        <div className="flex gap-2">
+      <div className="space-y-5 px-4 py-4">
+        <div className="flex gap-2 px-1">
           {ROUTINE_COLORS.map((color) => (
             <button
               key={color}
               onClick={() => updateRoutine(routineId, { color })}
-              className={cn(
-                'h-8 w-8 rounded-full transition-transform',
-                routine.color === color && 'scale-110 ring-2 ring-ink ring-offset-2 ring-offset-bg'
-              )}
-              style={{ backgroundColor: color }}
-            />
+              aria-label={`Color ${color}`}
+              className="flex h-11 w-11 shrink-0 items-center justify-center"
+            >
+              <span
+                className={cn(
+                  'h-6 w-6 rounded-full transition-transform',
+                  routine.color === color && 'scale-110 ring-2 ring-ink ring-offset-2 ring-offset-bg'
+                )}
+                style={{ backgroundColor: color }}
+              />
+            </button>
           ))}
         </div>
 
@@ -78,72 +90,47 @@ export default function RoutineEditor() {
             .filter((e) => e.dayId === day.id)
             .sort((a, b) => a.exerciseOrder - b.exerciseOrder)
           return (
-            <div key={day.id} className="rounded-2xl bg-surface p-4">
-              <div className="flex items-center justify-between gap-2">
-                <input
-                  value={day.name}
-                  onChange={(e) => db.routineDays.update(day.id, { name: e.target.value })}
-                  className="flex-1 bg-transparent font-semibold outline-none"
-                />
+            <section key={day.id}>
+              <Card>
+                <DayHeaderRow day={day} />
+                {day.isRest === 1 ? (
+                  <Row>
+                    <p className="text-[14px] text-ink-3">Día de descanso</p>
+                  </Row>
+                ) : (
+                  entries.map((entry, index) => (
+                    <RoutineExerciseRow
+                      key={entry.id}
+                      entry={entry}
+                      exercise={exerciseMap.get(entry.exerciseId)}
+                      isFirst={index === 0}
+                      isLast={index === entries.length - 1}
+                      linkedWithPrev={
+                        index > 0 &&
+                        entry.supersetGroup !== undefined &&
+                        entries[index - 1].supersetGroup === entry.supersetGroup
+                      }
+                    />
+                  ))
+                )}
+              </Card>
+              {day.isRest === 0 && (
                 <button
-                  onClick={() =>
-                    db.routineDays.update(day.id, { isRest: day.isRest === 1 ? 0 : 1 })
-                  }
-                  className={cn(
-                    'rounded-lg p-2',
-                    day.isRest === 1 ? 'text-info' : 'text-ink-3'
-                  )}
-                  title="Marcar como día de descanso"
+                  onClick={() => setPickerDayId(day.id)}
+                  className="mt-2 flex h-11 w-full items-center justify-center gap-1.5 rounded-sm border border-dashed border-line-2 text-sm font-medium text-ink-2 active:bg-surface"
                 >
-                  <Moon size={18} />
+                  <Plus size={16} /> Agregar ejercicio
                 </button>
-                <button
-                  onClick={() => {
-                    if (confirm(`¿Eliminar "${day.name}"?`)) deleteDay(day.id)
-                  }}
-                  className="rounded-lg p-2 text-ink-3"
-                >
-                  <Trash2 size={18} />
-                </button>
-              </div>
-
-              {day.isRest === 1 ? (
-                <p className="mt-2 text-sm text-ink-3">Día de descanso</p>
-              ) : (
-                <>
-                  <div className="mt-3 space-y-2">
-                    {entries.map((entry, index) => (
-                      <RoutineExerciseRow
-                        key={entry.id}
-                        entry={entry}
-                        exercise={exerciseMap.get(entry.exerciseId)}
-                        isFirst={index === 0}
-                        isLast={index === entries.length - 1}
-                        linkedWithPrev={
-                          index > 0 &&
-                          entry.supersetGroup !== undefined &&
-                          entries[index - 1].supersetGroup === entry.supersetGroup
-                        }
-                      />
-                    ))}
-                  </div>
-                  <button
-                    onClick={() => setPickerDayId(day.id)}
-                    className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-line-2 py-2.5 text-sm font-medium text-ink-2 active:bg-surface-2"
-                  >
-                    <Plus size={16} /> Agregar ejercicio
-                  </button>
-                </>
               )}
-            </div>
+            </section>
           )
         })}
 
         <button
           onClick={() => addDay(routineId, routine.userId, `Día ${(days?.length ?? 0) + 1}`)}
-          className="w-full rounded-2xl border border-line-2 py-4 font-semibold text-ink-2 active:bg-surface"
+          className="h-14 w-full rounded-md border border-line-2 font-semibold text-ink-2 active:bg-surface"
         >
-          + Agregar día
+          Agregar día
         </button>
       </div>
 
@@ -154,6 +141,39 @@ export default function RoutineEditor() {
         />
       )}
     </div>
+  )
+}
+
+/** Nombre del día + toggle de descanso + borrar. Primera fila de la Card. */
+function DayHeaderRow({ day }: { day: RoutineDay }) {
+  return (
+    <Row>
+      <input
+        value={day.name}
+        onChange={(e) => db.routineDays.update(day.id, { name: e.target.value })}
+        className="h-11 min-w-0 flex-1 bg-transparent font-semibold outline-none"
+      />
+      <button
+        onClick={() => db.routineDays.update(day.id, { isRest: day.isRest === 1 ? 0 : 1 })}
+        title="Marcar como día de descanso"
+        aria-label="Marcar como día de descanso"
+        className={cn(
+          'flex h-11 w-11 shrink-0 items-center justify-center',
+          day.isRest === 1 ? 'text-info' : 'text-ink-3'
+        )}
+      >
+        <Moon size={18} />
+      </button>
+      <button
+        onClick={() => {
+          if (confirm(`¿Eliminar "${day.name}"?`)) deleteDay(day.id)
+        }}
+        aria-label="Eliminar día"
+        className="flex h-11 w-11 shrink-0 items-center justify-center text-ink-3"
+      >
+        <Trash2 size={18} />
+      </button>
+    </Row>
   )
 }
 
@@ -170,102 +190,143 @@ function RoutineExerciseRow({
   isLast: boolean
   linkedWithPrev: boolean
 }) {
+  const [notesOpen, setNotesOpen] = useState(Boolean(entry.notes))
+
   return (
-    <div
-      className={cn(
-        'rounded-xl bg-surface-2 p-3',
-        entry.supersetGroup !== undefined && 'border-l-2 border-accent',
-        linkedWithPrev && '-mt-1 rounded-t-none'
-      )}
-    >
-      <div className="flex items-start justify-between gap-2">
+    <Row className="flex-col items-stretch gap-0">
+      <div className="flex w-full items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <p className="truncate font-medium">{exercise?.name ?? 'Ejercicio'}</p>
             {entry.supersetGroup !== undefined && (
-              <span className="rounded bg-accent/15 px-1.5 py-0.5 text-[10px] font-bold text-accent">
+              <span className="shrink-0 rounded-xs bg-accent/15 px-1.5 py-0.5 text-[10px] font-bold text-accent">
                 SS
               </span>
             )}
           </div>
-          <div className="mt-1 flex gap-1">
+          <div className="mt-1 flex flex-wrap gap-1">
             {exercise?.musclePrimary.map((m) => <MuscleChip key={m} muscle={m} />)}
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-0.5">
+        <div className="flex shrink-0 items-center">
           <button
             onClick={() => toggleSupersetWithPrevious(entry.id)}
             disabled={isFirst}
+            title="Superserie con el ejercicio anterior"
+            aria-label="Superserie con el ejercicio anterior"
             className={cn(
-              'rounded p-1.5 disabled:opacity-30',
+              'flex h-11 w-9 items-center justify-center disabled:opacity-30',
               linkedWithPrev ? 'text-accent' : 'text-ink-3'
             )}
-            title="Superserie con el ejercicio anterior"
           >
             <Link2 size={16} />
           </button>
           <button
             onClick={() => moveExercise(entry.id, -1)}
             disabled={isFirst}
-            className="rounded p-1.5 text-ink-3 disabled:opacity-30"
+            aria-label="Mover arriba"
+            className="flex h-11 w-9 items-center justify-center text-ink-3 disabled:opacity-30"
           >
             <ArrowUp size={16} />
           </button>
           <button
             onClick={() => moveExercise(entry.id, 1)}
             disabled={isLast}
-            className="rounded p-1.5 text-ink-3 disabled:opacity-30"
+            aria-label="Mover abajo"
+            className="flex h-11 w-9 items-center justify-center text-ink-3 disabled:opacity-30"
           >
             <ArrowDown size={16} />
           </button>
           <button
             onClick={() => softDelete('routineExercises', entry.id)}
-            className="rounded p-1.5 text-ink-3"
+            aria-label="Quitar ejercicio"
+            className="flex h-11 w-9 items-center justify-center text-ink-3"
           >
             <X size={16} />
           </button>
         </div>
       </div>
 
-      <div className="mt-2 flex items-center gap-3 text-sm">
-        <label className="flex items-center gap-1.5 text-ink-2">
+      <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <label className="flex items-center gap-2 text-[14px] text-ink-2">
           Series
           <input
             type="number"
+            inputMode="numeric"
             value={entry.setsTarget}
+            onFocus={(e) => e.target.select()}
             onChange={(e) =>
               db.routineExercises.update(entry.id, {
                 setsTarget: Math.max(1, Number(e.target.value) || 1),
               })
             }
-            className="w-12 rounded bg-surface-3 py-1 text-center font-mono font-bold outline-none"
+            className="h-9 w-12 rounded-xs bg-surface-2 text-center font-mono font-bold tabular-nums outline-none focus:ring-1 focus:ring-accent"
           />
         </label>
-        <label className="flex items-center gap-1.5 text-ink-2">
+        <label className="flex items-center gap-2 text-[14px] text-ink-2">
           Reps
           <input
             type="number"
+            inputMode="numeric"
             value={entry.repsMin}
+            onFocus={(e) => e.target.select()}
             onChange={(e) =>
               db.routineExercises.update(entry.id, {
                 repsMin: Math.max(1, Number(e.target.value) || 1),
               })
             }
-            className="w-12 rounded bg-surface-3 py-1 text-center font-mono font-bold outline-none"
+            className="h-9 w-12 rounded-xs bg-surface-2 text-center font-mono font-bold tabular-nums outline-none focus:ring-1 focus:ring-accent"
           />
-          –
+          <span className="text-ink-3">–</span>
           <input
             type="number"
+            inputMode="numeric"
             value={entry.repsMax}
+            onFocus={(e) => e.target.select()}
             onChange={(e) =>
               db.routineExercises.update(entry.id, {
                 repsMax: Math.max(entry.repsMin, Number(e.target.value) || entry.repsMin),
               })
             }
-            className="w-12 rounded bg-surface-3 py-1 text-center font-mono font-bold outline-none"
+            className="h-9 w-12 rounded-xs bg-surface-2 text-center font-mono font-bold tabular-nums outline-none focus:ring-1 focus:ring-accent"
           />
         </label>
       </div>
-    </div>
+
+      {/* Descanso y notas: antes escritos por el código (QR, defaults) pero
+          invisibles para el usuario — ningún editor los mostraba. */}
+      <div className="mt-2 flex items-center gap-1.5">
+        {REST_OPTIONS.map((s) => (
+          <button
+            key={s}
+            onClick={() => db.routineExercises.update(entry.id, { restSeconds: s })}
+            className={cn(
+              'flex h-8 items-center rounded-xs px-2.5 font-mono text-[12px] tabular-nums',
+              entry.restSeconds === s ? 'bg-accent text-bg' : 'bg-surface-2 text-ink-3'
+            )}
+          >
+            {s}s
+          </button>
+        ))}
+        {!notesOpen && (
+          <button
+            onClick={() => setNotesOpen(true)}
+            className="ml-auto h-8 px-2 text-[12px] text-ink-3 active:text-ink-2"
+          >
+            {entry.notes ? 'Ver nota' : 'Agregar nota'}
+          </button>
+        )}
+      </div>
+      {notesOpen && (
+        <input
+          value={entry.notes ?? ''}
+          onChange={(e) =>
+            db.routineExercises.update(entry.id, { notes: e.target.value || undefined })
+          }
+          placeholder="Nota (ej: pin 7, banco inclinado a 30°)"
+          className="mt-2 h-9 w-full rounded-xs bg-surface-2 px-3 text-[13px] outline-none focus:ring-1 focus:ring-accent"
+        />
+      )}
+    </Row>
   )
 }
