@@ -11,6 +11,7 @@ import { RestTimer } from '@/components/gym/RestTimer'
 import { MuscleChip } from '@/components/gym/MuscleChip'
 import Confetti from '@/components/ui/Confetti'
 import NumberStepper from '@/components/ui/NumberStepper'
+import { Card } from '@/components/ui/Card'
 import AchievementIcon from '@/components/gym/AchievementIcon'
 import type { Exercise, PersonalRecord, WorkoutSet } from '@/types'
 import { cn, displayToKg, formatDuration, formatWeight } from '@/lib/utils'
@@ -231,38 +232,36 @@ export default function Workout() {
 
       <div className="space-y-4 px-4 py-4">
         {grouped.map(({ exercise, sets: exSets }) => (
-          <div key={exercise?.id ?? 'unknown'} className="rounded-2xl bg-surface p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <div>
+          <Card key={exercise?.id ?? 'unknown'} as="section" className="px-3 pb-3">
+            <div className="flex items-start justify-between gap-3 border-b border-line-2 px-1 py-3.5">
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-semibold">{exercise?.name ?? 'Ejercicio'}</p>
+                  <h2 className="truncate font-semibold">{exercise?.name ?? 'Ejercicio'}</h2>
                   {exSets[0]?.supersetGroup !== undefined && (
-                    <span className="rounded bg-accent/15 px-1.5 py-0.5 text-[10px] font-bold text-accent">
+                    <span className="shrink-0 rounded-xs bg-accent/15 px-1.5 py-0.5 text-[10px] font-bold text-accent">
                       SS
                     </span>
                   )}
                 </div>
-                <div className="mt-1 flex gap-1">
+                <div className="mt-1.5 flex flex-wrap gap-1">
                   {exercise?.musclePrimary.map((m) => <MuscleChip key={m} muscle={m} />)}
                 </div>
               </div>
               <span
                 className={cn(
-                  'shrink-0 rounded-full px-2.5 py-1 font-mono text-xs font-bold',
-                  exSets.every((s) => s.completed === 1)
-                    ? 'bg-success/15 text-success'
-                    : 'bg-surface-2 text-ink-2'
+                  'shrink-0 font-mono text-[15px] font-bold tabular-nums',
+                  exSets.every((s) => s.completed === 1) ? 'text-success' : 'text-ink-3'
                 )}
               >
                 {exSets.filter((s) => s.completed === 1).length}/{exSets.length}
               </span>
             </div>
 
-            <div className="mb-1.5 grid grid-cols-[2rem_1fr_1fr_2.75rem] gap-2 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
+            <div className="grid grid-cols-[2rem_1fr_1fr_2.75rem] gap-2 px-1 pb-1 pt-2.5 text-[12px] font-medium text-ink-3">
               <span>#</span>
               <span className="text-center">Reps</span>
               <span className="text-center">
-                {exercise && isBodyweight(exercise.equipment) ? 'Lastre' : units.toUpperCase()}
+                {exercise && isBodyweight(exercise.equipment) ? 'Lastre' : units}
               </span>
               <span />
             </div>
@@ -287,16 +286,16 @@ export default function Workout() {
             <div className="mt-2 flex gap-2">
               <button
                 onClick={() => store.addSet(workoutId, exercise!.id)}
-                className="flex-1 rounded-lg border border-dashed border-line-2 py-2.5 text-sm font-medium text-ink-2 active:bg-surface-2"
+                className="h-11 flex-1 rounded-sm bg-surface-2 text-sm font-medium text-ink-2 transition-colors active:bg-surface-3"
               >
-                + Agregar serie
+                Agregar serie
               </button>
               {/* Igualar evita el peor caso del stepper: cambiar el peso en
-                  4 series es hoy repetir el mismo viaje 4 veces. */}
+                  4 series es repetir el mismo viaje 4 veces. */}
               {exSets.length > 1 && (
                 <button
                   onClick={() => applyFirstSetToRest(exSets)}
-                  className="flex items-center gap-1.5 rounded-lg border border-dashed border-line-2 px-3 py-2.5 text-sm font-medium text-ink-2 active:bg-surface-2"
+                  className="flex h-11 items-center gap-1.5 rounded-sm bg-surface-2 px-3.5 text-sm font-medium text-ink-2 transition-colors active:bg-surface-3"
                   title="Copiar reps y peso de la 1ª serie a las que faltan"
                 >
                   <CopyCheck size={15} /> Igualar
@@ -306,26 +305,26 @@ export default function Workout() {
                 <button
                   onClick={() => store.removeSet(exSets[exSets.length - 1].id)}
                   aria-label="Quitar la última serie"
-                  className="rounded-lg border border-dashed border-line-2 px-4 py-2.5 text-sm font-medium text-danger/70 active:bg-surface-2"
+                  className="h-11 rounded-sm bg-surface-2 px-4 text-sm font-medium text-danger/80 transition-colors active:bg-surface-3"
                 >
                   −
                 </button>
               )}
             </div>
-          </div>
+          </Card>
         ))}
 
         <button
           onClick={() => setPickerOpen(true)}
-          className="w-full rounded-2xl border border-line-2 py-4 font-semibold text-ink-2 active:bg-surface"
+          className="h-14 w-full rounded-md border border-line-2 py-4 font-semibold text-ink-2 transition-colors active:bg-surface"
         >
-          + Agregar ejercicio
+          Agregar ejercicio
         </button>
 
         {grouped.length > 0 && (
           <button
             onClick={handleFinish}
-            className="w-full rounded-2xl bg-accent py-4 text-lg font-bold text-bg active:bg-accent-dim"
+            className="h-14 w-full rounded-md bg-accent text-[17px] font-bold text-bg transition-colors active:bg-accent-dim"
           >
             Finalizar entreno
           </button>
@@ -381,10 +380,15 @@ function SetRow({
   return (
     <div
       className={cn(
-        'mb-1.5 rounded-xl px-1 py-1 transition-colors',
-        set.completed === 1 && 'opacity-60',
-        isActive && 'border-l-2 border-accent bg-surface-2',
-        expanded && !isActive && 'bg-surface-2'
+        'px-1 transition-colors',
+        // Separador entre series en vez de una tarjeta por serie: la fila ya
+        // vive dentro de la tarjeta del ejercicio.
+        '[&:not(:first-of-type)]:border-t [&:not(:first-of-type)]:border-line-2',
+        set.completed === 1 && 'opacity-55',
+        // La serie activa NO lleva borde de acento a la izquierda: esa barra
+        // de color al costado es el tell más reconocible de UI generada.
+        // Alcanza con teñir el fondo y marcar el número.
+        (isActive || expanded) && 'bg-surface-2/60'
       )}
     >
       <div className="grid grid-cols-[2rem_1fr_1fr_2.75rem] items-center gap-2">
@@ -392,8 +396,12 @@ function SetRow({
         <button
           onClick={() => onUpdate({ isWarmup: set.isWarmup === 1 ? 0 : 1 })}
           className={cn(
-            'flex h-11 w-8 items-center justify-center rounded-md text-sm font-bold',
-            set.isWarmup === 1 ? 'bg-warning/20 text-warning' : 'text-ink-3'
+            'flex h-11 w-8 items-center justify-center rounded-xs text-sm font-bold tabular-nums',
+            set.isWarmup === 1
+              ? 'bg-warning/20 text-warning'
+              : isActive
+              ? 'text-accent'
+              : 'text-ink-3'
           )}
           title={set.isWarmup === 1 ? 'Serie de calentamiento' : 'Serie de trabajo'}
         >
@@ -406,10 +414,11 @@ function SetRow({
           aria-expanded={expanded}
           className="col-span-2 grid grid-cols-2 gap-2"
         >
-          <span className="rounded-lg py-2 text-center font-mono text-base font-bold">
+          {/* tabular-nums: sin esto los números bailan de ancho al cambiar */}
+          <span className="py-2.5 text-center font-mono text-base font-bold tabular-nums">
             {set.reps}
           </span>
-          <span className="rounded-lg py-2 text-center font-mono text-base font-bold">
+          <span className="py-2.5 text-center font-mono text-base font-bold tabular-nums">
             {displayWeight}
           </span>
         </button>
