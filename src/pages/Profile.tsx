@@ -1,8 +1,9 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useNavigate } from 'react-router-dom'
-import { Bell, LogOut, Ruler, Shield } from 'lucide-react'
+import { LogOut, Ruler, Settings, Shield } from 'lucide-react'
 import { db } from '@/db/schema'
 import { useAuthStore } from '@/stores/authStore'
+import { Card, Row } from '@/components/ui/Card'
 import type { LocalProfile } from '@/types'
 import { cn } from '@/lib/utils'
 import { getDailyMessage } from '@/lib/motivational'
@@ -48,26 +49,24 @@ export default function Profile() {
       <h1 className="text-2xl font-bold">Perfil</h1>
 
       {/* Cita motivacional */}
-      <blockquote className="rounded-xl bg-surface/60 px-4 py-3 text-sm italic text-ink-2">
+      <blockquote className="px-1 text-[13px] italic leading-relaxed text-ink-3">
         "{dailyMsg.text}"
-        {dailyMsg.author && (
-          <footer className="mt-1 text-xs not-italic text-ink-3">— {dailyMsg.author}</footer>
-        )}
+        {dailyMsg.author && <footer className="mt-0.5 not-italic">— {dailyMsg.author}</footer>}
       </blockquote>
 
-      {/* Datos del usuario */}
-      <section className="rounded-2xl bg-surface p-5 space-y-1">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent text-sm font-bold text-bg">
+      {/* Identidad */}
+      <Card className="p-5">
+        <div className="mb-3 flex items-center gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-bold text-bg">
             {(name ?? 'U').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()}
           </div>
-          <div>
-            <p className="font-semibold">{name}</p>
-            <p className="text-sm text-ink-3">{user?.email}</p>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-semibold">{name}</p>
+            <p className="truncate text-sm text-ink-3">{user?.email}</p>
           </div>
           {role === 'admin' && (
-            <span className="ml-auto rounded bg-accent/15 px-2 py-1 text-xs font-bold text-accent">
-              ADMIN
+            <span className="shrink-0 rounded-xs bg-accent/15 px-2 py-1 text-xs font-bold text-accent">
+              Admin
             </span>
           )}
         </div>
@@ -83,168 +82,91 @@ export default function Profile() {
             {LEVEL_LABELS[profile.level] ?? profile.level}
           </p>
         )}
+      </Card>
+
+      {/* Datos corporales: alimentan el recomendador de cargas y los
+          niveles de fuerza. Lo que es comportamiento de la app (unidades,
+          descanso, tema...) vive en Ajustes. */}
+      <section>
+        <Card>
+          <Row className="flex-col items-stretch gap-2">
+            <label className="text-[13px] font-medium text-ink-2">Peso corporal (kg)</label>
+            <input
+              type="number"
+              inputMode="decimal"
+              value={profile.bodyWeightKg ?? ''}
+              onChange={(e) => update({ bodyWeightKg: Number(e.target.value) || undefined })}
+              placeholder="Ej: 75"
+              className="h-11 w-full rounded-xs bg-surface-2 px-3 font-mono tabular-nums outline-none focus:ring-1 focus:ring-accent"
+            />
+          </Row>
+          <Row className="flex-col items-stretch gap-2">
+            <label className="text-[13px] font-medium text-ink-2">Sexo</label>
+            <div className="flex gap-2">
+              {(
+                [
+                  ['male', 'Masculino'],
+                  ['female', 'Femenino'],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  onClick={() => update({ sex: value })}
+                  className={cn(
+                    'h-11 flex-1 rounded-xs border text-sm font-semibold',
+                    profile.sex === value
+                      ? 'border-accent bg-accent text-bg'
+                      : 'border-line-2 text-ink-2'
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </Row>
+          <Row className="flex-col items-stretch gap-2">
+            <label className="text-[13px] font-medium text-ink-2">Fecha de nacimiento</label>
+            <input
+              type="date"
+              value={profile.dob ?? ''}
+              onChange={(e) => update({ dob: e.target.value || undefined })}
+              className="h-11 w-full rounded-xs bg-surface-2 px-3 outline-none focus:ring-1 focus:ring-accent [color-scheme:dark]"
+            />
+          </Row>
+        </Card>
       </section>
 
-      {/* Configuración */}
-      <section className="space-y-4 rounded-2xl bg-surface p-5">
-        <div>
-          <label className="mb-2 block text-sm font-medium text-ink-2">Unidades</label>
-          <div className="flex gap-2">
-            {(['kg', 'lbs'] as const).map((u) => (
-              <button
-                key={u}
-                onClick={() => update({ units: u })}
-                className={cn(
-                  'flex-1 rounded-lg border py-2.5 text-sm font-semibold uppercase',
-                  profile.units === u
-                    ? 'border-accent bg-accent text-bg'
-                    : 'border-line-2 text-ink-2'
-                )}
-              >
-                {u}
-              </button>
-            ))}
+      {/* Accesos */}
+      <Card>
+        <Row onClick={() => navigate('/medidas')}>
+          <Ruler size={20} className="shrink-0 text-accent" />
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold">Medidas corporales</p>
+            <p className="text-[13px] text-ink-3">Registrá tu peso y medidas</p>
           </div>
-        </div>
-
-        <div>
-          <label className="mb-2 block text-sm font-medium text-ink-2">
-            Peso corporal (kg)
-          </label>
-          <input
-            type="number"
-            value={profile.bodyWeightKg ?? ''}
-            onChange={(e) =>
-              update({ bodyWeightKg: Number(e.target.value) || undefined })
-            }
-            placeholder="Ej: 75"
-            className="w-full rounded-lg bg-surface-2 px-3 py-2.5 font-mono outline-none focus:ring-1 focus:ring-accent"
-          />
-        </div>
-
-        <div>
-          <label className="mb-2 block text-sm font-medium text-ink-2">
-            Descanso por defecto (segundos)
-          </label>
-          <div className="flex gap-2">
-            {[60, 90, 120, 180].map((s) => (
-              <button
-                key={s}
-                onClick={() => update({ restTimerDefault: s })}
-                className={cn(
-                  'flex-1 rounded-lg border py-2.5 font-mono text-sm font-semibold',
-                  profile.restTimerDefault === s
-                    ? 'border-accent bg-accent text-bg'
-                    : 'border-line-2 text-ink-2'
-                )}
-              >
-                {s}s
-              </button>
-            ))}
+        </Row>
+        <Row onClick={() => navigate('/ajustes')}>
+          <Settings size={20} className="shrink-0 text-accent" />
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold">Ajustes</p>
+            <p className="text-[13px] text-ink-3">Unidades, tema, recordatorios</p>
           </div>
-        </div>
-
-        <div>
-          <label className="mb-2 block text-sm font-medium text-ink-2">
-            Meta semanal (entrenos)
-          </label>
-          <div className="flex gap-2">
-            {[2, 3, 4, 5, 6].map((n) => (
-              <button
-                key={n}
-                onClick={() => update({ weeklyGoal: n })}
-                className={cn(
-                  'flex-1 rounded-lg border py-2.5 font-mono text-sm font-semibold',
-                  (profile.weeklyGoal ?? 3) === n
-                    ? 'border-accent bg-accent text-bg'
-                    : 'border-line-2 text-ink-2'
-                )}
-              >
-                {n}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <label className="mb-2 block text-sm font-medium text-ink-2">Sexo</label>
-          <div className="flex gap-2">
-            {(
-              [
-                ['male', 'Masculino'],
-                ['female', 'Femenino'],
-              ] as const
-            ).map(([value, label]) => (
-              <button
-                key={value}
-                onClick={() => update({ sex: value })}
-                className={cn(
-                  'flex-1 rounded-lg border py-2.5 text-sm font-semibold',
-                  profile.sex === value
-                    ? 'border-accent bg-accent text-bg'
-                    : 'border-line-2 text-ink-2'
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <label className="mb-2 block text-sm font-medium text-ink-2">
-            Fecha de nacimiento
-          </label>
-          <input
-            type="date"
-            value={profile.dob ?? ''}
-            onChange={(e) => update({ dob: e.target.value || undefined })}
-            className="w-full rounded-lg bg-surface-2 px-3 py-2.5 outline-none focus:ring-1 focus:ring-accent [color-scheme:dark]"
-          />
-        </div>
-      </section>
-
-      {/* Accesos a paneles */}
-      <button
-        onClick={() => navigate('/medidas')}
-        className="flex w-full items-center gap-3 rounded-2xl bg-surface p-4 text-left active:bg-surface-2"
-      >
-        <Ruler size={20} className="text-accent" />
-        <div>
-          <p className="font-semibold">Medidas corporales</p>
-          <p className="text-sm text-ink-3">Registrá tu peso y medidas, y ve tu evolución</p>
-        </div>
-      </button>
-
-      <button
-        onClick={() => navigate('/recordatorios')}
-        className="flex w-full items-center gap-3 rounded-2xl bg-surface p-4 text-left active:bg-surface-2"
-      >
-        <Bell size={20} className="text-accent" />
-        <div>
-          <p className="font-semibold">Recordatorios</p>
-          <p className="text-sm text-ink-3">Avisos para no perder tu racha de entrenos</p>
-        </div>
-      </button>
-
-      {/* Admin panel link */}
-      {role === 'admin' && (
-        <button
-          onClick={() => navigate('/admin')}
-          className="flex w-full items-center gap-3 rounded-2xl bg-surface p-4 text-left active:bg-surface-2"
-        >
-          <Shield size={20} className="text-accent" />
-          <div>
-            <p className="font-semibold">Panel de administración</p>
-            <p className="text-sm text-ink-3">Gestionar usuarios y ver estadísticas globales</p>
-          </div>
-        </button>
-      )}
+        </Row>
+        {role === 'admin' && (
+          <Row onClick={() => navigate('/admin')}>
+            <Shield size={20} className="shrink-0 text-accent" />
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold">Panel de administración</p>
+              <p className="text-[13px] text-ink-3">Usuarios y estadísticas globales</p>
+            </div>
+          </Row>
+        )}
+      </Card>
 
       {/* Logout */}
       <button
         onClick={handleLogout}
-        className="flex w-full items-center gap-3 rounded-2xl border border-danger/30 p-4 text-danger active:bg-danger/10"
+        className="flex h-14 w-full items-center gap-3 rounded-md border border-danger/30 px-4 text-danger active:bg-danger/10"
       >
         <LogOut size={20} />
         <span className="font-semibold">Cerrar sesión</span>

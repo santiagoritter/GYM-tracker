@@ -150,7 +150,7 @@ function StepWelcome({
 }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center text-center">
-      <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-accent">
+      <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-lg bg-accent">
         <Flame size={48} className="text-bg" />
       </div>
       <h1 className="mb-2 text-3xl font-bold">
@@ -192,7 +192,7 @@ function StepPersonal({
       <div className="mb-8">
         <div className="mb-2 flex items-center gap-2 text-accent">
           <User size={20} />
-          <span className="text-sm font-semibold uppercase tracking-wide">Paso 1 de 3</span>
+          <span className="text-sm font-medium">Paso 1 de 3</span>
         </div>
         <h2 className="text-2xl font-bold">¿Cómo sos?</h2>
         <p className="mt-1 text-sm text-ink-3">
@@ -270,7 +270,7 @@ function StepBody({
       <div className="mb-8">
         <div className="mb-2 flex items-center gap-2 text-accent">
           <Target size={20} />
-          <span className="text-sm font-semibold uppercase tracking-wide">Paso 2 de 3</span>
+          <span className="text-sm font-medium">Paso 2 de 3</span>
         </div>
         <h2 className="text-2xl font-bold">Tu cuerpo y tu meta</h2>
         <p className="mt-1 text-sm text-ink-3">
@@ -363,7 +363,7 @@ function StepLevel({
       <div className="mb-8">
         <div className="mb-2 flex items-center gap-2 text-accent">
           <Trophy size={20} />
-          <span className="text-sm font-semibold uppercase tracking-wide">Paso 3 de 3</span>
+          <span className="text-sm font-medium">Paso 3 de 3</span>
         </div>
         <h2 className="text-2xl font-bold">Tu nivel</h2>
         <p className="mt-1 text-sm text-ink-3">

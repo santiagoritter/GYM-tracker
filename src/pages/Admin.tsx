@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { Crown, Shield, User } from 'lucide-react'
 import { db } from '@/db/schema'
 import { useAuthStore } from '@/stores/authStore'
+import { Card, EmptyState, Row, SectionHeader } from '@/components/ui/Card'
 import { cn } from '@/lib/utils'
 
 export default function Admin() {
@@ -40,7 +41,7 @@ export default function Admin() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/15">
+        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent/15">
           <Shield size={20} className="text-accent" />
         </div>
         <div>
@@ -51,9 +52,7 @@ export default function Admin() {
 
       {/* Stats globales */}
       <section>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-2">
-          Estadísticas globales
-        </h2>
+        <SectionHeader title="Estadísticas globales" />
         <div className="grid grid-cols-3 gap-2">
           <StatBlock label="Sesiones" value={String(globalStats.sessions)} />
           <StatBlock
@@ -67,45 +66,48 @@ export default function Admin() {
       {/* Admins */}
       {admins.length > 0 && (
         <section>
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-ink-2">
-            <Crown size={14} className="text-accent" /> Administradores
-          </h2>
-          <div className="space-y-2">
+          <SectionHeader
+            title="Administradores"
+            action={<Crown size={14} className="mb-1 text-ink-3" />}
+          />
+          <Card>
             {admins.map((u) => (
-              <UserCard
+              <UserRow
                 key={u.id}
                 user={u}
                 isSelf={u.id === currentUserId}
                 onDemote={() => demoteToUser(u.id)}
               />
             ))}
-          </div>
+          </Card>
         </section>
       )}
 
       {/* Usuarios */}
       {members.length > 0 && (
         <section>
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-ink-2">
-            <User size={14} /> Usuarios ({members.length})
-          </h2>
-          <div className="space-y-2">
+          <SectionHeader
+            title={`Usuarios (${members.length})`}
+            action={<User size={14} className="mb-1 text-ink-3" />}
+          />
+          <Card>
             {members.map((u) => (
-              <UserCard
+              <UserRow
                 key={u.id}
                 user={u}
                 isSelf={false}
                 onPromote={() => promoteToAdmin(u.id)}
               />
             ))}
-          </div>
+          </Card>
         </section>
       )}
 
       {users.length <= 1 && (
-        <p className="rounded-xl bg-surface p-6 text-center text-sm text-ink-3">
-          Sos el único usuario registrado. Cuando otros se registren aparecen acá.
-        </p>
+        <EmptyState
+          title="Sos el único usuario registrado"
+          description="Cuando otros se registren aparecen acá."
+        />
       )}
     </div>
   )
@@ -113,14 +115,14 @@ export default function Admin() {
 
 function StatBlock({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-surface p-4 text-center">
-      <p className="font-mono text-xl font-bold text-accent">{value}</p>
+    <div className="rounded-md bg-surface p-4 text-center">
+      <p className="font-mono text-xl font-bold tabular-nums text-accent">{value}</p>
       <p className="mt-0.5 text-xs text-ink-3">{label}</p>
     </div>
   )
 }
 
-function UserCard({
+function UserRow({
   user,
   isSelf,
   onPromote,
@@ -146,7 +148,7 @@ function UserCard({
     .toUpperCase()
 
   return (
-    <div className="flex items-center gap-3 rounded-xl bg-surface p-3">
+    <Row>
       <div className={cn(
         'flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold',
         user.role === 'admin' ? 'bg-accent text-bg' : 'bg-surface-2 text-ink'
@@ -159,16 +161,16 @@ function UserCard({
         </p>
         <p className="truncate text-xs text-ink-3">{user.email}</p>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2">
         {user.onboardingComplete === 0 && (
-          <span className="rounded bg-warning/20 px-1.5 py-0.5 text-[10px] font-bold text-warning">
-            PENDIENTE
+          <span className="rounded-xs bg-warning/20 px-1.5 py-1 text-[10px] font-bold text-warning">
+            Pendiente
           </span>
         )}
         {user.role === 'admin' && !isSelf && (
           <button
             onClick={onDemote}
-            className="rounded-lg bg-surface-2 px-2.5 py-1.5 text-xs text-ink-2 active:bg-surface-3"
+            className="flex h-11 items-center rounded-xs bg-surface-2 px-3 text-xs text-ink-2 active:bg-surface-3"
           >
             Quitar admin
           </button>
@@ -176,12 +178,12 @@ function UserCard({
         {user.role === 'user' && (
           <button
             onClick={onPromote}
-            className="rounded-lg bg-accent/10 px-2.5 py-1.5 text-xs font-semibold text-accent active:bg-accent/20"
+            className="flex h-11 items-center rounded-xs bg-accent/10 px-3 text-xs font-semibold text-accent active:bg-accent/20"
           >
             Hacer admin
           </button>
         )}
       </div>
-    </div>
+    </Row>
   )
 }

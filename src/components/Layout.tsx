@@ -43,15 +43,15 @@ export default function Layout() {
       <header className="sticky top-0 z-30 flex items-center justify-between px-4 pt-[env(safe-area-inset-top)] pb-0">
         <div className="glass absolute inset-0 -z-10 border-b border-line" />
         <div className="flex items-center gap-2.5 py-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-[11px] font-bold text-black">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-[11px] font-bold text-bg">
             {initials}
           </div>
           <span className="max-w-[140px] truncate text-[15px] font-semibold text-ink">
             {name?.split(' ')[0] ?? 'Campeón'}
           </span>
           {role === 'admin' && (
-            <span className="rounded-md bg-accent/15 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-accent">
-              ADMIN
+            <span className="rounded-xs bg-accent/15 px-1.5 py-0.5 text-[10px] font-bold text-accent">
+              Admin
             </span>
           )}
         </div>
@@ -59,16 +59,16 @@ export default function Layout() {
           {role === 'admin' && (
             <button
               onClick={() => navigate('/admin')}
-              className="rounded-xl px-3 py-1.5 text-xs font-medium text-ink-2 transition-colors active:bg-fill"
+              className="flex h-11 items-center rounded-sm px-3 text-xs font-medium text-ink-2 transition-colors active:bg-fill"
             >
-              <Shield size={15} className="inline mr-1" />Panel
+              <Shield size={15} className="mr-1 inline" />Panel
             </button>
           )}
           <button
             onClick={handleLogout}
-            className="rounded-xl px-3 py-1.5 text-xs font-medium text-ink-3 transition-colors active:bg-fill"
+            className="flex h-11 items-center rounded-sm px-3 text-xs font-medium text-ink-3 transition-colors active:bg-fill"
           >
-            <LogOut size={15} className="inline mr-1" />Salir
+            <LogOut size={15} className="mr-1 inline" />Salir
           </button>
         </div>
       </header>
@@ -83,11 +83,11 @@ export default function Layout() {
           onClick={() => navigate(`/entreno/${activeWorkout.id}`)}
           className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] left-1/2 z-50 animate-scale-in"
         >
-          <div className="flex items-center gap-2.5 rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-black">
+          <div className="flex items-center gap-2.5 rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-bg">
             <Flame size={15} fill="currentColor" />
             <span>Entreno en curso</span>
             <span className="opacity-70">·</span>
-            <span className="font-mono text-xs">{formatDuration(activeWorkout.startedAt)}</span>
+            <span className="font-mono text-xs tabular-nums">{formatDuration(activeWorkout.startedAt)}</span>
           </div>
         </button>
       )}

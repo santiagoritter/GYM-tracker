@@ -12,6 +12,7 @@ import {
 } from '@/db/routines'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { Suspense, lazy } from 'react'
+import { Card, EmptyState, Row } from '@/components/ui/Card'
 import type { Routine } from '@/types'
 import { cn } from '@/lib/utils'
 
@@ -70,7 +71,7 @@ export default function Routines() {
         <h1 className="text-2xl font-bold">Rutinas</h1>
         <button
           onClick={() => setScanning(true)}
-          className="flex items-center gap-1.5 rounded-lg border border-line-2 px-3 py-2 text-sm font-medium text-ink-2 active:bg-surface"
+          className="flex h-11 items-center gap-1.5 rounded-sm border border-line-2 px-3 text-sm font-medium text-ink-2 active:bg-surface"
         >
           <ScanLine size={16} /> Escanear QR
         </button>
@@ -84,11 +85,11 @@ export default function Routines() {
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
             placeholder="Nombre de la rutina (ej: Push Pull Legs)"
-            className="flex-1 rounded-lg bg-surface px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-accent placeholder:text-ink-3"
+            className="h-12 flex-1 rounded-sm bg-surface px-3 text-sm outline-none focus:ring-1 focus:ring-accent placeholder:text-ink-3"
           />
           <button
             onClick={handleCreate}
-            className="rounded-lg bg-accent px-4 font-semibold text-bg"
+            className="h-12 rounded-sm bg-accent px-4 font-semibold text-bg"
           >
             Crear
           </button>
@@ -97,13 +98,13 @@ export default function Routines() {
         <div className="flex gap-2">
           <button
             onClick={() => setCreating(true)}
-            className="flex-1 rounded-2xl border border-dashed border-line-2 py-4 font-semibold text-ink-2 active:bg-surface"
+            className="h-14 flex-1 rounded-md border border-dashed border-line-2 font-semibold text-ink-2 active:bg-surface"
           >
-            + Nueva rutina
+            Nueva rutina
           </button>
           <button
             onClick={() => setPickingTemplate(true)}
-            className="flex items-center gap-1.5 rounded-2xl border border-line-2 px-4 font-semibold text-ink-2 active:bg-surface"
+            className="flex h-14 items-center gap-1.5 rounded-md border border-line-2 px-4 font-semibold text-ink-2 active:bg-surface"
           >
             <Sparkles size={16} /> Clásicas
           </button>
@@ -115,39 +116,36 @@ export default function Routines() {
           .filter((d) => d.routineId === routine.id)
           .sort((a, b) => a.dayOrder - b.dayOrder)
         return (
-          <div
+          <Card
             key={routine.id}
-            className={cn(
-              'rounded-2xl bg-surface p-4',
-              routine.isActive === 1 && 'ring-1 ring-accent/50'
-            )}
+            className={cn(routine.isActive === 1 && 'ring-1 ring-accent/50')}
           >
-            <div className="flex items-center justify-between">
+            <Row>
               <button
                 onClick={() => navigate(`/rutina/${routine.id}`)}
-                className="flex items-center gap-2 text-left"
+                className="flex min-w-0 flex-1 items-center gap-2 text-left"
               >
                 <span
-                  className="h-3 w-3 rounded-full"
+                  className="h-3 w-3 shrink-0 rounded-full"
                   style={{ backgroundColor: routine.color }}
                 />
-                <span className="font-semibold">{routine.name}</span>
+                <span className="truncate font-semibold">{routine.name}</span>
               </button>
-              <div className="flex gap-1">
+              <div className="flex shrink-0">
                 <button
                   onClick={() => setSharing(routine)}
-                  className="rounded-lg p-2 text-ink-3"
-                  title="Compartir por QR"
+                  aria-label="Compartir por QR"
+                  className="flex h-11 w-9 items-center justify-center text-ink-3"
                 >
                   <QrCode size={18} />
                 </button>
                 <button
                   onClick={() => userId && setActiveRoutine(userId, routine.id)}
+                  aria-label="Marcar como rutina favorita"
                   className={cn(
-                    'rounded-lg p-2',
+                    'flex h-11 w-9 items-center justify-center',
                     routine.isActive === 1 ? 'text-accent' : 'text-ink-3'
                   )}
-                  title="Marcar como rutina activa"
                 >
                   <Star size={18} fill={routine.isActive === 1 ? 'currentColor' : 'none'} />
                 </button>
@@ -157,35 +155,31 @@ export default function Routines() {
                       deleteRoutine(routine.id)
                     }
                   }}
-                  className="rounded-lg p-2 text-ink-3"
+                  aria-label="Eliminar rutina"
+                  className="flex h-11 w-9 items-center justify-center text-ink-3"
                 >
                   <Trash2 size={18} />
                 </button>
               </div>
-            </div>
+            </Row>
 
-            <div className="mt-3 space-y-1.5">
-              {routineDays.map((day) => (
-                <div
-                  key={day.id}
-                  className="flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2"
-                >
-                  <span className={cn('text-sm', day.isRest === 1 && 'text-ink-3')}>
-                    {day.name}
-                    {day.isRest === 1 && ' · descanso'}
-                  </span>
-                  {day.isRest === 0 && (
-                    <button
-                      onClick={() => handleTrain(day.id)}
-                      className="flex items-center gap-1 rounded-md bg-accent px-2.5 py-1 text-xs font-bold text-bg"
-                    >
-                      <Play size={12} fill="currentColor" /> Entrenar
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+            {routineDays.map((day) => (
+              <Row key={day.id}>
+                <span className={cn('min-w-0 flex-1 truncate text-[14px]', day.isRest === 1 && 'text-ink-3')}>
+                  {day.name}
+                  {day.isRest === 1 && ' · descanso'}
+                </span>
+                {day.isRest === 0 && (
+                  <button
+                    onClick={() => handleTrain(day.id)}
+                    className="flex h-9 shrink-0 items-center gap-1.5 rounded-xs bg-accent px-3 text-[13px] font-bold text-bg"
+                  >
+                    <Play size={13} fill="currentColor" /> Entrenar
+                  </button>
+                )}
+              </Row>
+            ))}
+          </Card>
         )
       })}
 
@@ -205,13 +199,11 @@ export default function Routines() {
       </Suspense>
 
       {routines?.length === 0 && !creating && (
-        <div className="flex flex-col items-center gap-3 rounded-2xl bg-surface p-10 text-center">
-          <Calendar size={40} className="text-ink-3" />
-          <p className="text-sm text-ink-2">
-            Armá tu rutina por días, agregá ejercicios estilo playlist y arrancá cada
-            entreno con un tap.
-          </p>
-        </div>
+        <EmptyState
+          icon={<Calendar size={32} />}
+          title="Todavía no tenés rutinas"
+          description="Armá tu rutina por días, agregá ejercicios estilo playlist y arrancá cada entreno con un tap."
+        />
       )}
     </div>
   )

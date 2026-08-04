@@ -18,9 +18,12 @@ import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { HistoryList } from '@/components/gym/HistoryList'
 import { MonthlyStats } from '@/components/gym/MonthlyStats'
 import { StrengthLevels } from '@/components/gym/StrengthLevels'
+import { MuscleGroupLevels } from '@/components/gym/MuscleGroupLevels'
 import { PhotoGallery } from '@/components/gym/PhotoGallery'
 import StatsOverview from '@/components/gym/StatsOverview'
 import CalendarHeatmap from '@/components/gym/CalendarHeatmap'
+import RecentWorkouts from '@/components/gym/RecentWorkouts'
+import { SectionHeader } from '@/components/ui/Card'
 import AchievementsPanel from '@/components/gym/AchievementsPanel'
 import { cn } from '@/lib/utils'
 
@@ -63,16 +66,28 @@ export default function Progress() {
         <div className="space-y-4">
           <StatsOverview />
           <section>
-            <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-2">
-              Actividad
-            </h2>
+            <SectionHeader title="Actividad" />
             <CalendarHeatmap />
+          </section>
+          {/* Mudado desde Inicio (Redisenio.md §3.3): mirar hacia atrás es
+              una actividad de revisión, no de "qué entreno hoy". */}
+          <section>
+            <SectionHeader title="Últimos entrenos" />
+            <RecentWorkouts />
           </section>
         </div>
       )}
       {tab === 'charts' && <Charts />}
       {tab === 'month' && <MonthlyStats />}
-      {tab === 'levels' && <StrengthLevels />}
+      {tab === 'levels' && (
+        <div className="space-y-6">
+          <StrengthLevels />
+          <section>
+            <SectionHeader title="Grupos musculares" />
+            <MuscleGroupLevels />
+          </section>
+        </div>
+      )}
       {tab === 'achievements' && <AchievementsPanel />}
       {tab === 'photos' && <PhotoGallery />}
       {tab === 'prs' && <PRList />}
