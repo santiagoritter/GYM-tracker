@@ -1,10 +1,9 @@
 # 17 — Estado del rediseño (rama `beta`)
 
-Actualizado al cierre de la segunda pasada de rediseño (Fases 7-11 de
+Actualizado al cierre de la segunda pasada de rediseño (Fases 7-12 de
 `staged-beaming-wind.md`), 5 de agosto de 2026: fix de rendimiento crítico
 en Android, calendario de actividad movido a Inicio, anillo semanal nuevo,
-tema claro corregido, y split de bundle. Segundo merge a `main` de la
-sesión.
+tema claro corregido, split de bundle, y tap-to-reveal en Últimos entrenos.
 
 ## Ramas
 
@@ -12,7 +11,7 @@ sesión.
 |---|---|
 | `alpha` | Snapshot estable previo al rediseño. Congelada. |
 | `beta` | Rediseño en curso. **Acá se trabaja.** |
-| `main` | Producción (GitHub Pages). Al día con `beta` tras dos merges en esta sesión — el usuario lo ve en el teléfono tras el próximo deploy del workflow. |
+| `main` | Producción (GitHub Pages). Al día con `beta` — el usuario lo ve en el teléfono tras el próximo deploy del workflow. |
 
 Solo `main` dispara el deploy.
 
@@ -109,6 +108,11 @@ de referencia para gráficos/componentes:
     `recharts` (411KB, sigue lazy) y `vendor` (react/react-dom/router,
     164KB) del chunk principal — bajó de 574KB a 411KB, desaparece el
     warning de build.
+12. **Tap-to-reveal en `RecentWorkouts`**: concepto adaptado del card-flip
+    de kokonutui.com (dispara por hover en el original, no aplica a
+    touch) — sin el flip 3D literal, que en esta app leería como
+    decoración. Tap expande el detalle por ejercicio (series + mejor
+    peso) de ese entreno, consultado solo cuando la fila está expandida.
 
 ---
 
