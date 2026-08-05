@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { motion, useReducedMotion, type PanInfo } from 'motion/react'
+import { animate, motion, useMotionValue, useReducedMotion } from 'motion/react'
 import { Calendar, Dumbbell, Flame, House, LogOut, Shield, TrendingUp, User } from 'lucide-react'
 import { workoutsFor } from '@/db/scoped'
 import { useAuthStore } from '@/stores/authStore'
@@ -16,6 +16,10 @@ const TABS = [
   { to: '/progreso', label: 'Progreso', icon: TrendingUp },
   { to: '/perfil', label: 'Yo', icon: User },
 ]
+
+// Margen fijo a cada lado de la pastilla dentro de su columna — sin esto,
+// en el primer y último tab tocaba el borde de la cápsula exterior.
+const PILL_INSET = 6
 
 function activeTabIndex(pathname: string): number {
   const i = TABS.findIndex(({ to }) => (to === '/' ? pathname === '/' : pathname.startsWith(to)))
@@ -50,11 +54,39 @@ export default function Layout() {
   }, [])
 
   const activeIndex = activeTabIndex(location.pathname)
+  const pillX = (i: number) => i * tabWidth + PILL_INSET
 
-  const handlePillDragEnd = (_e: unknown, info: PanInfo) => {
+  // Motion value propio (no el prop `animate`): así se puede comandar la
+  // animación de snap a mano desde `onDragEnd` sin depender de que
+  // `activeIndex` haya cambiado de valor — ese era el bug reportado ("no
+  // se clava"): si soltabas el arrastre sin cruzar al tab siguiente,
+  // activeIndex quedaba igual, el prop `animate` no volvía a dispararse, y
+  // la pastilla se quedaba flotando a mitad de camino en vez de volver.
+  const x = useMotionValue(0)
+  const positionedRef = useRef(false)
+  const spring = reduced
+    ? { duration: 0 }
+    : { type: 'spring' as const, damping: 30, stiffness: 300 }
+
+  useEffect(() => {
     if (!tabWidth) return
-    const x = activeIndex * tabWidth + info.offset.x
-    const nearest = Math.min(TABS.length - 1, Math.max(0, Math.round(x / tabWidth)))
+    // La primerísima vez que se mide el ancho (recién montado), la
+    // pastilla aparece directo en su lugar — animarla desde x:0 se vería
+    // como si entrara deslizando desde la izquierda en cada carga.
+    if (!positionedRef.current) {
+      positionedRef.current = true
+      x.set(pillX(activeIndex))
+      return
+    }
+    const controls = animate(x, pillX(activeIndex), spring)
+    return () => controls.stop()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIndex, tabWidth, reduced])
+
+  const handlePillDragEnd = () => {
+    if (!tabWidth) return
+    const nearest = Math.min(TABS.length - 1, Math.max(0, Math.round((x.get() - PILL_INSET) / tabWidth)))
+    animate(x, pillX(nearest), spring)
     if (nearest !== activeIndex) navigate(TABS[nearest].to)
   }
 
@@ -158,23 +190,25 @@ export default function Layout() {
 
             {/* La "gota": cápsula que envuelve ícono+label del tab activo
                 entero (no solo el ícono), como el indicador de los tab
-                bars nuevos de iOS. Se desliza sola al tocar otro tab
-                (`animate`) y también se puede arrastrar con el dedo —
-                al soltar, navega al tab más cercano a donde quedó. Un
-                solo elemento compartido (no uno por tab), posicionado
-                por `x` en vez de `layoutId`: `drag` y `layoutId` no
-                combinan bien, `x` controlado a mano sí. */}
+                bars nuevos de iOS. Se desliza sola al tocar otro tab y
+                también se puede arrastrar con el dedo — al soltar, se
+                clava (`animate(x, ...)` a mano, ver el motion value `x`
+                más arriba) en el tab más cercano a donde quedó, cruce o
+                no a otro tab. `PILL_INSET` la separa de los bordes
+                izquierdo/derecho de la cápsula exterior en el primer y
+                último tab. Vidrio propio (blur + tinte), no solo el
+                relleno plano de antes — sigue siendo parte de la tab
+                bar, una de las dos superficies donde DESIGN.md permite
+                `backdrop-filter`. */}
             {tabWidth > 0 && (
               <motion.div
                 drag="x"
-                dragConstraints={{ left: 0, right: (TABS.length - 1) * tabWidth }}
+                dragConstraints={{ left: PILL_INSET, right: pillX(TABS.length - 1) }}
                 dragElastic={0}
                 dragMomentum={false}
                 onDragEnd={handlePillDragEnd}
-                animate={{ x: activeIndex * tabWidth }}
-                transition={reduced ? { duration: 0 } : { type: 'spring', damping: 30, stiffness: 300 }}
-                style={{ width: tabWidth }}
-                className="absolute inset-y-1 left-0 z-20 touch-none rounded-full bg-accent/15"
+                style={{ x, width: tabWidth - PILL_INSET * 2 }}
+                className="absolute inset-y-1 left-0 z-20 touch-none rounded-full bg-accent/20 backdrop-blur-xs"
               />
             )}
           </div>
