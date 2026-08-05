@@ -5,11 +5,12 @@ import { Search, Trophy } from 'lucide-react'
 import { db } from '@/db/schema'
 import { personalRecordsFor } from '@/db/scoped'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
-import type { Equipment, Exercise, MuscleGroup } from '@/types'
+import type { Difficulty, Equipment, Exercise, MuscleGroup } from '@/types'
 import { MUSCLE_LABELS, MuscleChip } from '@/components/gym/MuscleChip'
 import ExerciseDetailSheet from '@/components/gym/ExerciseDetailSheet'
 import EquipmentIcon from '@/components/gym/EquipmentIcon'
 import { Card, EmptyState } from '@/components/ui/Card'
+import { DIFFICULTY_DOT, DIFFICULTY_LABELS, DIFFICULTY_ORDER } from '@/lib/difficulty'
 import { cn } from '@/lib/utils'
 
 const MUSCLE_FILTERS = Object.keys(MUSCLE_LABELS) as MuscleGroup[]
@@ -30,6 +31,7 @@ export default function Exercises() {
   const [query, setQuery] = useState('')
   const [muscle, setMuscle] = useState<MuscleGroup | null>(null)
   const [equipment, setEquipment] = useState<Equipment | null>(null)
+  const [difficulty, setDifficulty] = useState<Difficulty | null>(null)
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null)
 
   const exercises = useLiveQuery(() => db.exercises.toArray(), []) ?? []
@@ -44,11 +46,12 @@ export default function Exercises() {
     return exercises
       .filter((e) => !muscle || e.musclePrimary.includes(muscle))
       .filter((e) => !equipment || e.equipment === equipment)
+      .filter((e) => !difficulty || e.difficulty === difficulty)
       .filter(
         (e) => !q || e.name.toLowerCase().includes(q) || e.nameEn.toLowerCase().includes(q)
       )
       .sort((a, b) => a.name.localeCompare(b.name))
-  }, [exercises, query, muscle, equipment])
+  }, [exercises, query, muscle, equipment, difficulty])
 
   // Virtualizada: 107 ejercicios sin virtualizar montaban ~500+ nodos DOM
   // (ícono + chips por fila) de una sola vez, lo que trababa el scroll en
@@ -116,6 +119,25 @@ export default function Exercises() {
           ))}
         </div>
 
+        {/* Filtros dificultad */}
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none]">
+          {DIFFICULTY_ORDER.map((d) => (
+            <button
+              key={d}
+              onClick={() => setDifficulty(difficulty === d ? null : d)}
+              className={cn(
+                'flex h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-[12px] font-medium transition-colors',
+                difficulty === d
+                  ? 'bg-accent text-bg'
+                  : 'bg-fill text-ink-2 active:bg-fill-2'
+              )}
+            >
+              <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', difficulty === d ? 'bg-bg' : DIFFICULTY_DOT[d])} />
+              {DIFFICULTY_LABELS[d]}
+            </button>
+          ))}
+        </div>
+
         <p className="px-1 text-[13px] text-ink-3">{filtered.length} ejercicios</p>
 
         {/* Lista virtualizada: solo se montan las filas visibles + overscan,
@@ -156,7 +178,11 @@ export default function Exercises() {
                           <p className="font-semibold leading-tight">{e.name}</p>
                           <p className="mt-0.5 text-[12px] text-ink-3">{e.nameEn}</p>
                         </div>
-                        <span className="flex shrink-0 items-center gap-1 text-[12px] text-ink-3">
+                        <span className="flex shrink-0 items-center gap-1.5 text-[12px] text-ink-3">
+                          <span
+                            className={cn('h-1.5 w-1.5 shrink-0 rounded-full', DIFFICULTY_DOT[e.difficulty])}
+                            title={DIFFICULTY_LABELS[e.difficulty]}
+                          />
                           <EquipmentIcon equipment={e.equipment} size={13} />
                           {EQUIPMENT_LABELS[e.equipment]}
                         </span>

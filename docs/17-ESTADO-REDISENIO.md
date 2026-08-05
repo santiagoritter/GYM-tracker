@@ -1,10 +1,11 @@
 # 17 — Estado del rediseño (rama `beta`)
 
-Actualizado al cierre de la tercera pasada de rediseño (Fases 13-16 de
-`staged-beaming-wind.md`), 5 de agosto de 2026: feedback directo del
-usuario sobre `main` desplegado — navegación del avatar, reordenamiento
-de Inicio (el anillo semanal se mudó a Progreso), la regla de identidad
-server-side documentada, y Liquid Glass (skill `apple-design`).
+Actualizado al cierre de la cuarta pasada (Fases 18-24 de
+`staged-beaming-wind.md`), 5 de agosto de 2026: batch de ideas del
+usuario — bienvenida enriquecida, backup exportable/importable,
+dificultad por ejercicio, calorías on por defecto, el anillo de Progreso
+simplificado por segunda vez (definitivo), % de grasa corporal opcional,
+y nivel de experiencia ampliado a 6 escalones.
 
 ## Ramas
 
@@ -148,6 +149,37 @@ features salvo §2.5 (sync online) y §2.8 (rutina más popular) — ambas
 bloqueadas por Supabase sin desplegar — ya están confirmadas hechas por
 lectura/grep directo. No queda ninguna feature de negocio nueva de esa
 sección por construir.
+
+### Cuarta pasada — Fases 18-24, completas
+Batch de ideas nuevas del usuario, más una segunda captura marcando el
+mismo widget de anillos (Fase 9) como roto:
+
+18. Bienvenida del onboarding (`StepWelcome`) enriquecida con 3 bullets
+    de qué hace la app — mismo paso, no suma fricción.
+19. **Backup exportable/importable** (`src/lib/backup.ts`, nuevo): las 12
+    tablas de `SYNC_ORDER` a JSON, blobs de fotos en base64, remapeo de
+    `userId` en el import (incluidos los ids compuestos de
+    `personalRecords`/`exercisePhotos`). Único camino real hoy para no
+    perder el historial al cambiar de dispositivo, sin sync a Supabase.
+    Test dedicado: `scripts/test-backup.mts`.
+20. Dificultad por ejercicio (ya existía en el dato, nunca se mostraba):
+    punto de color en cada fila de Ejercicios + filtro nuevo. Compartido
+    entre la lista y el sheet de detalle vía `src/lib/difficulty.ts`.
+21. `calorieTrackingEnabled: 1` por defecto en los dos puntos donde se
+    crea un perfil — antes quedaba `undefined` (desactivado).
+22. **El anillo de Progreso, arreglado por segunda vez, esta vez
+    definitivo**: se borran los 7 anillos concéntricos de la Fase 9
+    (dos rondas de feedback real los marcaron como rotos/confusos) y
+    vuelve un `ProgressRing` único — theme-aware desde el arranque, a
+    diferencia del original que se había borrado en la Fase 9.
+23. `bodyFatPct` opcional en `LocalProfile` (v11 de Dexie, campo no
+    indexado), input en Perfil, espejado desde Medidas igual que ya
+    pasaba con el peso.
+24. `ExperienceLevel` de 3 a 6 escalones
+    (novice/beginner/intermediate/advanced/elite/champion), alineado
+    con los 6 que ya usaba `STANDARDS` internamente — antes el
+    recomendador nunca podía apuntar a `novice`/`elite`/`champion` desde
+    el autorreporte del onboarding.
 
 ---
 

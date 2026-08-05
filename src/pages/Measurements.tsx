@@ -17,7 +17,7 @@ import { bodyMeasurementsFor } from '@/db/scoped'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useChartColors } from '@/hooks/useChartColors'
 import { Card, EmptyState, Row, SectionHeader } from '@/components/ui/Card'
-import type { BodyMeasurement } from '@/types'
+import type { BodyMeasurement, LocalProfile } from '@/types'
 import { nowIso, uid } from '@/lib/utils'
 import { toast } from '@/stores/toastStore'
 
@@ -83,8 +83,13 @@ export default function Measurements() {
         updatedAt: nowIso(),
       }
       await db.bodyMeasurements.add(entry)
-      // Si registraste peso, actualizá el peso corporal del perfil también
-      if (numbers.weightKg) await db.profile.update(userId, { bodyWeightKg: numbers.weightKg })
+      // Si registraste peso o grasa corporal, actualizá el perfil también —
+      // son el valor "actual" que usan el recomendador y los niveles de
+      // fuerza, no hace falta pedirlos dos veces.
+      const profilePatch: Partial<LocalProfile> = {}
+      if (numbers.weightKg) profilePatch.bodyWeightKg = numbers.weightKg
+      if (numbers.bodyFatPct) profilePatch.bodyFatPct = numbers.bodyFatPct
+      if (Object.keys(profilePatch).length > 0) await db.profile.update(userId, profilePatch)
       setForm({})
       toast.success('Medida registrada', 'Seguí midiendo tu progreso.')
     } finally {

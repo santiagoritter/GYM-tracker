@@ -10,6 +10,7 @@ import { softDelete } from '@/db/mutations'
 import { exercisePhotoFor } from '@/db/scoped'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { compressImage } from '@/lib/photos'
+import { DIFFICULTY_COLOR, DIFFICULTY_LABELS } from '@/lib/difficulty'
 import { nowIso } from '@/lib/utils'
 import MuscleBodySVG from './MuscleBodySVG'
 import EquipmentIcon from './EquipmentIcon'
@@ -40,18 +41,6 @@ const PATTERN_LABEL: Record<string, string> = {
   carry: 'Acarreo',
   isolation: 'Aislamiento',
   other: 'Otro',
-}
-
-const DIFFICULTY_COLOR: Record<string, string> = {
-  beginner: 'text-success',
-  intermediate: 'text-warning',
-  advanced: 'text-danger',
-}
-
-const DIFFICULTY_LABEL: Record<string, string> = {
-  beginner: 'Principiante',
-  intermediate: 'Intermedio',
-  advanced: 'Avanzado',
 }
 
 const MUSCLE_LABEL: Record<string, string> = {
@@ -240,7 +229,7 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
         {/* Badges */}
         <div className="flex flex-wrap items-center gap-2 px-5 pb-4">
           <span className={cn('text-[12px] font-semibold', DIFFICULTY_COLOR[exercise.difficulty])}>
-            {DIFFICULTY_LABEL[exercise.difficulty]}
+            {DIFFICULTY_LABELS[exercise.difficulty]}
           </span>
           <span className="text-ink-4">·</span>
           <span className="flex items-center gap-1 text-[12px] text-ink-2">

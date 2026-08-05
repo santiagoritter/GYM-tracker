@@ -7,6 +7,7 @@ import { Card, Row } from '@/components/ui/Card'
 import type { LocalProfile } from '@/types'
 import { cn } from '@/lib/utils'
 import { getDailyMessage } from '@/lib/motivational'
+import { LEVEL_LABELS } from '@/lib/strengthStandards'
 
 const GOAL_LABELS: Record<string, string> = {
   strength: 'Fuerza máxima',
@@ -14,12 +15,6 @@ const GOAL_LABELS: Record<string, string> = {
   endurance: 'Resistencia',
   health: 'Salud general',
   general: 'Todo un poco',
-}
-
-const LEVEL_LABELS: Record<string, string> = {
-  beginner: 'Principiante',
-  intermediate: 'Intermedio',
-  advanced: 'Avanzado',
 }
 
 const dailyMsg = getDailyMessage()
@@ -97,6 +92,20 @@ export default function Profile() {
               value={profile.bodyWeightKg ?? ''}
               onChange={(e) => update({ bodyWeightKg: Number(e.target.value) || undefined })}
               placeholder="Ej: 75"
+              className="h-11 w-full rounded-xs bg-surface-2 px-3 font-mono tabular-nums outline-none focus:ring-1 focus:ring-accent"
+            />
+          </Row>
+          <Row className="flex-col items-stretch gap-2">
+            <label className="text-[13px] font-medium text-ink-2">% de grasa corporal</label>
+            <input
+              type="number"
+              inputMode="decimal"
+              min={3}
+              max={60}
+              step={0.1}
+              value={profile.bodyFatPct ?? ''}
+              onChange={(e) => update({ bodyFatPct: Number(e.target.value) || undefined })}
+              placeholder="Opcional"
               className="h-11 w-full rounded-xs bg-surface-2 px-3 font-mono tabular-nums outline-none focus:ring-1 focus:ring-accent"
             />
           </Row>

@@ -6,11 +6,13 @@ import {
   Flame,
   HeartPulse,
   Layers,
+  Scale,
   Target,
   Timer,
   TrendingUp,
   Trophy,
   User,
+  WifiOff,
   type LucideIcon,
 } from 'lucide-react'
 import { db } from '@/db/schema'
@@ -18,6 +20,12 @@ import { useAuthStore } from '@/stores/authStore'
 import { ONBOARDING_MESSAGES, getRandomMessage } from '@/lib/motivational'
 import { cn, nowIso } from '@/lib/utils'
 import type { FitnessGoal, ExperienceLevel } from '@/types'
+
+const WELCOME_HIGHLIGHTS: { text: string; Icon: LucideIcon }[] = [
+  { text: 'Funciona sin conexión: entrená aunque el gimnasio no tenga señal', Icon: WifiOff },
+  { text: 'Te sugiere el peso de cada serie según tu historial', Icon: Scale },
+  { text: 'Seguí tu progreso con niveles de fuerza y récords personales', Icon: TrendingUp },
+]
 
 const GOALS: { key: FitnessGoal; label: string; Icon: LucideIcon }[] = [
   { key: 'strength', label: 'Fuerza máxima', Icon: Dumbbell },
@@ -28,9 +36,12 @@ const GOALS: { key: FitnessGoal; label: string; Icon: LucideIcon }[] = [
 ]
 
 const LEVELS: { key: ExperienceLevel; label: string; desc: string }[] = [
-  { key: 'beginner', label: 'Principiante', desc: 'Menos de 1 año entrenando' },
-  { key: 'intermediate', label: 'Intermedio', desc: '1–3 años de entrenamiento' },
-  { key: 'advanced', label: 'Avanzado', desc: 'Más de 3 años en serio' },
+  { key: 'novice', label: 'Novato', desc: 'Recién arrancás o volvés después de mucho tiempo parado' },
+  { key: 'beginner', label: 'Principiante', desc: 'Menos de 1 año entrenando con regularidad' },
+  { key: 'intermediate', label: 'Intermedio', desc: '1–3 años de entrenamiento constante' },
+  { key: 'advanced', label: 'Avanzado', desc: 'Varios años entrenando en serio' },
+  { key: 'elite', label: 'Elite', desc: 'Nivel competitivo, entre los más fuertes de tu categoría' },
+  { key: 'champion', label: 'Campeón', desc: 'Nivel de récord nacional o internacional' },
 ]
 
 export default function Onboarding() {
@@ -74,6 +85,7 @@ export default function Onboarding() {
           units: 'kg',
           restTimerDefault: 90,
           onboardingComplete: 1,
+          calorieTrackingEnabled: 1,
           ...patch,
           dirty: 1,
           updatedAt: nowIso(),
@@ -156,7 +168,16 @@ function StepWelcome({
       <h1 className="mb-2 text-3xl font-bold">
         ¡Bienvenido, {name.split(' ')[0]}!
       </h1>
-      <p className="mb-8 text-ink-3">Tu viaje hacia la mejor versión de vos mismo empieza acá.</p>
+      <p className="mb-6 text-ink-3">Tu viaje hacia la mejor versión de vos mismo empieza acá.</p>
+
+      <ul className="mb-8 w-full space-y-3 text-left">
+        {WELCOME_HIGHLIGHTS.map(({ text, Icon }) => (
+          <li key={text} className="flex items-center gap-3 rounded-xl bg-surface p-3.5">
+            <Icon size={18} className="shrink-0 text-accent" strokeWidth={1.8} />
+            <span className="text-sm text-ink-2">{text}</span>
+          </li>
+        ))}
+      </ul>
 
       <blockquote className="mb-10 rounded-2xl bg-surface p-6">
         <p className="text-base font-medium italic text-ink">"{quote.text}"</p>
