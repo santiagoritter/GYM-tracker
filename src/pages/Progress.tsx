@@ -22,6 +22,7 @@ import { StrengthLevels } from '@/components/gym/StrengthLevels'
 import { MuscleGroupLevels } from '@/components/gym/MuscleGroupLevels'
 import { PhotoGallery } from '@/components/gym/PhotoGallery'
 import StatsOverview from '@/components/gym/StatsOverview'
+import StreakWeekCard from '@/components/gym/StreakWeekCard'
 import RecentWorkouts from '@/components/gym/RecentWorkouts'
 import { SectionHeader } from '@/components/ui/Card'
 import AchievementsPanel from '@/components/gym/AchievementsPanel'
@@ -64,12 +65,13 @@ export default function Progress() {
 
       {tab === 'summary' && (
         <div className="space-y-4">
+          {/* El anillo semanal se mudó desde Inicio (pedido explícito): es
+              un resumen para revisar, no algo que compita con "qué entreno
+              hoy". El heatmap de actividad se queda en Inicio. */}
+          <StreakWeekCard />
           <StatsOverview />
-          {/* El heatmap de actividad vive en Inicio, no acá (pedido
-              explícito): es lo primero que se quiere ver al abrir la app,
-              no algo que hay que venir a buscar a Progreso. RecentWorkouts
-              sigue acá — mirar hacia atrás es revisión, no "qué entreno
-              hoy", que es lo que resuelve Inicio. */}
+          {/* RecentWorkouts vive acá, no en Inicio — mirar hacia atrás es
+              revisión, no "qué entreno hoy", que es lo que resuelve Inicio. */}
           <section>
             <SectionHeader title="Últimos entrenos" />
             <RecentWorkouts />

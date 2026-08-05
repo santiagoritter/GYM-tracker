@@ -42,7 +42,10 @@ export default function Layout() {
       {/* Header glass */}
       <header className="sticky top-0 z-30 flex items-center justify-between px-4 pt-[env(safe-area-inset-top)] pb-0">
         <div className="glass absolute inset-0 -z-10 border-b border-line" />
-        <div className="flex items-center gap-2.5 py-3">
+        <button
+          onClick={() => navigate('/perfil')}
+          className="flex min-h-11 items-center gap-2.5 py-3"
+        >
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-[11px] font-bold text-bg">
             {initials}
           </div>
@@ -54,7 +57,7 @@ export default function Layout() {
               Admin
             </span>
           )}
-        </div>
+        </button>
         <div className="flex items-center gap-0.5">
           {role === 'admin' && (
             <button
