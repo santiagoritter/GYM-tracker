@@ -97,7 +97,7 @@ export default function Layout() {
 
       {/* Tab bar iOS */}
       <nav className="fixed bottom-0 left-1/2 z-40 w-full max-w-lg -translate-x-1/2">
-        <div className="glass border-t border-line">
+        <div className="glass glass-edge-top">
           <div className="flex items-stretch justify-around pb-[env(safe-area-inset-bottom)]">
             {TABS.map(({ to, label, icon: Icon }) => (
               <NavLink
