@@ -16,6 +16,8 @@ export const progressPhotosFor = (userId: string) =>
   db.progressPhotos.where('userId').equals(userId)
 export const exercisePhotoFor = (userId: string, exerciseId: string) =>
   db.exercisePhotos.get(`${userId}_${exerciseId}`)
+export const calorieEntriesFor = (userId: string) =>
+  db.calorieEntries.where('userId').equals(userId)
 
 // Tablas hijas: se resuelven vía su FK hacia la tabla padre ya scopeada,
 // sin necesitar userId propio (evita desnormalización).

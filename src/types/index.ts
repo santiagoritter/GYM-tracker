@@ -171,6 +171,12 @@ export interface LocalProfile extends SyncFields {
   reminderEnabled?: 0 | 1
   reminderTime?: string // "HH:MM" 24h
   reminderDays?: number[] // 0=domingo … 6=sábado
+  // Contador de calorías: opt-in (Redisenio.md §2.6). Configuración 1:1 por
+  // usuario, así que va acá y no en una tabla propia; el registro diario
+  // (N filas por día) sí necesita su propia tabla — ver CalorieEntry.
+  calorieTrackingEnabled?: 0 | 1
+  calorieGoalType?: 'maintenance' | 'deficit' | 'surplus'
+  calorieGoalKcal?: number
 }
 
 // Registro histórico de peso corporal y medidas
@@ -226,6 +232,16 @@ export interface ExercisePhoto extends PhotoSyncFields {
   createdAt: string
 }
 
+// Carga manual de calorías. N filas por usuario por día — a diferencia de
+// la configuración (LocalProfile), esto sí necesita tabla propia.
+export interface CalorieEntry extends SyncFields {
+  id: string
+  userId: string
+  loggedAt: string // ISO, fecha+hora del registro
+  kcal: number
+  label?: string // "Almuerzo", opcional
+}
+
 /** Tablas cuyas filas se sincronizan con Postgres. */
 export type SyncedTable =
   | 'profile'
@@ -239,6 +255,7 @@ export type SyncedTable =
   | 'achievements'
   | 'progressPhotos'
   | 'exercisePhotos'
+  | 'calorieEntries'
 
 /**
  * Lápida de una fila borrada localmente. Existe porque el pull incremental

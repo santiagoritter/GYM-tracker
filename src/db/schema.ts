@@ -2,6 +2,7 @@ import Dexie, { type Table } from 'dexie'
 import type {
   Achievement,
   BodyMeasurement,
+  CalorieEntry,
   EmailVerification,
   Exercise,
   ExercisePhoto,
@@ -37,6 +38,7 @@ export const SYNC_ORDER: readonly SyncedTable[] = [
   'achievements',
   'progressPhotos',
   'exercisePhotos',
+  'calorieEntries',
 ] as const
 
 export class GymTrackerDB extends Dexie {
@@ -56,6 +58,7 @@ export class GymTrackerDB extends Dexie {
   exercisePhotos!: Table<ExercisePhoto, string>
   tombstones!: Table<Tombstone, string>
   syncState!: Table<SyncStateRow, string>
+  calorieEntries!: Table<CalorieEntry, string>
 
   constructor() {
     super('GymTrackerDB')
@@ -216,6 +219,15 @@ export class GymTrackerDB extends Dexie {
           })
         }
       }
+    })
+    // v10: contador de calorías opcional (Redisenio.md §2.6). Tabla nueva
+    // sin datos que migrar — el .upgrade() no mueve nada, solo confirma
+    // que la instalación existente sigue sana y deja constancia del paso,
+    // igual que v3/v4/v5 en su momento.
+    this.version(10).stores({
+      calorieEntries: 'id, userId, loggedAt, dirty',
+    }).upgrade(async () => {
+      // no-op deliberado
     })
   }
 }
