@@ -5,12 +5,12 @@ import { Search, Trophy } from 'lucide-react'
 import { db } from '@/db/schema'
 import { personalRecordsFor } from '@/db/scoped'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
-import type { Difficulty, Equipment, Exercise, MuscleGroup } from '@/types'
-import { MUSCLE_LABELS, MuscleChip } from '@/components/gym/MuscleChip'
+import type { Equipment, Exercise, MuscleGroup } from '@/types'
+import { MUSCLE_LABELS, MUSCLE_STYLES, MuscleChip } from '@/components/gym/MuscleChip'
 import ExerciseDetailSheet from '@/components/gym/ExerciseDetailSheet'
 import EquipmentIcon from '@/components/gym/EquipmentIcon'
 import { Card, EmptyState } from '@/components/ui/Card'
-import { DIFFICULTY_DOT, DIFFICULTY_LABELS, DIFFICULTY_ORDER } from '@/lib/difficulty'
+import { DIFFICULTY_DOT, DIFFICULTY_LABELS } from '@/lib/difficulty'
 import { cn } from '@/lib/utils'
 
 const MUSCLE_FILTERS = Object.keys(MUSCLE_LABELS) as MuscleGroup[]
@@ -31,7 +31,6 @@ export default function Exercises() {
   const [query, setQuery] = useState('')
   const [muscle, setMuscle] = useState<MuscleGroup | null>(null)
   const [equipment, setEquipment] = useState<Equipment | null>(null)
-  const [difficulty, setDifficulty] = useState<Difficulty | null>(null)
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null)
 
   const exercises = useLiveQuery(() => db.exercises.toArray(), []) ?? []
@@ -46,12 +45,11 @@ export default function Exercises() {
     return exercises
       .filter((e) => !muscle || e.musclePrimary.includes(muscle))
       .filter((e) => !equipment || e.equipment === equipment)
-      .filter((e) => !difficulty || e.difficulty === difficulty)
       .filter(
         (e) => !q || e.name.toLowerCase().includes(q) || e.nameEn.toLowerCase().includes(q)
       )
       .sort((a, b) => a.name.localeCompare(b.name))
-  }, [exercises, query, muscle, equipment, difficulty])
+  }, [exercises, query, muscle, equipment])
 
   // Virtualizada: 107 ejercicios sin virtualizar montaban ~500+ nodos DOM
   // (ícono + chips por fila) de una sola vez, lo que trababa el scroll en
@@ -61,7 +59,7 @@ export default function Exercises() {
   const listRef = useRef<HTMLDivElement>(null)
   const virtualizer = useWindowVirtualizer({
     count: filtered.length,
-    estimateSize: () => 100,
+    estimateSize: () => 112,
     overscan: 8,
     scrollMargin: listRef.current?.offsetTop ?? 0,
   })
@@ -119,25 +117,6 @@ export default function Exercises() {
           ))}
         </div>
 
-        {/* Filtros dificultad */}
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none]">
-          {DIFFICULTY_ORDER.map((d) => (
-            <button
-              key={d}
-              onClick={() => setDifficulty(difficulty === d ? null : d)}
-              className={cn(
-                'flex h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-[12px] font-medium transition-colors',
-                difficulty === d
-                  ? 'bg-accent text-bg'
-                  : 'bg-fill text-ink-2 active:bg-fill-2'
-              )}
-            >
-              <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', difficulty === d ? 'bg-bg' : DIFFICULTY_DOT[d])} />
-              {DIFFICULTY_LABELS[d]}
-            </button>
-          ))}
-        </div>
-
         <p className="px-1 text-[13px] text-ink-3">{filtered.length} ejercicios</p>
 
         {/* Lista virtualizada: solo se montan las filas visibles + overscan,
@@ -169,43 +148,56 @@ export default function Exercises() {
                     <button
                       onClick={() => setSelectedExercise(e)}
                       className={cn(
-                        'flex min-h-11 w-full flex-col items-stretch gap-0 px-4 py-3 text-left transition-colors active:bg-surface-2',
+                        'flex min-h-11 w-full items-start gap-3 px-4 py-3 text-left transition-colors active:bg-surface-2',
                         vItem.index !== 0 && 'border-t border-line-2'
                       )}
                     >
-                      <div className="flex w-full items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="font-semibold leading-tight">{e.name}</p>
-                          <p className="mt-0.5 text-[12px] text-ink-3">{e.nameEn}</p>
-                        </div>
-                        <span className="flex shrink-0 items-center gap-1.5 text-[12px] text-ink-3">
+                      {/* Insignia de equipo, teñida con el color del músculo
+                          primario — un solo elemento visual comunica equipo
+                          (ícono) y grupo muscular (color), reusando la misma
+                          paleta que ya usan los chips de abajo. */}
+                      <span
+                        className={cn(
+                          'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border',
+                          MUSCLE_STYLES[e.musclePrimary[0]]
+                        )}
+                      >
+                        <EquipmentIcon equipment={e.equipment} size={20} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="font-semibold leading-tight">{e.name}</p>
+                            <p className="mt-0.5 truncate text-[12px] text-ink-3">{e.nameEn}</p>
+                          </div>
                           <span
-                            className={cn('h-1.5 w-1.5 shrink-0 rounded-full', DIFFICULTY_DOT[e.difficulty])}
+                            className="mt-1 flex shrink-0 items-center gap-1 text-[11px] text-ink-3"
                             title={DIFFICULTY_LABELS[e.difficulty]}
-                          />
-                          <EquipmentIcon equipment={e.equipment} size={13} />
-                          {EQUIPMENT_LABELS[e.equipment]}
-                        </span>
-                      </div>
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {e.musclePrimary.map((m) => (
-                          <MuscleChip key={m} muscle={m} />
-                        ))}
-                        {e.muscleSecondary.slice(0, 2).map((m) => (
-                          <MuscleChip key={m} muscle={m} secondary />
-                        ))}
-                      </div>
-                      {pr && (
-                        <div className="mt-2 flex items-center gap-1.5 text-[12px] text-accent">
-                          <Trophy size={12} />
-                          <span className="font-mono font-bold tabular-nums">
-                            {pr.weightKg} kg × {pr.reps}
-                          </span>
-                          <span className="text-ink-3">
-                            · 1RM <span className="tabular-nums">{pr.oneRmKg}</span> kg
+                          >
+                            <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', DIFFICULTY_DOT[e.difficulty])} />
+                            {EQUIPMENT_LABELS[e.equipment]}
                           </span>
                         </div>
-                      )}
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {e.musclePrimary.map((m) => (
+                            <MuscleChip key={m} muscle={m} />
+                          ))}
+                          {e.muscleSecondary.slice(0, 2).map((m) => (
+                            <MuscleChip key={m} muscle={m} secondary />
+                          ))}
+                        </div>
+                        {pr && (
+                          <div className="mt-2 flex items-center gap-1.5 text-[12px] text-accent">
+                            <Trophy size={12} />
+                            <span className="font-mono font-bold tabular-nums">
+                              {pr.weightKg} kg × {pr.reps}
+                            </span>
+                            <span className="text-ink-3">
+                              · 1RM <span className="tabular-nums">{pr.oneRmKg}</span> kg
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </button>
                   </div>
                 )

@@ -16,7 +16,9 @@ export const MUSCLE_LABELS: Record<MuscleGroup, string> = {
   cardio: 'Cardio',
 }
 
-const MUSCLE_STYLES: Record<MuscleGroup, string> = {
+/** Exportado: Exercises.tsx lo reusa para teñir el ícono de equipo con el
+ * color del músculo primario, mismo lenguaje de color en filtro y fila. */
+export const MUSCLE_STYLES: Record<MuscleGroup, string> = {
   chest: 'text-muscle-chest border-muscle-chest/40 bg-muscle-chest/10',
   back: 'text-muscle-back border-muscle-back/40 bg-muscle-back/10',
   shoulders: 'text-muscle-shoulders border-muscle-shoulders/40 bg-muscle-shoulders/10',
