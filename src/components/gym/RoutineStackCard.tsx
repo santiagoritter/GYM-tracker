@@ -14,7 +14,7 @@ export const FRONT_HEIGHT = 200
 export interface RoutineStackCardProps {
   routine: Routine
   days: RoutineDay[]
-  pose: { x: number; y: number; rotate: number }
+  pose: { y: number }
   stackOrder: number
   isSelected: boolean
   dimmed: boolean
@@ -83,9 +83,7 @@ export default function RoutineStackCard({
       className="absolute inset-x-0 top-0"
       style={{ zIndex: isSelected ? 30 : stackOrder }}
       animate={{
-        x: isSelected ? 0 : pose.x,
         y: isSelected ? 0 : pose.y,
-        rotate: isSelected ? 0 : pose.rotate,
         opacity: dimmed ? 0.35 : 1,
       }}
       transition={SPRING}
