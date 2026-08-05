@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import {
@@ -5,10 +6,12 @@ import {
   Bell,
   Calculator,
   ChevronRight,
+  Download,
   Flame,
   Moon,
   Settings,
   Sun,
+  Upload,
 } from 'lucide-react'
 import { db } from '@/db/schema'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
@@ -16,11 +19,14 @@ import { useThemeStore } from '@/stores/themeStore'
 import { Card, Row, SectionHeader } from '@/components/ui/Card'
 import type { LocalProfile } from '@/types'
 import { cn } from '@/lib/utils'
+import { exportBackup, importBackup } from '@/lib/backup'
+import { toast } from '@/stores/toastStore'
 
 export default function Ajustes() {
   const navigate = useNavigate()
   const userId = useCurrentUserId()
   const { theme, setTheme } = useThemeStore()
+  const fileRef = useRef<HTMLInputElement>(null)
   const profile = useLiveQuery(
     () => (userId ? db.profile.get(userId) : undefined),
     [userId]
@@ -28,6 +34,41 @@ export default function Ajustes() {
 
   const update = (patch: Partial<LocalProfile>) => {
     if (userId) db.profile.update(userId, patch)
+  }
+
+  const handleExport = async () => {
+    if (!userId) return
+    const blob = await exportBackup(userId)
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `gymtracker-backup-${new Date().toISOString().slice(0, 10)}.json`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+    toast.success('Backup exportado', 'Guardalo en un lugar seguro para restaurarlo en otro dispositivo.')
+  }
+
+  const handleImportClick = () => {
+    if (
+      confirm(
+        'Importar un backup agrega sus datos a los que ya tenés en este dispositivo — no reemplaza, puede duplicar si ya cargaste algo. Usalo solo en un dispositivo nuevo o vacío. ¿Continuar?'
+      )
+    ) {
+      fileRef.current?.click()
+    }
+  }
+
+  const handleImportFile = async (file: File) => {
+    if (!userId) return
+    try {
+      const text = await file.text()
+      await importBackup(userId, text)
+      toast.success('Datos importados', 'Volvé a entrar a cada pantalla para verlos actualizados.')
+    } catch (err) {
+      toast.error('No se pudo importar', err instanceof Error ? err.message : 'Revisá que sea un backup válido.')
+    }
   }
 
   if (!profile) return null
@@ -188,6 +229,37 @@ export default function Ajustes() {
               <ChevronRight size={16} className="shrink-0 text-ink-4" />
             </Row>
           </Card>
+        </section>
+
+        <section>
+          <SectionHeader title="Datos" />
+          <Card>
+            <Row onClick={handleExport}>
+              <Download size={18} className="shrink-0 text-ink-3" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[15px]">Exportar mis datos</p>
+                <p className="text-[13px] text-ink-3">Un archivo para restaurar todo en otro dispositivo</p>
+              </div>
+            </Row>
+            <Row onClick={handleImportClick}>
+              <Upload size={18} className="shrink-0 text-ink-3" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[15px]">Importar datos</p>
+                <p className="text-[13px] text-ink-3">Desde un backup exportado antes</p>
+              </div>
+            </Row>
+          </Card>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="application/json"
+            hidden
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) handleImportFile(file)
+              e.target.value = ''
+            }}
+          />
         </section>
 
         <p className="px-1 text-center text-xs text-ink-3">
