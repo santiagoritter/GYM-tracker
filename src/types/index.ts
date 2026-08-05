@@ -162,6 +162,7 @@ export interface LocalProfile extends SyncFields {
   onboardingComplete?: 0 | 1
   restTimerDefault: number // segundos
   bodyWeightKg?: number
+  bodyFatPct?: number
   heightCm?: number
   dob?: string
   sex?: 'male' | 'female'

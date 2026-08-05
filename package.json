@@ -11,7 +11,7 @@
     "ios": "npm run build:native && cap open ios",
     "android": "npm run build:native && cap open android",
     "typecheck": "tsc -b --noEmit",
-    "test:db": "node scripts/test-migration.mjs && node scripts/test-sync-hooks.mjs && node scripts/test-calories-migration.mjs",
+    "test:db": "node scripts/test-migration.mjs && node scripts/test-sync-hooks.mjs && node scripts/test-calories-migration.mjs && node scripts/test-bodyfat-migration.mjs",
     "test:rec": "esbuild scripts/test-recommendation.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/rec.mjs --log-level=error && node node_modules/.tmp/rec.mjs",
     "test:style": "node scripts/test-style-rules.mjs",
     "test:levels": "esbuild scripts/test-muscle-group-levels.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/mgl.mjs --log-level=error && node node_modules/.tmp/mgl.mjs",

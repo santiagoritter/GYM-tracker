@@ -101,6 +101,20 @@ export default function Profile() {
             />
           </Row>
           <Row className="flex-col items-stretch gap-2">
+            <label className="text-[13px] font-medium text-ink-2">% de grasa corporal</label>
+            <input
+              type="number"
+              inputMode="decimal"
+              min={3}
+              max={60}
+              step={0.1}
+              value={profile.bodyFatPct ?? ''}
+              onChange={(e) => update({ bodyFatPct: Number(e.target.value) || undefined })}
+              placeholder="Opcional"
+              className="h-11 w-full rounded-xs bg-surface-2 px-3 font-mono tabular-nums outline-none focus:ring-1 focus:ring-accent"
+            />
+          </Row>
+          <Row className="flex-col items-stretch gap-2">
             <label className="text-[13px] font-medium text-ink-2">Sexo</label>
             <div className="flex gap-2">
               {(

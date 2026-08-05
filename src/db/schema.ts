@@ -229,6 +229,12 @@ export class GymTrackerDB extends Dexie {
     }).upgrade(async () => {
       // no-op deliberado
     })
+    // v11: % de grasa corporal opcional en el perfil (valor "actual", no
+    // histórico — mismo concepto que bodyWeightKg, distinto del historial
+    // en bodyMeasurements). Campo no indexado, no toca .stores().
+    this.version(11).stores({}).upgrade(async () => {
+      // no-op: campo opcional sin valor por defecto que backfillear
+    })
   }
 }
 
