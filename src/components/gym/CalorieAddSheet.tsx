@@ -5,6 +5,7 @@ import Portal from '@/components/ui/Portal'
 import { db } from '@/db/schema'
 import { nowIso, uid } from '@/lib/utils'
 import { toast } from '@/stores/toastStore'
+import { useKeyboardInset } from '@/hooks/useKeyboardInset'
 import {
   sheetItemVariants,
   sheetItemVariantsReduced,
@@ -30,6 +31,7 @@ export default function CalorieAddSheet({
   const [kcalInput, setKcalInput] = useState('')
   const [labelInput, setLabelInput] = useState('')
   const reduced = useReducedMotion()
+  const keyboardInset = useKeyboardInset()
 
   const handleAdd = async () => {
     const kcal = Number(kcalInput)
@@ -78,7 +80,18 @@ export default function CalorieAddSheet({
 
         <motion.div
           variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}
-          className="space-y-3 px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
+          className="space-y-3 px-5"
+          style={{
+            // Con el teclado abierto, el margen de home indicator
+            // (safe-area-inset-bottom) queda tapado y no sirve — el borde
+            // real de abajo pasa a ser el propio teclado. Se reemplaza por
+            // el alto del teclado + el mismo respiro de siempre, así el
+            // botón sube y queda justo arriba en vez de escondido detrás.
+            paddingBottom:
+              keyboardInset > 0
+                ? `${keyboardInset + 24}px`
+                : 'calc(1.5rem + env(safe-area-inset-bottom))',
+          }}
         >
           <div className="flex gap-2">
             <input
