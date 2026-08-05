@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Calendar, Play, QrCode, ScanLine, Sparkles, Star, Trash2 } from 'lucide-react'
+import { Calendar, ScanLine, Sparkles } from 'lucide-react'
 import { db } from '@/db/schema'
 import { routinesFor, workoutsFor } from '@/db/scoped'
 import {
@@ -12,9 +12,9 @@ import {
 } from '@/db/routines'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { Suspense, lazy } from 'react'
-import { Card, EmptyState, Row } from '@/components/ui/Card'
+import { EmptyState } from '@/components/ui/Card'
+import RoutineStack from '@/components/gym/RoutineStack'
 import type { Routine } from '@/types'
-import { cn } from '@/lib/utils'
 
 // Lazy: qrcode + jsqr + lz-string solo se descargan al compartir/escanear
 const QRShareModal = lazy(() =>
@@ -45,6 +45,23 @@ export default function Routines() {
     () => (userId ? workoutsFor(userId).filter((w) => !w.finishedAt).first() : undefined),
     [userId]
   )
+
+  const daysByRoutine = useMemo(() => {
+    const map = new Map<string, typeof days>()
+    for (const day of days) {
+      const list = map.get(day.routineId) ?? []
+      list.push(day)
+      map.set(day.routineId, list)
+    }
+    for (const list of map.values()) list.sort((a, b) => a.dayOrder - b.dayOrder)
+    return map
+  }, [days])
+
+  const handleDelete = (routine: Routine) => {
+    if (confirm(`¿Eliminar la rutina "${routine.name}"?`)) {
+      deleteRoutine(routine.id)
+    }
+  }
 
   const handleCreate = async () => {
     const trimmed = name.trim()
@@ -111,77 +128,15 @@ export default function Routines() {
         </div>
       )}
 
-      {(routines ?? []).map((routine) => {
-        const routineDays = days
-          .filter((d) => d.routineId === routine.id)
-          .sort((a, b) => a.dayOrder - b.dayOrder)
-        return (
-          <Card
-            key={routine.id}
-            className={cn(routine.isActive === 1 && 'ring-1 ring-accent/50')}
-          >
-            <Row>
-              <button
-                onClick={() => navigate(`/rutina/${routine.id}`)}
-                className="flex min-w-0 flex-1 items-center gap-2 text-left"
-              >
-                <span
-                  className="h-3 w-3 shrink-0 rounded-full"
-                  style={{ backgroundColor: routine.color }}
-                />
-                <span className="truncate font-semibold">{routine.name}</span>
-              </button>
-              <div className="flex shrink-0">
-                <button
-                  onClick={() => setSharing(routine)}
-                  aria-label="Compartir por QR"
-                  className="flex h-11 w-9 items-center justify-center text-ink-3"
-                >
-                  <QrCode size={18} />
-                </button>
-                <button
-                  onClick={() => userId && setActiveRoutine(userId, routine.id)}
-                  aria-label="Marcar como rutina favorita"
-                  className={cn(
-                    'flex h-11 w-9 items-center justify-center',
-                    routine.isActive === 1 ? 'text-accent' : 'text-ink-3'
-                  )}
-                >
-                  <Star size={18} fill={routine.isActive === 1 ? 'currentColor' : 'none'} />
-                </button>
-                <button
-                  onClick={() => {
-                    if (confirm(`¿Eliminar la rutina "${routine.name}"?`)) {
-                      deleteRoutine(routine.id)
-                    }
-                  }}
-                  aria-label="Eliminar rutina"
-                  className="flex h-11 w-9 items-center justify-center text-ink-3"
-                >
-                  <Trash2 size={18} />
-                </button>
-              </div>
-            </Row>
-
-            {routineDays.map((day) => (
-              <Row key={day.id}>
-                <span className={cn('min-w-0 flex-1 truncate text-[14px]', day.isRest === 1 && 'text-ink-3')}>
-                  {day.name}
-                  {day.isRest === 1 && ' · descanso'}
-                </span>
-                {day.isRest === 0 && (
-                  <button
-                    onClick={() => handleTrain(day.id)}
-                    className="flex h-9 shrink-0 items-center gap-1.5 rounded-xs bg-accent px-3 text-[13px] font-bold text-bg"
-                  >
-                    <Play size={13} fill="currentColor" /> Entrenar
-                  </button>
-                )}
-              </Row>
-            ))}
-          </Card>
-        )
-      })}
+      <RoutineStack
+        routines={routines ?? []}
+        daysByRoutine={daysByRoutine}
+        onTrain={handleTrain}
+        onEdit={(routine) => navigate(`/rutina/${routine.id}`)}
+        onShare={setSharing}
+        onToggleFavorite={(routineId) => userId && setActiveRoutine(userId, routineId)}
+        onDelete={handleDelete}
+      />
 
       <Suspense fallback={null}>
         {sharing && <QRShareModal routine={sharing} onClose={() => setSharing(null)} />}
