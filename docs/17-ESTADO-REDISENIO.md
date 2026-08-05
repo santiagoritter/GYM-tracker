@@ -1,11 +1,12 @@
 # 17 — Estado del rediseño (rama `beta`)
 
-Actualizado al cierre de la cuarta pasada (Fases 18-24 de
-`staged-beaming-wind.md`), 5 de agosto de 2026: batch de ideas del
-usuario — bienvenida enriquecida, backup exportable/importable,
-dificultad por ejercicio, calorías on por defecto, el anillo de Progreso
-simplificado por segunda vez (definitivo), % de grasa corporal opcional,
-y nivel de experiencia ampliado a 6 escalones.
+Actualizado al cierre de la quinta pasada (Fases 26-30 de
+`staged-beaming-wind.md`), 5 de agosto de 2026: Web Push real para
+recordatorios (código listo, bloqueado por deploy de Supabase), fix de
+contraste del acento en modo claro, y tres patrones de interacción
+adaptados de referencias puntuales del usuario (kokonutui, bklit) —
+entrada con spring en los sheets, hold-to-start en el CTA principal, y
+radar chart en Niveles.
 
 ## Ramas
 
@@ -181,6 +182,63 @@ mismo widget de anillos (Fase 9) como roto:
     recomendador nunca podía apuntar a `novice`/`elite`/`champion` desde
     el autorreporte del onboarding.
 
+### Quinta pasada — Fases 26-30, completas
+Último batch: notificaciones push que funcionen con la app cerrada, arreglo
+de la paleta clara, y tres patrones de interacción con código de
+referencia provisto por el usuario (kokonutui, bklit) — adaptados a la
+paleta/forma/texto existentes, no copiados literal.
+
+26. **Web Push real** (código listo, bloqueado por deploy de Supabase):
+    `src/lib/supabaseClient.ts` (primer uso real de `@supabase/supabase-js`
+    en el repo, `null` si no hay env vars) + `src/lib/webPush.ts`
+    (`subscribeToPush`/`unsubscribeFromPush`). `vite-plugin-pwa` pasa de
+    `generateSW` a `strategies: 'injectManifest'` para poder meter un
+    service worker propio (`src/sw.ts`) con handlers de `push` y
+    `notificationclick` — verificado leyendo `dist/sw.js` directo, no solo
+    "el build no rompió": el precacheo de Workbox se mantuvo intacto tras
+    el cambio de estrategia. Servidor: tabla `push_subscriptions`
+    (`0005_push_subscriptions.sql`), función `send-push-reminders`
+    (VAPID vía `npm:web-push`), reemplaza al scaffold muerto
+    `send-reminders` (era por email, referenciaba columnas que nunca
+    existieron en el SQL real). El recordatorio viejo (`setInterval` +
+    `Notification`, solo con la app abierta) se mantiene como fallback
+    cuando push no está disponible/configurado.
+27. **Paleta de acento en modo claro**: `--color-accent` daba 3.24:1 de
+    contraste contra blanco (pasa AA para elementos grandes, no para texto
+    normal, y el acento se usa como `text-accent` chico en varios lados).
+    Ajustado a mano a `84 132 20` (~4.5:1, más verde que amarillo — lee
+    "lima fresco" en vez de "oliva militar"). Sin poder confirmarlo en
+    pantalla real en este entorno — queda anotado para confirmar a ojo.
+28. **Smooth Drawer** (kokonutui, adaptado): `motion` (sucesor de Framer
+    Motion) se suma como dependencia nueva, acotada a este pedido — no es
+    adopción general de la librería. Entrada con spring
+    (`damping: 30, stiffness: 300`) + `staggerChildren` del contenido
+    interno en los 3 sheets que sí son bottom-sheet
+    (`ExerciseDetailSheet`, `TemplatePicker`, `QRShareModal`);
+    `ExercisePicker` se excluyó al leer el código completo — es una vista
+    de pantalla completa (`fixed inset-0`), no un sheet, el patrón no
+    aplica. Mismos colores/forma/texto de siempre, solo cambia cómo entra.
+29. **Hold Button** (kokonutui, adaptado) en "Iniciar entrenamiento" de
+    Inicio: mantener presionado 500ms dispara el inicio, con una barra de
+    progreso sobre el propio botón; soltar antes cancela. Dos desvíos
+    deliberados del ejemplo: la barra anima `scaleX` (no `width`, que
+    dispara layout) y `holdDuration` es 500ms en vez de los 3000ms del
+    original (ahí confirmaba un borrado — acá es la acción más frecuente
+    de la app, 3s sería fricción excesiva).
+30. **Radar chart** (bklit, adaptado) en Niveles por grupo muscular:
+    `MuscleGroupLevels.tsx` suma un `RadarChart` de Recharts (ya
+    instalado, no hace falta la librería propia de bklit) arriba de la
+    lista existente, que se mantiene. Un solo acento, sin glow, mismos
+    tokens de tema que el resto de los charts vía `useChartColors`, y
+    cada eje lee `result.progress` — el mismo campo 0-1 que ya mostraba
+    la barra lineal, sin cálculo nuevo.
+
+**Nota sobre la idea de gestos/spring physics de `IDEAS.md`**: la Fase 28
+y 29 la resuelven parcialmente (entrada de sheets + hold button), pero el
+drag interrumpible con seguimiento 1:1 del dedo y rubber-banding en los
+bordes sigue sin implementarse — anotado en `IDEAS.md` qué falta
+puntualmente.
+
 ---
 
 ## Pendiente
@@ -189,6 +247,10 @@ mismo widget de anillos (Fase 9) como roto:
 - **§2.5 Supabase**: SQL listo en `supabase/migrations/`, pasos en
   `docs/13`. Falta que el usuario cree el proyecto.
 - **§2.8 Rutina más popular**: necesita el backend.
+- **Fase 26 (Web Push)**: cliente y servidor listos, pero el push real no
+  funciona hasta que el usuario despliegue Supabase y complete los pasos
+  manuales de `docs/13-BACKEND-SUPABASE.md` §6 (claves VAPID, secrets,
+  cron). Mismo estado que el resto de lo que depende de Supabase.
 - **iOS**: `npx cap add ios` solo corre en macOS.
 
 ### Sin empezar
@@ -236,7 +298,11 @@ mismo widget de anillos (Fase 9) como roto:
 2. ~~**Merge de `beta` a `main`**~~ — resuelto: el usuario autorizó
    explícitamente el merge al cierre de esta sesión, sin esperar validación
    visual previa ("mergea a main todo para que pueda ver ls cambios").
-3. **Contraste del acento en modo claro**: `--color-accent` se oscureció a
-   mano (~`#8A9A00`) para pasar AA sobre fondo blanco manteniendo el hue del
-   lima. No se verificó en pantalla real — si no convence, es un solo valor
-   en `src/index.css` para ajustar.
+3. **Contraste del acento en modo claro**: ajustado dos veces (Fase 10 y
+   Fase 27), el valor actual es `84 132 20` (~4.5:1 contra blanco,
+   calculado a mano). Sigue sin verificarse en pantalla real — si no
+   convence, es un solo valor en `src/index.css` para ajustar.
+4. **Web Push (Fase 26)**: código completo y en `main` tras el merge, pero
+   inerte hasta que el usuario cree el proyecto de Supabase y siga los
+   pasos manuales de `docs/13-BACKEND-SUPABASE.md` §6. Nada que decidir de
+   su parte salvo cuándo hacer ese deploy.
