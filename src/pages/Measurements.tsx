@@ -15,6 +15,7 @@ import { db } from '@/db/schema'
 import { softDelete } from '@/db/mutations'
 import { bodyMeasurementsFor } from '@/db/scoped'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
+import { useChartColors } from '@/hooks/useChartColors'
 import { Card, EmptyState, Row, SectionHeader } from '@/components/ui/Card'
 import type { BodyMeasurement } from '@/types'
 import { nowIso, uid } from '@/lib/utils'
@@ -33,6 +34,7 @@ const FIELDS: { key: keyof BodyMeasurement; label: string; unit: string }[] = [
 export default function Measurements() {
   const navigate = useNavigate()
   const userId = useCurrentUserId()
+  const chartColors = useChartColors()
   const [form, setForm] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
 
@@ -120,15 +122,15 @@ export default function Measurements() {
               <div className="h-48">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={weightSeries} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
-                    <CartesianGrid stroke="#2A2A2A" strokeDasharray="3 3" />
-                    <XAxis dataKey="label" stroke="#606060" fontSize={11} />
-                    <YAxis stroke="#606060" fontSize={11} domain={['dataMin - 2', 'dataMax + 2']} />
+                    <CartesianGrid stroke={chartColors.grid} strokeDasharray="3 3" />
+                    <XAxis dataKey="label" stroke={chartColors.axis} fontSize={11} />
+                    <YAxis stroke={chartColors.axis} fontSize={11} domain={['dataMin - 2', 'dataMax + 2']} />
                     <Tooltip
-                      contentStyle={{ backgroundColor: '#1C1C1C', border: '1px solid #383838', borderRadius: 8, fontSize: 12 }}
-                      labelStyle={{ color: '#A0A0A0' }}
+                      contentStyle={{ backgroundColor: chartColors.tooltipBg, border: `1px solid ${chartColors.tooltipBorder}`, borderRadius: 8, fontSize: 12 }}
+                      labelStyle={{ color: chartColors.tooltipText }}
                       formatter={(v) => [`${v} kg`, 'Peso']}
                     />
-                    <Line type="monotone" dataKey="kg" stroke="#E8FF47" strokeWidth={2} dot={{ fill: '#E8FF47', r: 3 }} />
+                    <Line type="monotone" dataKey="kg" stroke={chartColors.accent} strokeWidth={2} dot={{ fill: chartColors.accent, r: 3 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>

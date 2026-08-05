@@ -43,12 +43,18 @@
 /* Paleta iOS en modo claro: systemGroupedBackground de fondo, tarjetas en
    blanco puro, labels estándar de Apple. El acento lima se oscurece (no
    pasa AA sobre blanco tal cual) manteniendo el hue — es el único valor que
-   no viene directo de la paleta de iOS y conviene revisarlo a ojo. */
+   no viene directo de la paleta de iOS y conviene revisarlo a ojo.
+
+   surface-2/surface-3 NO copian los tokens tertiary/quaternary de iOS tal
+   cual — ahí Apple reutiliza el mismo valor que el fondo a propósito (listas
+   agrupadas), pero acá surface-2 hace de "un escalón por encima del fondo"
+   (celdas vacías de CalendarHeatmap, skeletons de carga) y necesita ser
+   distinguible de --color-bg, no idéntico. */
 :root[data-theme='light'] {
   --color-bg: 242 242 247; /* #F2F2F7 */
   --color-surface: 255 255 255;
-  --color-surface-2: 242 242 247;
-  --color-surface-3: 229 229 234; /* #E5E5EA */
+  --color-surface-2: 230 230 235;
+  --color-surface-3: 220 220 225;
   --color-surface-glass: rgba(255, 255, 255, 0.72);
   --color-line: rgba(60, 60, 67, 0.29);
   --color-line-2: rgba(60, 60, 67, 0.16);

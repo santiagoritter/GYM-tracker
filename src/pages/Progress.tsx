@@ -15,6 +15,7 @@ import {
 import { db } from '@/db/schema'
 import { workoutsFor, personalRecordsFor } from '@/db/scoped'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
+import { useChartColors } from '@/hooks/useChartColors'
 import { HistoryList } from '@/components/gym/HistoryList'
 import { MonthlyStats } from '@/components/gym/MonthlyStats'
 import { StrengthLevels } from '@/components/gym/StrengthLevels'
@@ -96,6 +97,7 @@ export default function Progress() {
 
 function Charts() {
   const userId = useCurrentUserId()
+  const chartColors = useChartColors()
   const workouts = useLiveQuery(
     () => (userId ? workoutsFor(userId).filter((w) => Boolean(w.finishedAt)).toArray() : []),
     [userId]
@@ -202,25 +204,25 @@ function Charts() {
         <div className="h-56 rounded-xl bg-surface p-3">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={exerciseData} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
-              <CartesianGrid stroke="#2A2A2A" strokeDasharray="3 3" />
-              <XAxis dataKey="label" stroke="#606060" fontSize={11} />
-              <YAxis stroke="#606060" fontSize={11} unit="" />
+              <CartesianGrid stroke={chartColors.grid} strokeDasharray="3 3" />
+              <XAxis dataKey="label" stroke={chartColors.axis} fontSize={11} />
+              <YAxis stroke={chartColors.axis} fontSize={11} unit="" />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#1C1C1C',
-                  border: '1px solid #383838',
+                  backgroundColor: chartColors.tooltipBg,
+                  border: `1px solid ${chartColors.tooltipBorder}`,
                   borderRadius: 8,
                   fontSize: 12,
                 }}
-                labelStyle={{ color: '#A0A0A0' }}
+                labelStyle={{ color: chartColors.tooltipText }}
                 formatter={(value) => [`${value} kg`, 'Mejor set']}
               />
               <Line
                 type="monotone"
                 dataKey="kg"
-                stroke="#E8FF47"
+                stroke={chartColors.accent}
                 strokeWidth={2}
-                dot={{ fill: '#E8FF47', r: 3 }}
+                dot={{ fill: chartColors.accent, r: 3 }}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -234,21 +236,21 @@ function Charts() {
         <div className="h-48 rounded-xl bg-surface p-3">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={weeklyVolume} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
-              <CartesianGrid stroke="#2A2A2A" strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="label" stroke="#606060" fontSize={10} />
-              <YAxis stroke="#606060" fontSize={11} />
+              <CartesianGrid stroke={chartColors.grid} strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="label" stroke={chartColors.axis} fontSize={10} />
+              <YAxis stroke={chartColors.axis} fontSize={11} />
               <Tooltip
-                cursor={{ fill: '#24242466' }}
+                cursor={{ fill: chartColors.cursor }}
                 contentStyle={{
-                  backgroundColor: '#1C1C1C',
-                  border: '1px solid #383838',
+                  backgroundColor: chartColors.tooltipBg,
+                  border: `1px solid ${chartColors.tooltipBorder}`,
                   borderRadius: 8,
                   fontSize: 12,
                 }}
-                labelStyle={{ color: '#A0A0A0' }}
+                labelStyle={{ color: chartColors.tooltipText }}
                 formatter={(value) => [`${value} kg`, 'Volumen']}
               />
-              <Bar dataKey="kg" fill="#E8FF47" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="kg" fill={chartColors.accent} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
