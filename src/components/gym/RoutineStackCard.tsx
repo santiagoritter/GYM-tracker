@@ -16,6 +16,7 @@ export interface RoutineStackCardProps {
   days: RoutineDay[]
   pose: { y: number }
   stackOrder: number
+  isFront: boolean
   isSelected: boolean
   dimmed: boolean
   onSelect: () => void
@@ -52,6 +53,7 @@ export default function RoutineStackCard({
   days,
   pose,
   stackOrder,
+  isFront,
   isSelected,
   dimmed,
   onSelect,
@@ -94,22 +96,22 @@ export default function RoutineStackCard({
         transition={SPRING}
         style={{ perspective: 1400 }}
       >
-        {/* Aura de acento para delimitar la carta seleccionada — pedido
-            explícito del usuario. DESIGN.md §0 lista el glow/halo de color
-            como anti-patrón por defecto; acá se hace una excepción
-            puntual, avisada, no una reapertura general de la regla (sigue
-            sin usarse en ningún otro lado).
+        {/* Aura de acento — pedido explícito del usuario. DESIGN.md §0 lista
+            el glow/halo de color como anti-patrón por defecto; acá se hace
+            una excepción puntual, avisada, no una reapertura general de la
+            regla (sigue sin usarse en ningún otro lado).
+            Delimita la carta AL FRENTE del mazo (la que "Cambiar rutina"
+            va rotando), no la seleccionada: dado vuelta sobre el primer
+            intento, pedido explícito — al frente es donde ayuda a saber
+            cuál es cuál mientras se navega el mazo; una vez que se abre
+            una (isSelected), ya está identificada de sobra por su propio
+            contenido, el aura ahí sobraba.
             Capa propia con su propia transición de opacity (rápida, 180ms),
-            en vez de una clase condicional en el contenedor que anima
-            `height`: ese spring recorre una distancia variable (240px al
-            alto real del reverso, que puede ser 600px+) y tarda bastante
-            más en asentarse que el rotateY (180° fijos) — el aura, atada a
-            esa caja, quedaba con el borde chico hasta que la altura
-            terminaba de crecer, entonces se percibía recién DESPUÉS del
-            flip en vez de junto con él. Acá aparece de una. */}
+            no atada al contenedor que anima `height` con spring (ver
+            historial: eso hacía que se percibiera con retraso). */}
         <motion.div
           className="pointer-events-none absolute inset-0 rounded-2xl shadow-[0_0_0_1.5px_rgb(var(--color-accent)/0.7),0_0_28px_rgb(var(--color-accent)/0.45)]"
-          animate={{ opacity: isSelected ? 1 : 0 }}
+          animate={{ opacity: isFront && !isSelected ? 1 : 0 }}
           transition={{ duration: 0.18 }}
         />
         <motion.div

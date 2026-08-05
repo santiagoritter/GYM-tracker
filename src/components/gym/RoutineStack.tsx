@@ -203,6 +203,7 @@ export default function RoutineStack({
               days={daysByRoutine.get(routine.id) ?? []}
               pose={pose}
               stackOrder={displayOrder.length - index}
+              isFront={index === 0}
               isSelected={selectedId === routine.id}
               dimmed={selectedId !== null && selectedId !== routine.id}
               onSelect={() => setSelectedId(routine.id)}
