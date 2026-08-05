@@ -1,9 +1,10 @@
 # 17 — Estado del rediseño (rama `beta`)
 
-Actualizado al cierre de la segunda pasada de rediseño (Fases 7-12 de
-`staged-beaming-wind.md`), 5 de agosto de 2026: fix de rendimiento crítico
-en Android, calendario de actividad movido a Inicio, anillo semanal nuevo,
-tema claro corregido, split de bundle, y tap-to-reveal en Últimos entrenos.
+Actualizado al cierre de la tercera pasada de rediseño (Fases 13-16 de
+`staged-beaming-wind.md`), 5 de agosto de 2026: feedback directo del
+usuario sobre `main` desplegado — navegación del avatar, reordenamiento
+de Inicio (el anillo semanal se mudó a Progreso), la regla de identidad
+server-side documentada, y Liquid Glass (skill `apple-design`).
 
 ## Ramas
 
@@ -114,6 +115,40 @@ de referencia para gráficos/componentes:
     decoración. Tap expande el detalle por ejercicio (series + mejor
     peso) de ese entreno, consultado solo cuando la fila está expandida.
 
+### Tercera pasada — Fases 13-16, completas
+Feedback directo del usuario probando `main` desplegado (captura de
+Inicio adjunta en la conversación):
+
+13. Avatar del header (`Layout.tsx`) ahora navega a `/perfil` — no tenía
+    `onClick`.
+14. Reordenamiento de Inicio: se saca `StreakWeekCard` (el anillo semanal
+    de la Fase 9, competía con la actividad de hoy en el primer scroll) y
+    pasa a ser lo primero del tab Resumen de Progreso. Nuevo orden de
+    Inicio: calorías → iniciar entrenamiento → calendario de actividad →
+    días de la rutina → frase.
+15. **"/me" en las peticiones** — investigado: no hay ningún backend HTTP
+    desplegado hoy (sin `@supabase/supabase-js` importado en `src/`, la
+    app es 100% local). No hay ningún endpoint real al que agregarle ese
+    patrón. El SQL ya lo cumple (`0004_indexes_rls_storage.sql`: RLS
+    compara contra `auth.uid()`, nunca contra un `user_id` del cliente).
+    Se documentó la regla para el código de cliente que todavía no existe
+    en `docs/13-BACKEND-SUPABASE.md` §3.5 + referencia en
+    `.claude/CLAUDE.md` §5.
+16. **Liquid Glass** (`~/.agents/skills/apple-design/SKILL.md` §12,
+    coincide con la skill que pide `Redisenio.md` §3.2): borde superior
+    brillante en la tab bar (`.glass-edge-top`), scrims de sheets/modales
+    animan blur+opacity juntos al aparecer (`animate-glass-in`), y
+    soporte nuevo de `prefers-reduced-transparency`/`prefers-contrast`/
+    `prefers-reduced-motion` (ausente hasta ahora). Las secciones 1-11 de
+    la skill (spring physics, gestos) quedan anotadas en `IDEAS.md` —
+    cambio de arquitectura de interacción, no de blur.
+
+**Auditoría de `Redisenio.md` §2 (features) contra el código**: todas las
+features salvo §2.5 (sync online) y §2.8 (rutina más popular) — ambas
+bloqueadas por Supabase sin desplegar — ya están confirmadas hechas por
+lectura/grep directo. No queda ninguna feature de negocio nueva de esa
+sección por construir.
+
 ---
 
 ## Pendiente
@@ -137,8 +172,11 @@ de referencia para gráficos/componentes:
   del blur), pero no hay un Android real en este entorno para confirmarlo.
   Falta que el usuario vuelva a probar en el Redmi Note 14.
 - `kokonutui.com/docs/card-flip` sigue devolviendo 404 en cada intento de
-  esta sesión — no bloqueó nada, pero la idea de tap-to-reveal en
-  `RecentWorkouts` sigue sin explorarse a fondo por eso.
+  esta sesión — no bloqueó nada, el concepto se adaptó igual en la Fase 12
+  (tap-to-reveal en `RecentWorkouts`, sin el flip 3D literal).
+- **Spring physics / gestos interactivos** (secciones 1-11 de la skill
+  `apple-design`) — anotado en `IDEAS.md`, requiere sumar una librería de
+  springs y reescribir interacciones existentes.
 
 ---
 
