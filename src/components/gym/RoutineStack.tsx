@@ -6,8 +6,12 @@ import type { Routine, RoutineDay } from '@/types'
 import { cn } from '@/lib/utils'
 import RoutineStackCard, { FRONT_HEIGHT } from './RoutineStackCard'
 
-const Y_STEP = 10
-const ROTATE_STEP = 1.4
+// Aspecto de notas apiladas sobre un escritorio: más dispersión que un
+// mazo de cartas prolijo — ángulo y offset bien visibles para poder
+// agarrar la de abajo sin pelearla contra la de arriba.
+const Y_STEP = 16
+const X_STEP = 7
+const ROTATE_STEP = 3
 const MAX_STACK_STEP = 5
 const SPRING = { type: 'spring' as const, damping: 30, stiffness: 300 }
 
@@ -129,9 +133,11 @@ export default function RoutineStack({
     >
       {routines.map((routine, index) => {
         const step = Math.min(index, MAX_STACK_STEP)
+        const side = index % 2 === 0 ? 1 : -1
         const pose = {
+          x: step * X_STEP * side,
           y: step * Y_STEP,
-          rotate: step * ROTATE_STEP * (index % 2 === 0 ? 1 : -1),
+          rotate: step * ROTATE_STEP * side,
         }
         return (
           <RoutineStackCard

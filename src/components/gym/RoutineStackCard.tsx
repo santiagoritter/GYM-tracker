@@ -6,12 +6,12 @@ import type { Routine, RoutineDay } from '@/types'
 import { cn } from '@/lib/utils'
 
 const SPRING = { type: 'spring' as const, damping: 30, stiffness: 300 }
-export const FRONT_HEIGHT = 84
+export const FRONT_HEIGHT = 108
 
 export interface RoutineStackCardProps {
   routine: Routine
   days: RoutineDay[]
-  pose: { y: number; rotate: number }
+  pose: { x: number; y: number; rotate: number }
   stackOrder: number
   isSelected: boolean
   dimmed: boolean
@@ -80,6 +80,7 @@ export default function RoutineStackCard({
       className="absolute inset-x-0 top-0"
       style={{ zIndex: isSelected ? 30 : stackOrder }}
       animate={{
+        x: isSelected ? 0 : pose.x,
         y: isSelected ? 0 : pose.y,
         rotate: isSelected ? 0 : pose.rotate,
         opacity: dimmed ? 0.35 : 1,
@@ -105,21 +106,21 @@ export default function RoutineStackCard({
             disabled={!frontInteractive}
             aria-label={`Ver rutina ${routine.name}`}
             className={cn(
-              'card-shine relative flex h-[84px] w-full items-center gap-3 rounded-2xl bg-surface px-4 text-left [backface-visibility:hidden]',
+              'card-shine relative flex h-[108px] w-full items-center gap-3 rounded-2xl bg-surface px-5 text-left [backface-visibility:hidden]',
               isSelected && 'pointer-events-none'
             )}
           >
             <span
-              className="h-3 w-3 shrink-0 rounded-full"
+              className="h-4 w-4 shrink-0 rounded-full"
               style={{ backgroundColor: routine.color }}
             />
             <span className="min-w-0 flex-1">
-              <span className="block truncate font-semibold">{routine.name}</span>
-              <span className="block text-[13px] text-ink-3">
+              <span className="block truncate text-lg font-semibold">{routine.name}</span>
+              <span className="block text-[14px] text-ink-3">
                 {days.length} {days.length === 1 ? 'día' : 'días'}
               </span>
             </span>
-            <Repeat2 size={16} className="shrink-0 text-ink-3" />
+            <Repeat2 size={18} className="shrink-0 text-ink-3" />
           </button>
 
           {/* Reverso */}
