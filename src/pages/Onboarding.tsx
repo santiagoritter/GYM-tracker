@@ -82,6 +82,7 @@ export default function Onboarding() {
           units: 'kg',
           restTimerDefault: 90,
           onboardingComplete: 1,
+          calorieTrackingEnabled: 1,
           ...patch,
           dirty: 1,
           updatedAt: nowIso(),

@@ -255,6 +255,7 @@ export async function ensureProfile(userId: string): Promise<void> {
       units: 'kg',
       restTimerDefault: 90,
       onboardingComplete: 0,
+      calorieTrackingEnabled: 1,
     } as LocalProfile)
   }
 }
