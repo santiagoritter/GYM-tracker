@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
+import { motion, useReducedMotion } from 'motion/react'
 import { X, CheckCircle2, AlertTriangle, Camera, Trash2, PlayCircle } from 'lucide-react'
 import type { Exercise } from '@/types'
 import { getExerciseInfo, getTechniqueVideoUrl } from '@/data/exerciseInfo'
@@ -11,6 +12,12 @@ import { exercisePhotoFor } from '@/db/scoped'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { compressImage } from '@/lib/photos'
 import { DIFFICULTY_COLOR, DIFFICULTY_LABELS } from '@/lib/difficulty'
+import {
+  sheetItemVariants,
+  sheetItemVariantsReduced,
+  sheetPanelVariants,
+  sheetPanelVariantsReduced,
+} from '@/lib/motionVariants'
 import { nowIso } from '@/lib/utils'
 import MuscleBodySVG from './MuscleBodySVG'
 import EquipmentIcon from './EquipmentIcon'
@@ -177,6 +184,7 @@ function SetupSection({ exercise }: { exercise: Exercise }) {
 
 export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
   const info = exercise ? getExerciseInfo(exercise.id) : null
+  const reduced = useReducedMotion()
 
   // Cerrar con Escape
   useEffect(() => {
@@ -202,46 +210,59 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
         onClick={onClose}
       />
 
-      {/* Sheet — el centrado horizontal (translateX(-50%)) vive en los
-          keyframes de animate-sheet-in, no en una clase -translate-x-1/2
-          separada: una animación reemplaza el transform completo del
-          elemento, así que una clase de transform aparte quedaría pisada. */}
-      <div className="fixed bottom-0 left-1/2 z-50 w-full max-w-lg animate-sheet-in rounded-t-3xl bg-surface shadow-float overflow-hidden">
-        {/* Drag handle */}
-        <div className="flex justify-center pt-3 pb-1">
-          <div className="h-1 w-10 rounded-full bg-line-2" />
-        </div>
-
-        {/* Header */}
-        <div className="flex items-start justify-between px-5 pt-1 pb-3">
-          <div className="flex-1 pr-4">
-            <h2 className="text-xl font-bold leading-tight">{exercise.name}</h2>
-            <p className="mt-0.5 text-[13px] text-ink-2">{exercise.nameEn}</p>
+      {/* Sheet — spring de entrada + stagger del contenido interno (Fase
+          28, "Smooth Drawer" de kokonutui adaptado a nuestro Portal, sin el
+          Drawer de shadcn que no está instalado). El centrado horizontal
+          vive en los keyframes de sheetPanelVariants, no en una clase
+          -translate-x-1/2 aparte — una animación reemplaza el transform
+          completo del elemento. */}
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={reduced ? sheetPanelVariantsReduced : sheetPanelVariants}
+        className="fixed bottom-0 left-1/2 z-50 w-full max-w-lg rounded-t-3xl bg-surface shadow-float overflow-hidden"
+      >
+        {/* Drag handle + header + badges: primer grupo del stagger */}
+        <motion.div variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}>
+          <div className="flex justify-center pt-3 pb-1">
+            <div className="h-1 w-10 rounded-full bg-line-2" />
           </div>
-          <button
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-fill text-ink-2 active:bg-fill-2"
-          >
-            <X size={16} />
-          </button>
-        </div>
 
-        {/* Badges */}
-        <div className="flex flex-wrap items-center gap-2 px-5 pb-4">
-          <span className={cn('text-[12px] font-semibold', DIFFICULTY_COLOR[exercise.difficulty])}>
-            {DIFFICULTY_LABELS[exercise.difficulty]}
-          </span>
-          <span className="text-ink-4">·</span>
-          <span className="flex items-center gap-1 text-[12px] text-ink-2">
-            <EquipmentIcon equipment={exercise.equipment} size={13} />
-            {EQUIPMENT_LABEL[exercise.equipment]}
-          </span>
-          <span className="text-ink-4">·</span>
-          <span className="text-[12px] text-ink-2">{PATTERN_LABEL[exercise.pattern]}</span>
-        </div>
+          <div className="flex items-start justify-between px-5 pt-1 pb-3">
+            <div className="flex-1 pr-4">
+              <h2 className="text-xl font-bold leading-tight">{exercise.name}</h2>
+              <p className="mt-0.5 text-[13px] text-ink-2">{exercise.nameEn}</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-fill text-ink-2 active:bg-fill-2"
+            >
+              <X size={16} />
+            </button>
+          </div>
 
-        {/* Contenido scrolleable */}
-        <div className="max-h-[70vh] overflow-y-auto overscroll-contain px-5 pb-8 space-y-6">
+          <div className="flex flex-wrap items-center gap-2 px-5 pb-4">
+            <span className={cn('text-[12px] font-semibold', DIFFICULTY_COLOR[exercise.difficulty])}>
+              {DIFFICULTY_LABELS[exercise.difficulty]}
+            </span>
+            <span className="text-ink-4">·</span>
+            <span className="flex items-center gap-1 text-[12px] text-ink-2">
+              <EquipmentIcon equipment={exercise.equipment} size={13} />
+              {EQUIPMENT_LABEL[exercise.equipment]}
+            </span>
+            <span className="text-ink-4">·</span>
+            <span className="text-[12px] text-ink-2">{PATTERN_LABEL[exercise.pattern]}</span>
+          </div>
+        </motion.div>
+
+        {/* Contenido scrolleable: segundo grupo del stagger, entra como una
+            sola unidad (no cascadea cada card interna — con hasta una
+            decena de tips/errores comunes, animar cada uno por separado se
+            sentiría lento en vez de pulido). */}
+        <motion.div
+          variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}
+          className="max-h-[70vh] overflow-y-auto overscroll-contain px-5 pb-8 space-y-6"
+        >
           {/* Ver la técnica en video. Es una búsqueda y no un ID de video a
               propósito: con 107 ejercicios, un ID que el autor borra deja un
               link muerto que nadie va a notar hasta que alguien lo toque. */}
@@ -350,8 +371,8 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
               Descripción detallada próximamente.
             </p>
           )}
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </Portal>
   )
 }

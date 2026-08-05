@@ -112,18 +112,6 @@
   }
   .animate-fade-up { animation: fade-up 240ms cubic-bezier(0.25,0.46,0.45,0.94) both; }
 
-  /* Sheet iOS: slide desde abajo. Incluye translateX(-50%) en ambos keyframes
-     porque una animación reemplaza el `transform` completo del elemento —
-     si el sheet también usa la clase -translate-x-1/2 para centrarse
-     horizontalmente (left-1/2 + -translate-x-1/2), esta animación la pisa
-     y el sheet queda pegado al borde izquierdo del punto medio en vez de
-     centrado. */
-  @keyframes sheet-in {
-    from { opacity: 0; transform: translate(-50%, 100%); }
-    to   { opacity: 1; transform: translate(-50%, 0); }
-  }
-  .animate-sheet-in { animation: sheet-in 360ms cubic-bezier(0.32,0.72,0,1) both; }
-
   /* Scale in suave. Incluye translateX(-50%): el único uso actual (pill de
      entreno activo en Layout.tsx) también necesita centrarse con left-1/2,
      y una animación reemplaza el transform completo del elemento. */
@@ -267,7 +255,6 @@
   .animate-glass-in {
     animation: reduced-fade 150ms ease both;
   }
-  .animate-sheet-in,
   .animate-scale-in {
     animation: reduced-fade-centered 150ms ease both;
   }

@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react'
+import { motion, useReducedMotion } from 'motion/react'
 import { Copy, Download, X } from 'lucide-react'
 import { buildPayload, encodePayload, generateQRDataUrl } from '@/lib/qr'
 import type { Routine } from '@/types'
 import Portal from '@/components/ui/Portal'
+import {
+  sheetItemVariants,
+  sheetItemVariantsReduced,
+  sheetPanelVariantsFlex,
+  sheetPanelVariantsFlexReduced,
+} from '@/lib/motionVariants'
 import { cn } from '@/lib/utils'
 
 export function QRShareModal({ routine, onClose }: { routine: Routine; onClose: () => void }) {
@@ -10,6 +17,7 @@ export function QRShareModal({ routine, onClose }: { routine: Routine; onClose: 
   const [qrUrl, setQrUrl] = useState<string | null>(null)
   const [encoded, setEncoded] = useState('')
   const [tooBig, setTooBig] = useState(false)
+  const reduced = useReducedMotion()
 
   useEffect(() => {
     let cancelled = false
@@ -31,15 +39,26 @@ export function QRShareModal({ routine, onClose }: { routine: Routine; onClose: 
   return (
     <Portal>
       <div className="fixed inset-0 z-50 flex items-end justify-center bg-bg/80 backdrop-blur-sm animate-glass-in">
-        <div className="w-full max-w-lg rounded-t-3xl border-t border-line-2 bg-surface p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
-          <div className="mb-4 flex items-center justify-between">
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={reduced ? sheetPanelVariantsFlexReduced : sheetPanelVariantsFlex}
+          className="w-full max-w-lg rounded-t-3xl border-t border-line-2 bg-surface p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
+        >
+          <motion.div
+            variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}
+            className="mb-4 flex items-center justify-between"
+          >
             <h2 className="text-lg font-bold">Compartir rutina</h2>
             <button onClick={onClose} className="rounded-lg p-2 text-ink-2">
               <X size={22} />
             </button>
-          </div>
+          </motion.div>
 
-          <div className="flex flex-col items-center gap-4">
+          <motion.div
+            variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}
+            className="flex flex-col items-center gap-4"
+          >
             {qrUrl ? (
               <img
                 src={qrUrl}
@@ -91,8 +110,8 @@ export function QRShareModal({ routine, onClose }: { routine: Routine; onClose: 
                 <Copy size={18} />
               </button>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
     </Portal>
   )

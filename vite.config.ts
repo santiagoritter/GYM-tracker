@@ -56,10 +56,13 @@ export default defineConfig({
         // lazy-loadeadas, pero sin chunk propio Rollup lo mezclaba con
         // cualquiera de esas páginas. React/react-dom/router cambian mucho
         // menos seguido que el código de la app — separarlos cachea mejor
-        // entre deploys.
+        // entre deploys. `motion` (Fase 28) entra desde ExerciseDetailSheet,
+        // que NO está lazy (se abre desde Exercises.tsx) — sin chunk propio
+        // infla el bundle principal a ~540KB.
         manualChunks: {
           recharts: ['recharts'],
           vendor: ['react', 'react-dom', 'react-router-dom'],
+          motion: ['motion'],
         },
       },
     },
