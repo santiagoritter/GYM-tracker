@@ -207,6 +207,11 @@ export default function Layout() {
                 dragElastic={0}
                 dragMomentum={false}
                 onDragEnd={handlePillDragEnd}
+                // Feedback táctil: mientras se arrastra, crece un toque —
+                // confirma "esto es lo que estás moviendo" sin depender
+                // solo del cursor/dedo. Vuelve sola a 1 al soltar, motion
+                // ya maneja esa transición.
+                whileDrag={{ scale: reduced ? 1 : 1.12 }}
                 style={{ x, width: tabWidth - PILL_INSET * 2 }}
                 className="absolute inset-y-1 left-0 z-20 touch-none rounded-full bg-accent/20 backdrop-blur-xs"
               />
