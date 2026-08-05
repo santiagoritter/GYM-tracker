@@ -1,6 +1,7 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { motion, useReducedMotion } from 'motion/react'
+import { motion, useReducedMotion, type PanInfo } from 'motion/react'
 import { Calendar, Dumbbell, Flame, House, LogOut, Shield, TrendingUp, User } from 'lucide-react'
 import { workoutsFor } from '@/db/scoped'
 import { useAuthStore } from '@/stores/authStore'
@@ -16,8 +17,14 @@ const TABS = [
   { to: '/perfil', label: 'Yo', icon: User },
 ]
 
+function activeTabIndex(pathname: string): number {
+  const i = TABS.findIndex(({ to }) => (to === '/' ? pathname === '/' : pathname.startsWith(to)))
+  return i === -1 ? 0 : i
+}
+
 export default function Layout() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { name, role, clearSession } = useAuthStore()
   const userId = useCurrentUserId()
   const reduced = useReducedMotion()
@@ -26,6 +33,30 @@ export default function Layout() {
     () => (userId ? workoutsFor(userId).filter((w) => !w.finishedAt).first() : undefined),
     [userId]
   )
+
+  // Ancho de cada columna de la tab bar, medido en vivo: hace falta en
+  // píxeles reales para poder animar/arrastrar la pastilla por posición
+  // (`x`), no hay forma de hacerlo solo con clases de Tailwind.
+  const tabRowRef = useRef<HTMLDivElement>(null)
+  const [tabWidth, setTabWidth] = useState(0)
+  useEffect(() => {
+    const row = tabRowRef.current
+    if (!row) return
+    const measure = () => setTabWidth(row.getBoundingClientRect().width / TABS.length)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(row)
+    return () => ro.disconnect()
+  }, [])
+
+  const activeIndex = activeTabIndex(location.pathname)
+
+  const handlePillDragEnd = (_e: unknown, info: PanInfo) => {
+    if (!tabWidth) return
+    const x = activeIndex * tabWidth + info.offset.x
+    const nearest = Math.min(TABS.length - 1, Math.max(0, Math.round(x / tabWidth)))
+    if (nearest !== activeIndex) navigate(TABS[nearest].to)
+  }
 
   const handleLogout = () => {
     clearSession()
@@ -101,7 +132,7 @@ export default function Layout() {
           el primer intento (px-3/pb-2 originales quedaban muy alta). */}
       <nav className="fixed bottom-0 left-1/2 z-40 w-full max-w-lg -translate-x-1/2 px-3 pb-[calc(0.25rem+env(safe-area-inset-bottom))]">
         <div className="glass glass-edge-top overflow-hidden rounded-full">
-          <div className="flex items-stretch justify-around">
+          <div ref={tabRowRef} className="relative flex items-stretch justify-around">
             {TABS.map(({ to, label, icon: Icon }) => (
               <NavLink
                 key={to}
@@ -109,7 +140,7 @@ export default function Layout() {
                 end={to === '/'}
                 className={({ isActive }) =>
                   cn(
-                    'flex flex-1 flex-col items-center gap-[3px] py-2.5 text-[10px] font-medium tracking-wide transition-colors duration-150',
+                    'relative z-10 flex flex-1 flex-col items-center gap-[3px] py-2.5 text-[10px] font-medium tracking-wide transition-colors duration-150',
                     isActive
                       ? 'text-accent'
                       : 'text-ink-3 active:text-ink-2'
@@ -118,34 +149,34 @@ export default function Layout() {
               >
                 {({ isActive }) => (
                   <>
-                    {/* La "gota": cápsula redonda (no cuadrada) que se
-                        desliza de tab en tab con layoutId, como el
-                        indicador activo de los tab bars nuevos de iOS. */}
-                    <span className="relative flex h-8 w-8 items-center justify-center">
-                      {isActive && (
-                        <motion.span
-                          layoutId="tab-pill"
-                          className="absolute inset-0 rounded-full bg-accent/15"
-                          transition={
-                            reduced
-                              ? { duration: 0 }
-                              : { type: 'spring', damping: 30, stiffness: 300 }
-                          }
-                        />
-                      )}
-                      {/* El estado activo se marca con color, fondo y grosor
-                          de trazo, no con un halo lima alrededor del icono. */}
-                      <Icon
-                        size={20}
-                        strokeWidth={isActive ? 2.2 : 1.8}
-                        className="relative z-10"
-                      />
-                    </span>
+                    <Icon size={20} strokeWidth={isActive ? 2.2 : 1.8} />
                     {label}
                   </>
                 )}
               </NavLink>
             ))}
+
+            {/* La "gota": cápsula que envuelve ícono+label del tab activo
+                entero (no solo el ícono), como el indicador de los tab
+                bars nuevos de iOS. Se desliza sola al tocar otro tab
+                (`animate`) y también se puede arrastrar con el dedo —
+                al soltar, navega al tab más cercano a donde quedó. Un
+                solo elemento compartido (no uno por tab), posicionado
+                por `x` en vez de `layoutId`: `drag` y `layoutId` no
+                combinan bien, `x` controlado a mano sí. */}
+            {tabWidth > 0 && (
+              <motion.div
+                drag="x"
+                dragConstraints={{ left: 0, right: (TABS.length - 1) * tabWidth }}
+                dragElastic={0}
+                dragMomentum={false}
+                onDragEnd={handlePillDragEnd}
+                animate={{ x: activeIndex * tabWidth }}
+                transition={reduced ? { duration: 0 } : { type: 'spring', damping: 30, stiffness: 300 }}
+                style={{ width: tabWidth }}
+                className="absolute inset-y-1 left-0 z-20 touch-none rounded-full bg-accent/15"
+              />
+            )}
           </div>
         </div>
       </nav>
