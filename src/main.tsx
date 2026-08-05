@@ -6,12 +6,19 @@ import { db, seedIfEmpty } from '@/db/schema'
 import { installSyncHooks, setSyncUser } from '@/db/syncHooks'
 import { useAuthStore } from '@/stores/authStore'
 import { initNativeShell } from '@/lib/native'
+import { initPwaUpdate } from '@/lib/pwaUpdate'
 import { applyTheme, useThemeStore } from '@/stores/themeStore'
 import '@/index.css'
 
 // No-op en el navegador; en nativo ajusta la barra de estado y oculta el
 // splash cuando la app ya puede dibujar.
 initNativeShell()
+
+// No-op si no hay service worker (nativo, navegadores sin soporte). En web
+// registra el SW y pide activamente si hay versión nueva — ver el comentario
+// en pwaUpdate.ts sobre por qué el registro automático de vite-plugin-pwa no
+// alcanza solo.
+initPwaUpdate()
 
 // El script inline de index.html ya setea data-theme antes del primer
 // paint (lee localStorage directo, sin poder importar este módulo). Esto

@@ -11,6 +11,13 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // El script que vite-plugin-pwa inyecta solo (registerSW.js) registra
+      // el SW y nada más — sin chequeo periódico, la única vez que el
+      // navegador revisa si hay versión nueva es en la carga de página.
+      // Con `injectRegister: false` se registra a mano en main.tsx vía
+      // `virtual:pwa-register`, para poder pedir el chequeo activamente
+      // (al volver a foreground) y avisar cuando hay una versión lista.
+      injectRegister: false,
       // injectManifest en vez de generateSW (default): es la única forma de
       // meter código propio en el service worker — acá, el handler de
       // `push` de la Fase 26. Con generateSW, Workbox arma el SW solo y no
