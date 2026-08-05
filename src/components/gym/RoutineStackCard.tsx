@@ -89,24 +89,29 @@ export default function RoutineStackCard({
       transition={SPRING}
     >
       <motion.div
-        className={cn(
-          'relative rounded-2xl',
-          // Aura de acento para delimitar la carta seleccionada — pedido
-          // explícito del usuario. DESIGN.md §0 lista el glow/halo de color
-          // como anti-patrón por defecto; acá se hace una excepción
-          // puntual, avisada, no una reapertura general de la regla (sigue
-          // sin usarse en ningún otro lado). Vive en ESTE contenedor (el
-          // que no rota) y no en el que gira con rotateY: un box-shadow
-          // sobre un elemento con transform 3D activo renderiza raro en
-          // WebKit durante la rotación — acá el shadow queda estable
-          // mientras el hijo gira adentro.
-          isSelected &&
-            'shadow-[0_0_0_1.5px_rgb(var(--color-accent)/0.7),0_0_28px_rgb(var(--color-accent)/0.45)]'
-        )}
+        className="relative rounded-2xl"
         animate={{ height: isSelected ? undefined : FRONT_HEIGHT }}
         transition={SPRING}
         style={{ perspective: 1400 }}
       >
+        {/* Aura de acento para delimitar la carta seleccionada — pedido
+            explícito del usuario. DESIGN.md §0 lista el glow/halo de color
+            como anti-patrón por defecto; acá se hace una excepción
+            puntual, avisada, no una reapertura general de la regla (sigue
+            sin usarse en ningún otro lado).
+            Capa propia con su propia transición de opacity (rápida, 180ms),
+            en vez de una clase condicional en el contenedor que anima
+            `height`: ese spring recorre una distancia variable (240px al
+            alto real del reverso, que puede ser 600px+) y tarda bastante
+            más en asentarse que el rotateY (180° fijos) — el aura, atada a
+            esa caja, quedaba con el borde chico hasta que la altura
+            terminaba de crecer, entonces se percibía recién DESPUÉS del
+            flip en vez de junto con él. Acá aparece de una. */}
+        <motion.div
+          className="pointer-events-none absolute inset-0 rounded-2xl shadow-[0_0_0_1.5px_rgb(var(--color-accent)/0.7),0_0_28px_rgb(var(--color-accent)/0.45)]"
+          animate={{ opacity: isSelected ? 1 : 0 }}
+          transition={{ duration: 0.18 }}
+        />
         <motion.div
           className="relative"
           animate={{ rotateY: isSelected ? 180 : 0 }}
