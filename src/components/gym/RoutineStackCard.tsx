@@ -95,7 +95,16 @@ export default function RoutineStackCard({
         style={{ perspective: 1400 }}
       >
         <motion.div
-          className="relative"
+          className={cn(
+            'relative rounded-2xl',
+            // Aura de acento para delimitar la carta seleccionada — pedido
+            // explícito del usuario. DESIGN.md §0 lista el glow/halo de
+            // color como anti-patrón por defecto; acá se hace una
+            // excepción puntual, avisada, no una reapertura general de la
+            // regla (sigue sin usarse en ningún otro lado).
+            isSelected &&
+              'shadow-[0_0_0_1.5px_rgb(var(--color-accent)/0.7),0_0_28px_rgb(var(--color-accent)/0.45)]'
+          )}
           animate={{ rotateY: isSelected ? 180 : 0 }}
           transition={SPRING}
           style={{ transformStyle: 'preserve-3d' }}
