@@ -151,10 +151,12 @@ el cliente que consuma Supabase:
   endpoint nuevo: es dejar que RLS + la sesión autenticada hagan el
   scoping siempre, en vez de confiar en nada que venga del cliente.
 
-Esto no aplica hoy (no hay cliente de Supabase importado en `src/`,
-confirmado — la app es 100% local vía Dexie) pero es la regla que hay que
-respetar apenas se conecte, y por eso queda escrita acá antes de que haga
-falta.
+Actualización (Fase 26): ya existe un primer cliente de Supabase
+(`src/lib/supabaseClient.ts`), pero acotado a un solo uso — guardar/borrar
+suscripciones de Web Push (`push_subscriptions`, ver §6). El resto de la
+app (rutinas, entrenos, perfil, todo lo demás) sigue siendo 100% local vía
+Dexie. Esta regla aplica igual: esa tabla también tiene RLS por
+`auth.uid()`, nunca confía en un `user_id` que mande el cliente.
 
 ---
 
@@ -192,15 +194,62 @@ string vacío **sin fallar**, y publicaría un bundle roto en silencio.
 
 ---
 
+## 6. Notificaciones push (Fase 26)
+
+El 5º SQL (`0005_push_subscriptions.sql`) todavía no está en la lista del
+paso 2 — correrlo junto con los otros cuatro, en orden, después de esos.
+
+1. **Generar el par de claves VAPID** (identifican a este servidor ante los
+   navegadores — no son secretas de la misma forma que una contraseña, pero
+   la privada no puede filtrarse):
+   ```bash
+   npx web-push generate-vapid-keys
+   ```
+2. **Secrets de la función** (además de los que ya usa el resto del backend):
+   ```bash
+   supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=...
+   ```
+3. **Desplegar la función**:
+   ```bash
+   supabase functions deploy send-push-reminders
+   ```
+4. **Programar con pg_cron** (cada hora en punto — mismo patrón que
+   `docs/12-RECORDATORIOS.md` ya documentaba para el intento anterior):
+   ```sql
+   select cron.schedule(
+     'send-push-reminders-hourly',
+     '0 * * * *',
+     $$ select net.http_post(
+          url := 'https://<PROJECT>.functions.supabase.co/send-push-reminders',
+          headers := jsonb_build_object('Authorization', 'Bearer ' || current_setting('app.cron_secret'))
+        ) $$
+   );
+   ```
+5. **Secret nuevo en GitHub** (mismo lugar que los dos de arriba): la clave
+   VAPID **pública** (la privada nunca sale de Supabase):
+
+   | Nombre | Valor |
+   |---|---|
+   | `VITE_VAPID_PUBLIC_KEY` | la clave pública generada en el paso 1 |
+
+Sin este paso, `/recordatorios` no ofrece la opción de notificaciones push
+— `isPushAvailable()` en `src/lib/webPush.ts` la esconde en vez de mostrar
+algo que no puede andar.
+
+---
+
 ## Checklist
 
 - [ ] Proyecto creado, URL y anon key anotadas
-- [ ] Los 4 SQL corridos en orden
+- [ ] Los 5 SQL corridos en orden (incluye `0005_push_subscriptions.sql`)
 - [ ] Advisors → Security sin warnings
 - [ ] Site URL y las 4 Redirect URLs
 - [ ] SMTP de Gmail configurado y probado
 - [ ] Rate limit de emails subido
 - [ ] Plantillas con `{{ .TokenHash }}`
 - [ ] Anonymous sign-ins desactivado
-- [ ] Los 2 secrets en GitHub
+- [ ] Los 2 secrets de Supabase en GitHub (URL + anon key)
 - [ ] `{"role":"admin"}` puesto (después del primer registro)
+- [ ] Claves VAPID generadas, secrets de la función seteados
+- [ ] `send-push-reminders` desplegada y con su cron programado
+- [ ] `VITE_VAPID_PUBLIC_KEY` en los secrets de GitHub

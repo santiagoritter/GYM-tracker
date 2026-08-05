@@ -114,8 +114,6 @@ a esa le interesa mucho.
 - **`docs/01` a `docs/12` mezclan lo real con lo aspiracional.** Ya se
   corrigieron algunos; el resto sigue describiendo una arquitectura Supabase
   que nunca existió.
-- **`supabase/functions/send-reminders/` es scaffold muerto.** O se despliega
-  o se borra.
 - **`Admin.tsx` escribe roles en el IndexedDB del propio usuario.** Funciona
   como demo local, pero no puede sobrevivir a la migración a Supabase Auth.
 - **`RoutineExercise.notes` y `restSeconds` son write-only.** Los escribe el
