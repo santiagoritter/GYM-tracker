@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { animate, motion, useMotionValue, useReducedMotion } from 'motion/react'
-import { Calendar, Dumbbell, Flame, House, LogOut, Shield, TrendingUp, User } from 'lucide-react'
+import { Calendar, Dumbbell, Flame, House, Shield, TrendingUp, User } from 'lucide-react'
 import { workoutsFor } from '@/db/scoped'
 import { useAuthStore } from '@/stores/authStore'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
@@ -29,7 +29,7 @@ function activeTabIndex(pathname: string): number {
 export default function Layout() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { name, role, clearSession } = useAuthStore()
+  const { name, role } = useAuthStore()
   const userId = useCurrentUserId()
   const reduced = useReducedMotion()
   useReminderScheduler()
@@ -90,11 +90,6 @@ export default function Layout() {
     if (nearest !== activeIndex) navigate(TABS[nearest].to)
   }
 
-  const handleLogout = () => {
-    clearSession()
-    navigate('/login', { replace: true })
-  }
-
   const initials = (name ?? 'U')
     .split(' ')
     .map((w) => w[0])
@@ -132,12 +127,6 @@ export default function Layout() {
               <Shield size={15} className="mr-1 inline" />Panel
             </button>
           )}
-          <button
-            onClick={handleLogout}
-            className="flex h-11 items-center rounded-sm px-3 text-xs font-medium text-ink-3 transition-colors active:bg-fill"
-          >
-            <LogOut size={15} className="mr-1 inline" />Salir
-          </button>
         </div>
       </header>
 
