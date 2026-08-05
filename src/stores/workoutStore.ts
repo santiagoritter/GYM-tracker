@@ -1,9 +1,11 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import { db } from '@/db/schema'
 import { softDelete, softDeleteMany } from '@/db/mutations'
 import type { PersonalRecord, Workout, WorkoutSet } from '@/types'
 import { calc1RM, nowIso, uid } from '@/lib/utils'
 import { recommend } from '@/lib/recommendation'
+import { cancelScheduledNotifications } from '@/lib/native'
 
 interface RestTimerState {
   endsAt: number | null // epoch ms
@@ -25,151 +27,188 @@ interface WorkoutStore {
   discardWorkout: (workoutId: string) => Promise<void>
 }
 
-export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
-  restTimer: { endsAt: null, totalSeconds: 90 },
+/**
+ * `restTimer` persiste en localStorage (mismo patrón que
+ * `src/stores/themeStore.ts`) para sobrevivir a que el sistema mate la app
+ * con un descanso corriendo — sin esto, al volver el estado visual
+ * desaparecía aunque en nativo la notificación del SO ya estuviera
+ * agendada y llegara igual (ver comentario en `RestTimer.tsx`).
+ *
+ * `partialize` deja afuera las acciones async: no tiene sentido
+ * serializarlas y total no sobreviven a un reload de todos modos.
+ */
+export const useWorkoutStore = create<WorkoutStore>()(
+  persist(
+    (set, get) => ({
+      restTimer: { endsAt: null, totalSeconds: 90 },
 
-  startRest: (seconds) =>
-    set({ restTimer: { endsAt: Date.now() + seconds * 1000, totalSeconds: seconds } }),
+      startRest: (seconds) =>
+        set({ restTimer: { endsAt: Date.now() + seconds * 1000, totalSeconds: seconds } }),
 
-  extendRest: (seconds) => {
-    const { restTimer } = get()
-    if (restTimer.endsAt) {
-      set({
-        restTimer: {
-          endsAt: restTimer.endsAt + seconds * 1000,
-          totalSeconds: restTimer.totalSeconds + seconds,
-        },
-      })
-    }
-  },
+      extendRest: (seconds) => {
+        const { restTimer } = get()
+        if (restTimer.endsAt) {
+          set({
+            restTimer: {
+              endsAt: restTimer.endsAt + seconds * 1000,
+              totalSeconds: restTimer.totalSeconds + seconds,
+            },
+          })
+        }
+      },
 
-  skipRest: () => set({ restTimer: { endsAt: null, totalSeconds: 90 } }),
+      skipRest: () => set({ restTimer: { endsAt: null, totalSeconds: 90 } }),
 
-  startWorkout: async (userId, name) => {
-    const workout: Workout = {
-      id: uid(),
-      userId,
-      name,
-      startedAt: nowIso(),
-      dirty: 1,
-      updatedAt: nowIso(),
-    }
-    await db.workouts.add(workout)
-    return workout.id
-  },
-
-  addExercise: async (workoutId, exerciseId) => {
-    // Agregar un ejercicio libremente arranca con las series que corresponden
-    // al objetivo del usuario, ya precargadas con reps y peso sugeridos. Sin
-    // esto el ejercicio aparecía con 0 kg y había que armarlo a mano.
-    const workout = await db.workouts.get(workoutId)
-    const exercise = await db.exercises.get(exerciseId)
-    if (!workout || !exercise) return
-
-    const [profile, history] = await Promise.all([
-      db.profile.get(workout.userId),
-      db.workoutSets
-        .where('exerciseId')
-        .equals(exerciseId)
-        .filter((s) => s.userId === workout.userId && s.completed === 1 && s.isWarmup === 0)
-        .toArray(),
-    ])
-
-    const rec = recommend(exercise, profile, history)
-    for (let i = 0; i < rec.sets; i++) {
-      await get().addSet(workoutId, exerciseId, {
-        reps: rec.repsMin,
-        weightKg: rec.weightKg,
-      })
-    }
-  },
-
-  addSet: async (workoutId, exerciseId, template) => {
-    const [workout, existing] = await Promise.all([
-      db.workouts.get(workoutId),
-      db.workoutSets.where('[workoutId+exerciseId]').equals([workoutId, exerciseId]).toArray(),
-    ])
-    if (!workout) throw new Error('Entreno no encontrado')
-    const last = existing.sort((a, b) => a.setNumber - b.setNumber).at(-1)
-    const newSet: WorkoutSet = {
-      id: uid(),
-      workoutId,
-      // Se toma del entreno padre, no de la sesión: así una serie nunca
-      // queda huérfana de dueño aunque el store de auth todavía no cargó.
-      userId: workout.userId,
-      exerciseId,
-      setNumber: (last?.setNumber ?? 0) + 1,
-      reps: template?.reps ?? last?.reps ?? 10,
-      weightKg: template?.weightKg ?? last?.weightKg ?? 0,
-      isWarmup: template?.isWarmup ?? 0,
-      completed: 0,
-      dirty: 1,
-      updatedAt: nowIso(),
-    }
-    await db.workoutSets.add(newSet)
-  },
-
-  updateSet: async (setId, patch) => {
-    await db.workoutSets.update(setId, patch)
-  },
-
-  removeSet: async (setId) => {
-    await softDelete('workoutSets', setId)
-  },
-
-  finishWorkout: async (userId, workoutId, notes) => {
-    const sets = await db.workoutSets.where('workoutId').equals(workoutId).toArray()
-    const workingSets = sets.filter((s) => s.completed === 1 && s.isWarmup === 0)
-    const totalVolumeKg = workingSets.reduce((sum, s) => sum + s.weightKg * s.reps, 0)
-
-    await db.workouts.update(workoutId, {
-      finishedAt: nowIso(),
-      notes,
-      totalVolumeKg,
-    })
-
-    // Detección de PRs: mejor 1RM estimado por ejercicio
-    const newPRs: PersonalRecord[] = []
-    const byExercise = new Map<string, WorkoutSet[]>()
-    for (const s of workingSets) {
-      const list = byExercise.get(s.exerciseId) ?? []
-      list.push(s)
-      byExercise.set(s.exerciseId, list)
-    }
-
-    for (const [exerciseId, exSets] of byExercise) {
-      const best = exSets.reduce((a, b) =>
-        calc1RM(b.weightKg, b.reps) > calc1RM(a.weightKg, a.reps) ? b : a
-      )
-      const oneRm = calc1RM(best.weightKg, best.reps)
-      if (oneRm <= 0) continue
-
-      const prId = `${userId}_${exerciseId}`
-      const current = await db.personalRecords.get(prId)
-      if (!current || oneRm > current.oneRmKg) {
-        const pr: PersonalRecord = {
-          id: prId,
+      startWorkout: async (userId, name) => {
+        const workout: Workout = {
+          id: uid(),
           userId,
-          exerciseId,
-          weightKg: best.weightKg,
-          reps: best.reps,
-          oneRmKg: oneRm,
-          achievedAt: nowIso(),
-          workoutId,
+          name,
+          startedAt: nowIso(),
           dirty: 1,
           updatedAt: nowIso(),
         }
-        await db.personalRecords.put(pr)
-        newPRs.push(pr)
-      }
+        await db.workouts.add(workout)
+        return workout.id
+      },
+
+      addExercise: async (workoutId, exerciseId) => {
+        // Agregar un ejercicio libremente arranca con las series que corresponden
+        // al objetivo del usuario, ya precargadas con reps y peso sugeridos. Sin
+        // esto el ejercicio aparecía con 0 kg y había que armarlo a mano.
+        const workout = await db.workouts.get(workoutId)
+        const exercise = await db.exercises.get(exerciseId)
+        if (!workout || !exercise) return
+
+        const [profile, history] = await Promise.all([
+          db.profile.get(workout.userId),
+          db.workoutSets
+            .where('exerciseId')
+            .equals(exerciseId)
+            .filter((s) => s.userId === workout.userId && s.completed === 1 && s.isWarmup === 0)
+            .toArray(),
+        ])
+
+        const rec = recommend(exercise, profile, history)
+        for (let i = 0; i < rec.sets; i++) {
+          await get().addSet(workoutId, exerciseId, {
+            reps: rec.repsMin,
+            weightKg: rec.weightKg,
+          })
+        }
+      },
+
+      addSet: async (workoutId, exerciseId, template) => {
+        const [workout, existing] = await Promise.all([
+          db.workouts.get(workoutId),
+          db.workoutSets.where('[workoutId+exerciseId]').equals([workoutId, exerciseId]).toArray(),
+        ])
+        if (!workout) throw new Error('Entreno no encontrado')
+        const last = existing.sort((a, b) => a.setNumber - b.setNumber).at(-1)
+        const newSet: WorkoutSet = {
+          id: uid(),
+          workoutId,
+          // Se toma del entreno padre, no de la sesión: así una serie nunca
+          // queda huérfana de dueño aunque el store de auth todavía no cargó.
+          userId: workout.userId,
+          exerciseId,
+          setNumber: (last?.setNumber ?? 0) + 1,
+          reps: template?.reps ?? last?.reps ?? 10,
+          weightKg: template?.weightKg ?? last?.weightKg ?? 0,
+          isWarmup: template?.isWarmup ?? 0,
+          completed: 0,
+          dirty: 1,
+          updatedAt: nowIso(),
+        }
+        await db.workoutSets.add(newSet)
+      },
+
+      updateSet: async (setId, patch) => {
+        await db.workoutSets.update(setId, patch)
+      },
+
+      removeSet: async (setId) => {
+        await softDelete('workoutSets', setId)
+      },
+
+      finishWorkout: async (userId, workoutId, notes) => {
+        const sets = await db.workoutSets.where('workoutId').equals(workoutId).toArray()
+        const workingSets = sets.filter((s) => s.completed === 1 && s.isWarmup === 0)
+        const totalVolumeKg = workingSets.reduce((sum, s) => sum + s.weightKg * s.reps, 0)
+
+        await db.workouts.update(workoutId, {
+          finishedAt: nowIso(),
+          notes,
+          totalVolumeKg,
+        })
+
+        // Detección de PRs: mejor 1RM estimado por ejercicio
+        const newPRs: PersonalRecord[] = []
+        const byExercise = new Map<string, WorkoutSet[]>()
+        for (const s of workingSets) {
+          const list = byExercise.get(s.exerciseId) ?? []
+          list.push(s)
+          byExercise.set(s.exerciseId, list)
+        }
+
+        for (const [exerciseId, exSets] of byExercise) {
+          const best = exSets.reduce((a, b) =>
+            calc1RM(b.weightKg, b.reps) > calc1RM(a.weightKg, a.reps) ? b : a
+          )
+          const oneRm = calc1RM(best.weightKg, best.reps)
+          if (oneRm <= 0) continue
+
+          const prId = `${userId}_${exerciseId}`
+          const current = await db.personalRecords.get(prId)
+          if (!current || oneRm > current.oneRmKg) {
+            const pr: PersonalRecord = {
+              id: prId,
+              userId,
+              exerciseId,
+              weightKg: best.weightKg,
+              reps: best.reps,
+              oneRmKg: oneRm,
+              achievedAt: nowIso(),
+              workoutId,
+              dirty: 1,
+              updatedAt: nowIso(),
+            }
+            await db.personalRecords.put(pr)
+            newPRs.push(pr)
+          }
+        }
+
+        return newPRs
+      },
+
+      discardWorkout: async (workoutId) => {
+        const sets = await db.workoutSets.where('workoutId').equals(workoutId).toArray()
+        await softDeleteMany('workoutSets', sets.map((s) => s.id))
+        await softDelete('workouts', workoutId)
+      },
+    }),
+    {
+      name: 'gymtracker-resttimer',
+      partialize: (state) => ({ restTimer: state.restTimer }),
+      // Si la app murió de golpe con un descanso corriendo, esa sesión
+      // nunca llegó a un unmount limpio: la notificación nativa que ya
+      // había agendado sigue pendiente en el SO. Si acá reagendáramos otra
+      // para el mismo horario (que es lo que haría el efecto de
+      // RestTimer.tsx al montar con este endsAt restaurado) llegarían dos
+      // avisos duplicados — se cancela la vieja antes de que eso pase.
+      // Si el endsAt restaurado ya venció, se resetea silencioso: mismo
+      // comportamiento de hoy, y si la notificación era nativa ya se
+      // disparó a horario igual.
+      onRehydrateStorage: () => (state) => {
+        if (!state) return
+        const { endsAt } = state.restTimer
+        if (!endsAt) return
+        if (endsAt > Date.now()) {
+          cancelScheduledNotifications()
+        } else {
+          state.restTimer = { endsAt: null, totalSeconds: 90 }
+        }
+      },
     }
-
-    return newPRs
-  },
-
-  discardWorkout: async (workoutId) => {
-    const sets = await db.workoutSets.where('workoutId').equals(workoutId).toArray()
-    await softDeleteMany('workoutSets', sets.map((s) => s.id))
-    await softDelete('workouts', workoutId)
-  },
-}))
+  )
+)
