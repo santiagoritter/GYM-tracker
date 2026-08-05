@@ -141,7 +141,7 @@ export default function Layout() {
         </div>
       </header>
 
-      <main className="flex-1 animate-fade-up px-4 pb-36 pt-3">
+      <main className="flex-1 animate-fade-up px-4 pb-[8.5rem] pt-3">
         <Outlet />
       </main>
 
@@ -149,7 +149,7 @@ export default function Layout() {
       {activeWorkout && (
         <button
           onClick={() => navigate(`/entreno/${activeWorkout.id}`)}
-          className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] left-1/2 z-50 animate-scale-in"
+          className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] left-1/2 z-50 animate-scale-in"
         >
           <div className="flex items-center gap-2.5 rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-bg">
             <Flame size={15} fill="currentColor" />
@@ -172,7 +172,7 @@ export default function Layout() {
                 end={to === '/'}
                 className={({ isActive }) =>
                   cn(
-                    'relative flex flex-1 flex-col items-center gap-1 py-4 text-[11px] font-medium tracking-wide transition-colors duration-150',
+                    'relative flex flex-1 flex-col items-center gap-1 py-3 text-[11px] font-medium tracking-wide transition-colors duration-150',
                     isActive
                       // Por encima de la pastilla (z-20): si no, el blur de
                       // atrás la ensucia. pointer-events-none deja pasar el
@@ -186,7 +186,7 @@ export default function Layout() {
               >
                 {({ isActive }) => (
                   <>
-                    <Icon size={24} strokeWidth={isActive ? 2.2 : 1.8} />
+                    <Icon size={22} strokeWidth={isActive ? 2.2 : 1.8} />
                     {label}
                   </>
                 )}
