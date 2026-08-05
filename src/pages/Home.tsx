@@ -12,6 +12,7 @@ import { cn, formatDuration } from '@/lib/utils'
 import CalendarHeatmap from '@/components/gym/CalendarHeatmap'
 import CalorieSummaryRow from '@/components/gym/CalorieSummaryRow'
 import { Card, Row, SectionHeader } from '@/components/ui/Card'
+import HoldButton from '@/components/ui/HoldButton'
 
 export default function Home() {
   const navigate = useNavigate()
@@ -99,8 +100,9 @@ export default function Home() {
         </button>
       ) : (
         <div className="space-y-2">
-          <button
-            onClick={handleStart}
+          <HoldButton
+            onComplete={handleStart}
+            holdDuration={500}
             className="flex w-full flex-col items-center gap-0.5 rounded-2xl bg-accent py-5 font-bold text-bg active:bg-accent-dim"
           >
             <span className="flex items-center gap-2 text-lg">
@@ -111,7 +113,7 @@ export default function Home() {
                 {activeRoutine?.name} · {nextDay.name}
               </span>
             )}
-          </button>
+          </HoldButton>
           {nextDay && (
             <button
               onClick={handleStartEmpty}
