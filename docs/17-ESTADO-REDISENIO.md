@@ -1,6 +1,7 @@
 # 17 — Estado del rediseño (rama `beta`)
 
-Actualizado al cierre de la sesión del 4 de agosto de 2026.
+Actualizado al cierre de la sesión del 5 de agosto de 2026: cierre de las 6
+fases del plan `staged-beaming-wind.md` y merge a `main`.
 
 ## Ramas
 
@@ -8,10 +9,9 @@ Actualizado al cierre de la sesión del 4 de agosto de 2026.
 |---|---|
 | `alpha` | Snapshot estable previo al rediseño. Congelada. |
 | `beta` | Rediseño en curso. **Acá se trabaja.** |
-| `main` | Producción (GitHub Pages). Sin los cambios de `beta`. |
+| `main` | Producción (GitHub Pages). **Recibió el merge de `beta`** con las 6 fases del plan — el usuario ya lo va a ver en el teléfono tras el próximo deploy del workflow. |
 
-Solo `main` dispara el deploy, así que nada de esto tocó todavía lo que el
-usuario tiene en el teléfono.
+Solo `main` dispara el deploy.
 
 ---
 
@@ -44,8 +44,33 @@ dispositivo real y ahora sí:
 - **Entreno**: superficies aplanadas, targets de 44px, `tabular-nums`.
 - **Inicio** (§3.3): actividad arriba, frase al final (empujaba el botón
   principal fuera del alcance del pulgar), días de rutina como Card con
-  hairlines.
-- **Progreso** (§3.3): recibe "Últimos entrenos".
+  hairlines, fila de calorías opcional.
+- **Progreso** (§3.3): recibe "Últimos entrenos", niveles por grupo
+  muscular debajo de `StrengthLevels`.
+- Las 9 pantallas restantes (Perfil, Medidas, Recordatorios, Ejercicios,
+  Admin, Login, Registro, Onboarding, Layout) migradas a `Card`/`Row`.
+- **RoutineEditor** (§1.2): sin tarjetas anidadas, sin el borde lateral de
+  acento en superserie; `restSeconds`/`notes` de `RoutineExercise` ahora
+  visibles y editables (antes eran write-only).
+
+### Plan `staged-beaming-wind.md` — las 6 fases, completas
+1. Card/Row en toda la app.
+2. RoutineEditor.
+3. **§2.3** Niveles de fuerza por grupo muscular — deriva el 1RM
+   equivalente vía `COEF` (ahora exportado de `recommendation.ts`), sin
+   tabla de estándares nueva. `src/lib/muscleGroupStrength.ts`.
+4. **§2.7** `Ajustes.tsx` (`/ajustes`) separado de Perfil + **tema claro**
+   real vía custom properties CSS + `data-theme` (no el `dark:` de
+   Tailwind, incompatible con los modificadores `/NN` ya usados en el
+   código). `src/stores/themeStore.ts`.
+5. **§2.6** Contador de calorías opcional (`/calorias`), tabla Dexie
+   `calorieEntries` (v10), fila de resumen en Inicio solo si está activado.
+6. **§2.1** Calculadora de 1RM (`/calculadora`), Epley + Brzycki
+   (`calc1RMBrzycki` en `src/lib/utils.ts`) más tabla de peso sugerido por
+   objetivo reutilizando `BY_GOAL`.
+
+Cada fase: commit propio, `npx tsc -b` + `npm test` + build en verde antes
+del commit siguiente.
 
 ---
 
@@ -58,19 +83,14 @@ dispositivo real y ahora sí:
 - **iOS**: `npx cap add ios` solo corre en macOS.
 
 ### Sin empezar
-- **§1.2** Rediseñar la sección de ejercicios dentro de una rutina
-  (`RoutineEditor`). Sigue con tarjetas anidadas.
-- **§1.3** Auditoría de overflow en el resto de las pantallas. Solo se
-  revisó Entreno.
-- **§2.1** Pantalla de calculadora de pesos. El motor ya existe en
-  `src/lib/recommendation.ts` (Epley + %1RM); falta la UI y sumar Brzycki.
-- **§2.3** Niveles por grupo muscular. Hoy `StrengthLevels` cubre 5
-  ejercicios; falta agregarlo por grupo.
-- **§2.6** Contador de calorías.
-- **§2.7** Pantalla de configuración + tema claro.
+- **§1.3** Auditoría de overflow línea por línea en las pantallas nuevas
+  (se verificó por cálculo de anchos, no en dispositivo real — pendiente
+  de confirmación visual en el iPhone del usuario).
 - **§3.1** Spec de design system con Fable (se hizo a mano en `DESIGN.md`).
-- Aplicar las primitivas de `Card.tsx` a Rutinas, Perfil, Medidas,
-  Recordatorios y Ejercicios.
+- Todo lo anotado en `IDEAS.md` (18 ideas fuera de alcance).
+- Segunda pasada de modernización sobre lo ya construido, usando de nuevo
+  las referencias de diseño (bklit, kokonutui, dribbble) — en curso al
+  cierre de esta sesión, ver el pie de este documento.
 
 ---
 
@@ -95,6 +115,10 @@ dispositivo real y ahora sí:
 1. **Google OAuth** (§2.5 dice "evaluar"). Antes se había definido que
    "gmail" era solo el remitente del mail de confirmación. ¿Se suma el login
    con Google? Cambia el setup.
-2. **Merge de `beta` a `main`**: ¿cuándo? Hay valor ya desplegable (el fix
-   del stepper, el contenido de los 107 ejercicios, el recomendador), pero
-   §3.5 pide validar el rediseño antes.
+2. ~~**Merge de `beta` a `main`**~~ — resuelto: el usuario autorizó
+   explícitamente el merge al cierre de esta sesión, sin esperar validación
+   visual previa ("mergea a main todo para que pueda ver ls cambios").
+3. **Contraste del acento en modo claro**: `--color-accent` se oscureció a
+   mano (~`#8A9A00`) para pasar AA sobre fondo blanco manteniendo el hue del
+   lima. No se verificó en pantalla real — si no convence, es un solo valor
+   en `src/index.css` para ajustar.
