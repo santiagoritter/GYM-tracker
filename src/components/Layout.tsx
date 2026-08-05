@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
+import { motion, useReducedMotion } from 'motion/react'
 import { Calendar, Dumbbell, Flame, House, LogOut, Shield, TrendingUp, User } from 'lucide-react'
 import { workoutsFor } from '@/db/scoped'
 import { useAuthStore } from '@/stores/authStore'
@@ -19,6 +20,7 @@ export default function Layout() {
   const navigate = useNavigate()
   const { name, role, clearSession } = useAuthStore()
   const userId = useCurrentUserId()
+  const reduced = useReducedMotion()
   useReminderScheduler()
   const activeWorkout = useLiveQuery(
     () => (userId ? workoutsFor(userId).filter((w) => !w.finishedAt).first() : undefined),
@@ -76,7 +78,7 @@ export default function Layout() {
         </div>
       </header>
 
-      <main className="flex-1 animate-fade-up px-4 pb-28 pt-3">
+      <main className="flex-1 animate-fade-up px-4 pb-32 pt-3">
         <Outlet />
       </main>
 
@@ -84,7 +86,7 @@ export default function Layout() {
       {activeWorkout && (
         <button
           onClick={() => navigate(`/entreno/${activeWorkout.id}`)}
-          className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] left-1/2 z-50 animate-scale-in"
+          className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] left-1/2 z-50 animate-scale-in"
         >
           <div className="flex items-center gap-2.5 rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-bg">
             <Flame size={15} fill="currentColor" />
@@ -95,10 +97,11 @@ export default function Layout() {
         </button>
       )}
 
-      {/* Tab bar iOS */}
-      <nav className="fixed bottom-0 left-1/2 z-40 w-full max-w-lg -translate-x-1/2">
-        <div className="glass glass-edge-top">
-          <div className="flex items-stretch justify-around pb-[env(safe-area-inset-bottom)]">
+      {/* Tab bar iOS — semi-flotante: un margen chico la despega de los
+          bordes en vez del flush edge-to-edge de antes. */}
+      <nav className="fixed bottom-0 left-1/2 z-40 w-full max-w-lg -translate-x-1/2 px-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+        <div className="glass glass-edge-top overflow-hidden rounded-2xl">
+          <div className="flex items-stretch justify-around">
             {TABS.map(({ to, label, icon: Icon }) => (
               <NavLink
                 key={to}
@@ -106,7 +109,7 @@ export default function Layout() {
                 end={to === '/'}
                 className={({ isActive }) =>
                   cn(
-                    'flex flex-1 flex-col items-center gap-[3px] py-2.5 text-[10px] font-medium tracking-wide transition-all duration-150',
+                    'flex flex-1 flex-col items-center gap-[3px] py-2.5 text-[10px] font-medium tracking-wide transition-colors duration-150',
                     isActive
                       ? 'text-accent'
                       : 'text-ink-3 active:text-ink-2'
@@ -115,13 +118,25 @@ export default function Layout() {
               >
                 {({ isActive }) => (
                   <>
-                    <span className={cn(
-                      'flex h-7 w-7 items-center justify-center rounded-xl transition-all duration-150',
-                      isActive && 'bg-accent/10'
-                    )}>
+                    <span className="relative flex h-7 w-7 items-center justify-center">
+                      {isActive && (
+                        <motion.span
+                          layoutId="tab-pill"
+                          className="absolute inset-0 rounded-xl bg-accent/15"
+                          transition={
+                            reduced
+                              ? { duration: 0 }
+                              : { type: 'spring', damping: 30, stiffness: 300 }
+                          }
+                        />
+                      )}
                       {/* El estado activo se marca con color, fondo y grosor
                           de trazo, no con un halo lima alrededor del icono. */}
-                      <Icon size={20} strokeWidth={isActive ? 2.2 : 1.8} />
+                      <Icon
+                        size={20}
+                        strokeWidth={isActive ? 2.2 : 1.8}
+                        className="relative z-10"
+                      />
                     </span>
                     {label}
                   </>
