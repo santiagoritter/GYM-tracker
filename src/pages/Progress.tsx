@@ -21,7 +21,6 @@ import { StrengthLevels } from '@/components/gym/StrengthLevels'
 import { MuscleGroupLevels } from '@/components/gym/MuscleGroupLevels'
 import { PhotoGallery } from '@/components/gym/PhotoGallery'
 import StatsOverview from '@/components/gym/StatsOverview'
-import CalendarHeatmap from '@/components/gym/CalendarHeatmap'
 import RecentWorkouts from '@/components/gym/RecentWorkouts'
 import { SectionHeader } from '@/components/ui/Card'
 import AchievementsPanel from '@/components/gym/AchievementsPanel'
@@ -65,12 +64,11 @@ export default function Progress() {
       {tab === 'summary' && (
         <div className="space-y-4">
           <StatsOverview />
-          <section>
-            <SectionHeader title="Actividad" />
-            <CalendarHeatmap />
-          </section>
-          {/* Mudado desde Inicio (Redisenio.md §3.3): mirar hacia atrás es
-              una actividad de revisión, no de "qué entreno hoy". */}
+          {/* El heatmap de actividad vive en Inicio, no acá (pedido
+              explícito): es lo primero que se quiere ver al abrir la app,
+              no algo que hay que venir a buscar a Progreso. RecentWorkouts
+              sigue acá — mirar hacia atrás es revisión, no "qué entreno
+              hoy", que es lo que resuelve Inicio. */}
           <section>
             <SectionHeader title="Últimos entrenos" />
             <RecentWorkouts />
