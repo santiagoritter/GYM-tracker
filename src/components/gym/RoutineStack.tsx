@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
-import { Play, QrCode, Star, Trash2 } from 'lucide-react'
+import { ArrowLeftRight, Play, QrCode, Star, Trash2 } from 'lucide-react'
 import { Card, Row } from '@/components/ui/Card'
 import type { Routine, RoutineDay } from '@/types'
 import { cn } from '@/lib/utils'
@@ -8,11 +8,14 @@ import RoutineStackCard, { FRONT_HEIGHT } from './RoutineStackCard'
 
 // Aspecto de notas apiladas sobre un escritorio: más dispersión que un
 // mazo de cartas prolijo — ángulo y offset bien visibles para poder
-// agarrar la de abajo sin pelearla contra la de arriba.
-const Y_STEP = 16
-const X_STEP = 7
-const ROTATE_STEP = 3
-const MAX_STACK_STEP = 5
+// agarrar la de abajo sin pelearla contra la de arriba. Offsets subidos
+// bastante respecto a la primera versión (16/7/3): "el espacio para
+// cambiar de una card a otra" era muy chico para distinguir/agarrar una
+// carta puntual del mazo, pedido explícito del usuario.
+const Y_STEP = 48
+const X_STEP = 18
+const ROTATE_STEP = 4
+const MAX_STACK_STEP = 4
 const SPRING = { type: 'spring' as const, damping: 30, stiffness: 300 }
 
 export interface RoutineStackProps {
@@ -125,42 +128,66 @@ export default function RoutineStack({
     ? (heights[selectedId] ?? FRONT_HEIGHT)
     : FRONT_HEIGHT + stackSpread
 
+  // Segundo modo de cambiar de rutina, más cómodo que ir a buscar una
+  // carta puntual en el mazo — pedido explícito, mismo estilo (píldora de
+  // acento) que la de "Entreno en curso" (Layout.tsx). Sin seleccionada
+  // arranca desde la primera; con una seleccionada, pasa a la siguiente
+  // (circular).
+  const handleSwitch = () => {
+    if (routines.length === 0) return
+    const currentIndex = selectedId ? routines.findIndex((r) => r.id === selectedId) : -1
+    const next = routines[(currentIndex + 1) % routines.length]
+    setSelectedId(next.id)
+  }
+
   return (
-    <motion.div
-      className="relative"
-      animate={{ height: containerHeight }}
-      transition={SPRING}
-    >
-      {routines.map((routine, index) => {
-        const step = Math.min(index, MAX_STACK_STEP)
-        const side = index % 2 === 0 ? 1 : -1
-        const pose = {
-          x: step * X_STEP * side,
-          y: step * Y_STEP,
-          rotate: step * ROTATE_STEP * side,
-        }
-        return (
-          <RoutineStackCard
-            key={routine.id}
-            routine={routine}
-            days={daysByRoutine.get(routine.id) ?? []}
-            pose={pose}
-            stackOrder={routines.length - index}
-            isSelected={selectedId === routine.id}
-            dimmed={selectedId !== null && selectedId !== routine.id}
-            onSelect={() => setSelectedId(routine.id)}
-            onDeselect={() => setSelectedId(null)}
-            onHeightChange={(h) =>
-              setHeights((prev) => (prev[routine.id] === h ? prev : { ...prev, [routine.id]: h }))
-            }
-            onTrain={onTrain}
-            onEdit={() => onEdit(routine)}
-            onShare={() => onShare(routine)}
-            onToggleFavorite={() => onToggleFavorite(routine.id)}
-            onDelete={() => onDelete(routine)}
-          />
-        )
-      })}
-    </motion.div>
+    <>
+      <motion.div
+        className="relative"
+        animate={{ height: containerHeight }}
+        transition={SPRING}
+      >
+        {routines.map((routine, index) => {
+          const step = Math.min(index, MAX_STACK_STEP)
+          const side = index % 2 === 0 ? 1 : -1
+          const pose = {
+            x: step * X_STEP * side,
+            y: step * Y_STEP,
+            rotate: step * ROTATE_STEP * side,
+          }
+          return (
+            <RoutineStackCard
+              key={routine.id}
+              routine={routine}
+              days={daysByRoutine.get(routine.id) ?? []}
+              pose={pose}
+              stackOrder={routines.length - index}
+              isSelected={selectedId === routine.id}
+              dimmed={selectedId !== null && selectedId !== routine.id}
+              onSelect={() => setSelectedId(routine.id)}
+              onDeselect={() => setSelectedId(null)}
+              onHeightChange={(h) =>
+                setHeights((prev) => (prev[routine.id] === h ? prev : { ...prev, [routine.id]: h }))
+              }
+              onTrain={onTrain}
+              onEdit={() => onEdit(routine)}
+              onShare={() => onShare(routine)}
+              onToggleFavorite={() => onToggleFavorite(routine.id)}
+              onDelete={() => onDelete(routine)}
+            />
+          )
+        })}
+      </motion.div>
+
+      {routines.length > 1 && (
+        <button
+          onClick={handleSwitch}
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-accent py-3 text-sm font-bold text-bg active:bg-accent-dim"
+        >
+          <ArrowLeftRight size={16} />
+          Cambiar rutina
+        </button>
+      )}
+    </>
   )
 }

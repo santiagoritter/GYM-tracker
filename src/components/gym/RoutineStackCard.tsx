@@ -6,7 +6,10 @@ import type { Routine, RoutineDay } from '@/types'
 import { cn } from '@/lib/utils'
 
 const SPRING = { type: 'spring' as const, damping: 30, stiffness: 300 }
-export const FRONT_HEIGHT = 108
+// 200: la primera versión (108) era una barra angosta — pedido explícito
+// del usuario de una carta "más cuadrada", con lugar real para mostrar los
+// días sin flippear (ver preview de abajo).
+export const FRONT_HEIGHT = 200
 
 export interface RoutineStackCardProps {
   routine: Routine
@@ -99,28 +102,49 @@ export default function RoutineStackCard({
           transition={SPRING}
           style={{ transformStyle: 'preserve-3d' }}
         >
-          {/* Frente */}
+          {/* Frente — más alto que la primera versión (108px → 200px,
+              pedido explícito), con preview de los días para que se pueda
+              "visualizar" la rutina sin tener que flippear. */}
           <button
             type="button"
             onClick={onSelect}
             disabled={!frontInteractive}
             aria-label={`Ver rutina ${routine.name}`}
             className={cn(
-              'card-shine relative flex h-[108px] w-full items-center gap-3 rounded-2xl bg-surface px-5 text-left [backface-visibility:hidden]',
+              'card-shine relative flex h-[200px] w-full flex-col justify-between rounded-2xl bg-surface p-5 text-left [backface-visibility:hidden]',
               isSelected && 'pointer-events-none'
             )}
           >
-            <span
-              className="h-4 w-4 shrink-0 rounded-full"
-              style={{ backgroundColor: routine.color }}
-            />
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-lg font-semibold">{routine.name}</span>
-              <span className="block text-[14px] text-ink-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <span
+                  className="h-3.5 w-3.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: routine.color }}
+                />
+                <span className="truncate text-xl font-semibold">{routine.name}</span>
+              </div>
+              <Repeat2 size={18} className="shrink-0 text-ink-3" />
+            </div>
+            <div>
+              <p className="text-[13px] text-ink-3">
                 {days.length} {days.length === 1 ? 'día' : 'días'}
-              </span>
-            </span>
-            <Repeat2 size={18} className="shrink-0 text-ink-3" />
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {days.slice(0, 4).map((day) => (
+                  <span
+                    key={day.id}
+                    className="rounded-full bg-fill px-2.5 py-1 text-[11px] font-medium text-ink-2"
+                  >
+                    {day.name}
+                  </span>
+                ))}
+                {days.length > 4 && (
+                  <span className="rounded-full bg-fill px-2.5 py-1 text-[11px] font-medium text-ink-3">
+                    +{days.length - 4}
+                  </span>
+                )}
+              </div>
+            </div>
           </button>
 
           {/* Reverso */}

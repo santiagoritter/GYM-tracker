@@ -155,10 +155,15 @@ export default function Exercises() {
                       {/* Insignia de equipo, teñida con el color del músculo
                           primario — un solo elemento visual comunica equipo
                           (ícono) y grupo muscular (color), reusando la misma
-                          paleta que ya usan los chips de abajo. */}
+                          paleta que ya usan los chips de abajo. Vidrio, no
+                          relleno plano: pedido explícito del usuario sobre
+                          la primera versión — mismo backdrop-blur-xs ya
+                          sancionado para la pastilla de la tab bar (Fase 46),
+                          nueva superficie pero mismo material, no uno
+                          inventado. */}
                       <span
                         className={cn(
-                          'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border',
+                          'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border backdrop-blur-xs',
                           MUSCLE_STYLES[e.musclePrimary[0]]
                         )}
                       >
