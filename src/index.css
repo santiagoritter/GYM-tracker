@@ -196,6 +196,19 @@
     @apply min-h-screen font-sans;
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior: none;
+    /* Mantener presionado (HoldButton, filas, chips) disparaba el menú de
+       selección/copiar nativo de iOS por encima de la UI en vez del gesto
+       propio de la app — se desactiva selección y "callout" global, y se
+       reactiva puntualmente donde sí hace falta (inputs, más abajo). */
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  input,
+  textarea {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
   }
   input[type='number'] {
     -moz-appearance: textfield;
