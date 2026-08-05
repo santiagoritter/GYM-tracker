@@ -10,6 +10,7 @@ import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { HOME_MESSAGES } from '@/lib/motivational'
 import { cn, formatDuration } from '@/lib/utils'
 import StreakWeekCard from '@/components/gym/StreakWeekCard'
+import CalendarHeatmap from '@/components/gym/CalendarHeatmap'
 import CalorieSummaryRow from '@/components/gym/CalorieSummaryRow'
 import { Card, Row, SectionHeader } from '@/components/ui/Card'
 
@@ -80,8 +81,11 @@ export default function Home() {
       </header>
 
       {/* Actividad arriba de todo (Redisenio.md §3.3): lo primero que se
-          quiere ver al abrir es cómo viene la semana. */}
+          quiere ver al abrir es cómo viene la semana. El heatmap se mudó
+          acá desde Progreso (pedido explícito) — mirar el historial de
+          entrenos no debería ser algo que hay que ir a buscar. */}
       <StreakWeekCard />
+      <CalendarHeatmap />
 
       {/* Solo aparece si el usuario activó el contador desde Ajustes — no
           se le agrega peso visual a Home a nadie que no lo pidió. */}

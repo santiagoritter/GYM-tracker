@@ -14,12 +14,14 @@ import { db } from '@/db/schema'
 import { softDelete } from '@/db/mutations'
 import { progressPhotosFor } from '@/db/scoped'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
+import { useChartColors } from '@/hooks/useChartColors'
 import { compressImage } from '@/lib/photos'
 import type { ProgressPhoto } from '@/types'
 import { cn, nowIso, uid } from '@/lib/utils'
 
 export function PhotoGallery() {
   const userId = useCurrentUserId()
+  const chartColors = useChartColors()
   const fileRef = useRef<HTMLInputElement>(null)
   const [viewing, setViewing] = useState<ProgressPhoto | null>(null)
   const [saving, setSaving] = useState(false)
@@ -151,13 +153,13 @@ export function PhotoGallery() {
           <div className="h-32">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={weightData} margin={{ top: 4, right: 8, bottom: 0, left: -25 }}>
-                <CartesianGrid stroke="#2A2A2A" strokeDasharray="3 3" />
-                <XAxis dataKey="label" stroke="#606060" fontSize={10} />
-                <YAxis stroke="#606060" fontSize={10} domain={['auto', 'auto']} />
+                <CartesianGrid stroke={chartColors.grid} strokeDasharray="3 3" />
+                <XAxis dataKey="label" stroke={chartColors.axis} fontSize={10} />
+                <YAxis stroke={chartColors.axis} fontSize={10} domain={['auto', 'auto']} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#1C1C1C',
-                    border: '1px solid #383838',
+                    backgroundColor: chartColors.tooltipBg,
+                    border: `1px solid ${chartColors.tooltipBorder}`,
                     borderRadius: 8,
                     fontSize: 12,
                   }}
@@ -166,9 +168,9 @@ export function PhotoGallery() {
                 <Line
                   type="monotone"
                   dataKey="kg"
-                  stroke="#60A5FA"
+                  stroke={chartColors.info}
                   strokeWidth={2}
-                  dot={{ fill: '#60A5FA', r: 3 }}
+                  dot={{ fill: chartColors.info, r: 3 }}
                 />
               </LineChart>
             </ResponsiveContainer>

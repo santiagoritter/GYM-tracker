@@ -42,4 +42,19 @@ export default defineConfig({
       '@': path.resolve(__dirname, 'src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Recharts (~250KB) solo lo usan Progreso/Medidas/Fotos, ya
+        // lazy-loadeadas, pero sin chunk propio Rollup lo mezclaba con
+        // cualquiera de esas páginas. React/react-dom/router cambian mucho
+        // menos seguido que el código de la app — separarlos cachea mejor
+        // entre deploys.
+        manualChunks: {
+          recharts: ['recharts'],
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+        },
+      },
+    },
+  },
 })

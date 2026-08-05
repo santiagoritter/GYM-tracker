@@ -43,12 +43,18 @@
 /* Paleta iOS en modo claro: systemGroupedBackground de fondo, tarjetas en
    blanco puro, labels estándar de Apple. El acento lima se oscurece (no
    pasa AA sobre blanco tal cual) manteniendo el hue — es el único valor que
-   no viene directo de la paleta de iOS y conviene revisarlo a ojo. */
+   no viene directo de la paleta de iOS y conviene revisarlo a ojo.
+
+   surface-2/surface-3 NO copian los tokens tertiary/quaternary de iOS tal
+   cual — ahí Apple reutiliza el mismo valor que el fondo a propósito (listas
+   agrupadas), pero acá surface-2 hace de "un escalón por encima del fondo"
+   (celdas vacías de CalendarHeatmap, skeletons de carga) y necesita ser
+   distinguible de --color-bg, no idéntico. */
 :root[data-theme='light'] {
   --color-bg: 242 242 247; /* #F2F2F7 */
   --color-surface: 255 255 255;
-  --color-surface-2: 242 242 247;
-  --color-surface-3: 229 229 234; /* #E5E5EA */
+  --color-surface-2: 230 230 235;
+  --color-surface-3: 220 220 225;
   --color-surface-glass: rgba(255, 255, 255, 0.72);
   --color-line: rgba(60, 60, 67, 0.29);
   --color-line-2: rgba(60, 60, 67, 0.16);
@@ -129,11 +135,17 @@
 
   /* Frosted glass — únicos dos usos permitidos: cabecera fija y tab bar
      (DESIGN.md §3). Resuelve un problema real (contenido que scrollea por
-     debajo de un chrome fijo); en cualquier otro lado sería decoración. */
+     debajo de un chrome fijo); en cualquier otro lado sería decoración.
+     blur(14px) en vez de 20px, y will-change: le pide al compositor una
+     capa propia para este elemento en vez de recalcular el blur contra el
+     árbol completo en cada frame — un blur(20px) fijo sobre contenido que
+     scrollea por debajo es caro de recompositar en GPUs Android de gama
+     media (reportado: traqueteo de scroll en un Redmi Note 14). */
   .glass {
     background: var(--color-surface-glass);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(14px) saturate(180%);
+    -webkit-backdrop-filter: blur(14px) saturate(180%);
+    will-change: backdrop-filter;
   }
 
   /* Highlight superior de tarjetas (efecto de luz) */

@@ -5,6 +5,7 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { db } from '@/db/schema'
 import { workoutsFor, personalRecordsFor } from '@/db/scoped'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
+import { useChartColors } from '@/hooks/useChartColors'
 import type { MuscleGroup } from '@/types'
 import { MUSCLE_LABELS } from '@/components/gym/MuscleChip'
 
@@ -25,6 +26,7 @@ const MUSCLE_COLORS: Record<string, string> = {
 
 export function MonthlyStats() {
   const userId = useCurrentUserId()
+  const chartColors = useChartColors()
   const [monthOffset, setMonthOffset] = useState(0)
 
   const workouts = useLiveQuery(
@@ -188,8 +190,8 @@ export function MonthlyStats() {
                   </Pie>
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#1C1C1C',
-                      border: '1px solid #383838',
+                      backgroundColor: chartColors.tooltipBg,
+                      border: `1px solid ${chartColors.tooltipBorder}`,
                       borderRadius: 8,
                       fontSize: 12,
                     }}

@@ -143,14 +143,14 @@ function ExercisePhotoSection({ exerciseId }: { exerciseId: string }) {
           <div className="absolute bottom-2 right-2 flex gap-1.5">
             <button
               onClick={() => fileRef.current?.click()}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-bg/80 text-ink backdrop-blur"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white"
               title="Reemplazar"
             >
               <Camera size={15} />
             </button>
             <button
               onClick={handleDelete}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-bg/80 text-danger backdrop-blur"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-danger"
               title="Eliminar"
             >
               <Trash2 size={15} />

@@ -1,7 +1,10 @@
 # 17 — Estado del rediseño (rama `beta`)
 
-Actualizado al cierre de la sesión del 5 de agosto de 2026: cierre de las 6
-fases del plan `staged-beaming-wind.md` y merge a `main`.
+Actualizado al cierre de la segunda pasada de rediseño (Fases 7-11 de
+`staged-beaming-wind.md`), 5 de agosto de 2026: fix de rendimiento crítico
+en Android, calendario de actividad movido a Inicio, anillo semanal nuevo,
+tema claro corregido, y split de bundle. Segundo merge a `main` de la
+sesión.
 
 ## Ramas
 
@@ -9,7 +12,7 @@ fases del plan `staged-beaming-wind.md` y merge a `main`.
 |---|---|
 | `alpha` | Snapshot estable previo al rediseño. Congelada. |
 | `beta` | Rediseño en curso. **Acá se trabaja.** |
-| `main` | Producción (GitHub Pages). **Recibió el merge de `beta`** con las 6 fases del plan — el usuario ya lo va a ver en el teléfono tras el próximo deploy del workflow. |
+| `main` | Producción (GitHub Pages). Al día con `beta` tras dos merges en esta sesión — el usuario lo ve en el teléfono tras el próximo deploy del workflow. |
 
 Solo `main` dispara el deploy.
 
@@ -72,6 +75,41 @@ dispositivo real y ahora sí:
 Cada fase: commit propio, `npx tsc -b` + `npm test` + build en verde antes
 del commit siguiente.
 
+### Segunda pasada — Fases 7-11, completas
+Motivadas por feedback real del usuario probando en un Redmi Note 14
+(gama media) contra un iPhone 14 Pro, y por seguir investigando las webs
+de referencia para gráficos/componentes:
+
+7. **Fix de rendimiento crítico**: la lista de 107 ejercicios
+   (`Exercises.tsx`) no estaba virtualizada — ~500+ nodos DOM montados de
+   una sola vez, imperceptible en un iPhone 14 Pro pero causaba scroll
+   trabado en Android de gama media. Virtualizada con
+   `@tanstack/react-virtual` (`useWindowVirtualizer`, ya que el documento
+   entero scrollea, no un contenedor propio). De paso: `.glass` bajó de
+   `blur(20px)` a `blur(14px)` + `will-change`, y se consolidaron 7
+   headers de página que usaban `backdrop-blur` de Tailwind directo en vez
+   de la clase `.glass` sancionada.
+8. Se movió `CalendarHeatmap` (el calendario de puntitos) de Progreso a
+   Inicio, pedido explícito del usuario — es lo primero que se quiere ver
+   al abrir la app.
+9. **`WeeklyActivityRings`** (nuevo, `src/components/gym/`): 7 anillos
+   concéntricos (lunes a domingo), inspirado en el ring-chart de
+   bklit.com y en los Activity Rings de Apple, pero con un solo acento
+   (no un color por anillo) y sin el glow de hover del original.
+   Reemplaza el `ProgressRing` único que tenía `StreakWeekCard` — ese
+   componente quedó sin consumidores y se borró.
+10. **Tema claro corregido**: los 4 archivos con gráficos de Recharts
+    tenían colores hex hardcodeados de modo oscuro (Recharts no puede leer
+    `data-theme`); nuevo hook `useChartColors` los resuelve desde los
+    custom properties del tema activo. Además, `--color-surface-2` era
+    idéntico a `--color-bg` en claro (copiado ciego de un token de iOS que
+    no aplicaba acá), aplanando skeletons y celdas vacías — corregido con
+    valores propios y escalonados.
+11. **Split de bundle**: `manualChunks` en `vite.config.ts` separa
+    `recharts` (411KB, sigue lazy) y `vendor` (react/react-dom/router,
+    164KB) del chunk principal — bajó de 574KB a 411KB, desaparece el
+    warning de build.
+
 ---
 
 ## Pendiente
@@ -87,10 +125,16 @@ del commit siguiente.
   (se verificó por cálculo de anchos, no en dispositivo real — pendiente
   de confirmación visual en el iPhone del usuario).
 - **§3.1** Spec de design system con Fable (se hizo a mano en `DESIGN.md`).
-- Todo lo anotado en `IDEAS.md` (18 ideas fuera de alcance).
-- Segunda pasada de modernización sobre lo ya construido, usando de nuevo
-  las referencias de diseño (bklit, kokonutui, dribbble) — en curso al
-  cierre de esta sesión, ver el pie de este documento.
+- Todo lo anotado en `IDEAS.md` (18 ideas fuera de alcance) — siguen
+  requiriendo confirmación explícita antes de implementarse, regla que
+  el propio documento establece.
+- **Confirmación en dispositivo real**: el fix de rendimiento de la Fase 7
+  está razonado por código (menos nodos DOM, menos costo de compositing
+  del blur), pero no hay un Android real en este entorno para confirmarlo.
+  Falta que el usuario vuelva a probar en el Redmi Note 14.
+- `kokonutui.com/docs/card-flip` sigue devolviendo 404 en cada intento de
+  esta sesión — no bloqueó nada, pero la idea de tap-to-reveal en
+  `RecentWorkouts` sigue sin explorarse a fondo por eso.
 
 ---
 
