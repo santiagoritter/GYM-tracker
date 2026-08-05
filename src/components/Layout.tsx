@@ -172,10 +172,15 @@ export default function Layout() {
                 end={to === '/'}
                 className={({ isActive }) =>
                   cn(
-                    'relative z-10 flex flex-1 flex-col items-center gap-[3px] py-2.5 text-[10px] font-medium tracking-wide transition-colors duration-150',
+                    'relative flex flex-1 flex-col items-center gap-[3px] py-2.5 text-[10px] font-medium tracking-wide transition-colors duration-150',
                     isActive
-                      ? 'text-accent'
-                      : 'text-ink-3 active:text-ink-2'
+                      // Por encima de la pastilla (z-20): si no, el blur de
+                      // atrás la ensucia. pointer-events-none deja pasar el
+                      // toque a la pastilla para que el arrastre siga
+                      // funcionando — tocar el tab ya activo no hacía nada
+                      // igual.
+                      ? 'z-30 pointer-events-none text-accent'
+                      : 'z-10 text-ink-3 active:text-ink-2'
                   )
                 }
               >
