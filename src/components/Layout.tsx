@@ -97,10 +97,10 @@ export default function Layout() {
         </button>
       )}
 
-      {/* Tab bar iOS — semi-flotante: un margen chico la despega de los
-          bordes en vez del flush edge-to-edge de antes. */}
-      <nav className="fixed bottom-0 left-1/2 z-40 w-full max-w-lg -translate-x-1/2 px-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
-        <div className="glass glass-edge-top overflow-hidden rounded-2xl">
+      {/* Tab bar iOS 26/27 — cápsula flotante, más cerca del borde que en
+          el primer intento (px-3/pb-2 originales quedaban muy alta). */}
+      <nav className="fixed bottom-0 left-1/2 z-40 w-full max-w-lg -translate-x-1/2 px-3 pb-[calc(0.25rem+env(safe-area-inset-bottom))]">
+        <div className="glass glass-edge-top overflow-hidden rounded-full">
           <div className="flex items-stretch justify-around">
             {TABS.map(({ to, label, icon: Icon }) => (
               <NavLink
@@ -118,11 +118,14 @@ export default function Layout() {
               >
                 {({ isActive }) => (
                   <>
-                    <span className="relative flex h-7 w-7 items-center justify-center">
+                    {/* La "gota": cápsula redonda (no cuadrada) que se
+                        desliza de tab en tab con layoutId, como el
+                        indicador activo de los tab bars nuevos de iOS. */}
+                    <span className="relative flex h-8 w-8 items-center justify-center">
                       {isActive && (
                         <motion.span
                           layoutId="tab-pill"
-                          className="absolute inset-0 rounded-xl bg-accent/15"
+                          className="absolute inset-0 rounded-full bg-accent/15"
                           transition={
                             reduced
                               ? { duration: 0 }
