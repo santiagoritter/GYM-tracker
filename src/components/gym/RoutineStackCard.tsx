@@ -89,22 +89,26 @@ export default function RoutineStackCard({
       transition={SPRING}
     >
       <motion.div
-        className="relative"
+        className={cn(
+          'relative rounded-2xl',
+          // Aura de acento para delimitar la carta seleccionada — pedido
+          // explícito del usuario. DESIGN.md §0 lista el glow/halo de color
+          // como anti-patrón por defecto; acá se hace una excepción
+          // puntual, avisada, no una reapertura general de la regla (sigue
+          // sin usarse en ningún otro lado). Vive en ESTE contenedor (el
+          // que no rota) y no en el que gira con rotateY: un box-shadow
+          // sobre un elemento con transform 3D activo renderiza raro en
+          // WebKit durante la rotación — acá el shadow queda estable
+          // mientras el hijo gira adentro.
+          isSelected &&
+            'shadow-[0_0_0_1.5px_rgb(var(--color-accent)/0.7),0_0_28px_rgb(var(--color-accent)/0.45)]'
+        )}
         animate={{ height: isSelected ? undefined : FRONT_HEIGHT }}
         transition={SPRING}
         style={{ perspective: 1400 }}
       >
         <motion.div
-          className={cn(
-            'relative rounded-2xl',
-            // Aura de acento para delimitar la carta seleccionada — pedido
-            // explícito del usuario. DESIGN.md §0 lista el glow/halo de
-            // color como anti-patrón por defecto; acá se hace una
-            // excepción puntual, avisada, no una reapertura general de la
-            // regla (sigue sin usarse en ningún otro lado).
-            isSelected &&
-              'shadow-[0_0_0_1.5px_rgb(var(--color-accent)/0.7),0_0_28px_rgb(var(--color-accent)/0.45)]'
-          )}
+          className="relative"
           animate={{ rotateY: isSelected ? 180 : 0 }}
           transition={SPRING}
           style={{ transformStyle: 'preserve-3d' }}

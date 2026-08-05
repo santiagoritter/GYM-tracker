@@ -3,6 +3,7 @@ import type { RefObject } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { ArrowLeftRight, Play, QrCode, Star, Trash2 } from 'lucide-react'
 import { Card, Row } from '@/components/ui/Card'
+import Portal from '@/components/ui/Portal'
 import type { Routine, RoutineDay } from '@/types'
 import { cn } from '@/lib/utils'
 import RoutineStackCard, { FRONT_HEIGHT } from './RoutineStackCard'
@@ -219,21 +220,31 @@ export default function RoutineStack({
         })}
       </motion.div>
 
-      {/* Fijo, apenas arriba de la tab bar (mismo nivel que la píldora de
-          "Entreno en curso" de Layout.tsx) — pedido explícito: en el flujo
-          normal de la página se iba demasiado abajo con varias rutinas.
-          Desaparece mientras hay una rutina abierta para no interrumpir. */}
-      {routines.length > 1 && !selectedId && (
-        <button
-          ref={switchRef}
-          onClick={handleSwitch}
-          className="animate-scale-in fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full bg-accent px-5 py-3 text-sm font-bold text-bg active:bg-accent-dim"
-        >
-          <ArrowLeftRight size={16} />
-          Cambiar rutina
-        </button>
-      )}
-      {showParticles && <SwitchParticles originRef={switchRef} />}
+      {/* Portal a document.body: <main> en Layout.tsx tiene animate-fade-up,
+          cuya animación deja un transform aplicado (fill-mode both) — eso
+          convierte a <main> en el "contenedor" de cualquier position:fixed
+          de adentro en vez de la ventana, y el botón queda atrapado
+          dentro de su caja (se mueve con el scroll) en vez de fijo arriba
+          de la tab bar. Mismo problema, mismo arreglo, que ya resuelven
+          los sheets (ver el comentario de Portal.tsx). */}
+      <Portal>
+        {/* Apenas arriba de la tab bar (mismo nivel que la píldora de
+            "Entreno en curso" de Layout.tsx) — pedido explícito: en el
+            flujo normal de la página se iba demasiado abajo con varias
+            rutinas. Desaparece mientras hay una rutina abierta para no
+            interrumpir. */}
+        {routines.length > 1 && !selectedId && (
+          <button
+            ref={switchRef}
+            onClick={handleSwitch}
+            className="animate-scale-in fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full bg-accent px-5 py-3 text-sm font-bold text-bg active:bg-accent-dim"
+          >
+            <ArrowLeftRight size={16} />
+            Cambiar rutina
+          </button>
+        )}
+        {showParticles && <SwitchParticles originRef={switchRef} />}
+      </Portal>
     </>
   )
 }
