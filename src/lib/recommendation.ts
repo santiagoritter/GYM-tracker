@@ -203,13 +203,6 @@ export const COEF: Record<string, Coefficient> = {
   'kb-goblet-clean': { ref: 'deadlift', factor: 0.15 },
 }
 
-/** Nivel del onboarding → escalón de la tabla de estándares. */
-const LEVEL_KEY = {
-  beginner: 'beginner',
-  intermediate: 'intermediate',
-  advanced: 'advanced',
-} as const
-
 export interface Recommendation {
   sets: number
   repsMin: number
@@ -268,7 +261,7 @@ export function estimate1RMFromProfile(exerciseId: string, profile?: LocalProfil
 
   const bodyWeight = plausibleBodyWeight(profile)
   const sex = profile?.sex === 'female' ? 'female' : 'male'
-  const level = LEVEL_KEY[profile?.level ?? 'beginner']
+  const level = profile?.level ?? 'beginner'
   const ratio = standard[sex][level]
   const ageMultiplier = profile?.dob ? getAgeMultiplier(ageFromDob(profile.dob)) : 1
 

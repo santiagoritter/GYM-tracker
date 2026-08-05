@@ -132,7 +132,12 @@ export interface RoutineExercise extends SyncFields {
 }
 
 export type FitnessGoal = 'strength' | 'mass' | 'endurance' | 'health' | 'general'
-export type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced'
+// Mismos 6 escalones que StrengthLevel (src/lib/strengthStandards.ts) sin
+// 'no_data' — ese es un estado calculado, no algo que alguien se
+// autorreporte. Antes eran solo 3 (beginner/intermediate/advanced), lo que
+// dejaba inalcanzables los otros 3 escalones de STANDARDS desde el
+// recomendador cuando no hay historial.
+export type ExperienceLevel = 'novice' | 'beginner' | 'intermediate' | 'advanced' | 'elite' | 'champion'
 export type UserRole = 'admin' | 'user'
 
 export interface User {

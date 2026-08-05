@@ -7,6 +7,7 @@ import { Card, Row } from '@/components/ui/Card'
 import type { LocalProfile } from '@/types'
 import { cn } from '@/lib/utils'
 import { getDailyMessage } from '@/lib/motivational'
+import { LEVEL_LABELS } from '@/lib/strengthStandards'
 
 const GOAL_LABELS: Record<string, string> = {
   strength: 'Fuerza máxima',
@@ -14,12 +15,6 @@ const GOAL_LABELS: Record<string, string> = {
   endurance: 'Resistencia',
   health: 'Salud general',
   general: 'Todo un poco',
-}
-
-const LEVEL_LABELS: Record<string, string> = {
-  beginner: 'Principiante',
-  intermediate: 'Intermedio',
-  advanced: 'Avanzado',
 }
 
 const dailyMsg = getDailyMessage()

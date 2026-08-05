@@ -36,9 +36,12 @@ const GOALS: { key: FitnessGoal; label: string; Icon: LucideIcon }[] = [
 ]
 
 const LEVELS: { key: ExperienceLevel; label: string; desc: string }[] = [
-  { key: 'beginner', label: 'Principiante', desc: 'Menos de 1 año entrenando' },
-  { key: 'intermediate', label: 'Intermedio', desc: '1–3 años de entrenamiento' },
-  { key: 'advanced', label: 'Avanzado', desc: 'Más de 3 años en serio' },
+  { key: 'novice', label: 'Novato', desc: 'Recién arrancás o volvés después de mucho tiempo parado' },
+  { key: 'beginner', label: 'Principiante', desc: 'Menos de 1 año entrenando con regularidad' },
+  { key: 'intermediate', label: 'Intermedio', desc: '1–3 años de entrenamiento constante' },
+  { key: 'advanced', label: 'Avanzado', desc: 'Varios años entrenando en serio' },
+  { key: 'elite', label: 'Elite', desc: 'Nivel competitivo, entre los más fuertes de tu categoría' },
+  { key: 'champion', label: 'Campeón', desc: 'Nivel de récord nacional o internacional' },
 ]
 
 export default function Onboarding() {
