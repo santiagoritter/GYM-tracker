@@ -38,7 +38,9 @@ export interface Prescription {
   rationale: string
 }
 
-const BY_GOAL: Record<FitnessGoal, Prescription> = {
+// Exportado: la calculadora de pesos (§2.1) reutiliza esta misma tabla
+// para mostrar la prescripción por objetivo sin duplicarla.
+export const BY_GOAL: Record<FitnessGoal, Prescription> = {
   strength: {
     sets: 4,
     repsMin: 4,

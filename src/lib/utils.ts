@@ -20,6 +20,18 @@ export function calc1RM(weightKg: number, reps: number): number {
   return Math.round(weightKg * (1 + reps / 30) * 10) / 10
 }
 
+/**
+ * 1RM estimado con fórmula de Brzycki. Más precisa que Epley en el rango
+ * bajo de reps (2-6) porque no es lineal; se vuelve inestable por encima de
+ * ~10 reps (el denominador se acerca a 0), así que se capa ahí.
+ */
+export function calc1RMBrzycki(weightKg: number, reps: number): number {
+  if (reps <= 0 || weightKg <= 0) return 0
+  if (reps === 1) return weightKg
+  const cappedReps = Math.min(reps, 10)
+  return Math.round((weightKg * 36) / (37 - cappedReps) * 10) / 10
+}
+
 const KG_PER_LB = 0.45359237
 
 export function formatWeight(kg: number, units: 'kg' | 'lbs'): string {

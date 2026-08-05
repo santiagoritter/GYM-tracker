@@ -1,6 +1,15 @@
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ArrowLeft, Bell, ChevronRight, Moon, Settings, Sun } from 'lucide-react'
+import {
+  ArrowLeft,
+  Bell,
+  Calculator,
+  ChevronRight,
+  Flame,
+  Moon,
+  Settings,
+  Sun,
+} from 'lucide-react'
 import { db } from '@/db/schema'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useThemeStore } from '@/stores/themeStore'
@@ -27,6 +36,10 @@ export default function Ajustes() {
     profile.reminderEnabled === 1
       ? `Activados, ${profile.reminderTime ?? '18:00'}`
       : 'Desactivados'
+  const calorieStatus =
+    profile.calorieTrackingEnabled === 1
+      ? `Activo, meta ${(profile.calorieGoalKcal ?? 2200).toLocaleString('es-AR')} kcal`
+      : 'Desactivado'
 
   return (
     <div className="mx-auto min-h-screen max-w-lg pb-24">
@@ -149,6 +162,28 @@ export default function Ajustes() {
               <div className="min-w-0 flex-1">
                 <p className="text-[15px]">Recordatorios</p>
                 <p className="text-[13px] text-ink-3">{reminderStatus}</p>
+              </div>
+              <ChevronRight size={16} className="shrink-0 text-ink-4" />
+            </Row>
+            <Row onClick={() => navigate('/calorias')}>
+              <Flame size={18} className="shrink-0 text-ink-3" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[15px]">Calorías</p>
+                <p className="text-[13px] text-ink-3">{calorieStatus}</p>
+              </div>
+              <ChevronRight size={16} className="shrink-0 text-ink-4" />
+            </Row>
+          </Card>
+        </section>
+
+        <section>
+          <SectionHeader title="Herramientas" />
+          <Card>
+            <Row onClick={() => navigate('/calculadora')}>
+              <Calculator size={18} className="shrink-0 text-ink-3" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[15px]">Calculadora de 1RM</p>
+                <p className="text-[13px] text-ink-3">Pesos por objetivo, sin abrir un ejercicio</p>
               </div>
               <ChevronRight size={16} className="shrink-0 text-ink-4" />
             </Row>

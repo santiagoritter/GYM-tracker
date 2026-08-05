@@ -10,6 +10,7 @@ import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { HOME_MESSAGES } from '@/lib/motivational'
 import { cn, formatDuration } from '@/lib/utils'
 import StreakWeekCard from '@/components/gym/StreakWeekCard'
+import CalorieSummaryRow from '@/components/gym/CalorieSummaryRow'
 import { Card, Row, SectionHeader } from '@/components/ui/Card'
 
 export default function Home() {
@@ -81,6 +82,10 @@ export default function Home() {
       {/* Actividad arriba de todo (Redisenio.md §3.3): lo primero que se
           quiere ver al abrir es cómo viene la semana. */}
       <StreakWeekCard />
+
+      {/* Solo aparece si el usuario activó el contador desde Ajustes — no
+          se le agrega peso visual a Home a nadie que no lo pidió. */}
+      <CalorieSummaryRow />
 
       {activeWorkout ? (
         <button
