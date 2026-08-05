@@ -132,6 +132,32 @@ Aplicá lo mismo a la plantilla **Reset password** (con `type=recovery`).
 
 ---
 
+## 3.5 Identidad del usuario: nunca confiar en el cliente
+
+Ya está bien hecho en el SQL (`0004_indexes_rls_storage.sql`: todas las
+políticas comparan contra `(select auth.uid())`, nunca contra un `user_id`
+que mande el cliente) — esto es la regla a **no romper** cuando se escriba
+el cliente que consuma Supabase:
+
+- Ninguna llamada desde el frontend debe mandar `userId` como filtro para
+  decidir qué filas devolver o escribir. Row Level Security ya lo resuelve
+  solo a partir del JWT de la sesión (`auth.uid()`); un `userId` de más en
+  el payload es, en el mejor caso, redundante, y en el peor, una superficie
+  para que alguien lo edite y pida datos de otra cuenta.
+- Si algún día hace falta una función RPC (`supabase.rpc(...)`), tiene que
+  resolver el usuario adentro de la función SQL vía `auth.uid()`, nunca
+  recibirlo como parámetro.
+- El equivalente de "pedile a la API `/me`" en este stack no es un
+  endpoint nuevo: es dejar que RLS + la sesión autenticada hagan el
+  scoping siempre, en vez de confiar en nada que venga del cliente.
+
+Esto no aplica hoy (no hay cliente de Supabase importado en `src/`,
+confirmado — la app es 100% local vía Dexie) pero es la regla que hay que
+respetar apenas se conecte, y por eso queda escrita acá antes de que haga
+falta.
+
+---
+
 ## 4. Rol de admin
 
 El rol **no** vive en una tabla: vive en `auth.users.raw_app_meta_data`, que
