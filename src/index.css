@@ -205,6 +205,14 @@
   input[type='number']::-webkit-outer-spin-button {
     -webkit-appearance: none;
   }
+  /* Bug conocido de WebKit/iOS Safari: input[type=date] ignora width:100%
+     y colapsa al ancho intrínseco de sus segmentos (día/mes/año + ícono),
+     dejando el valor pegado a la izquierda con el resto del box —padding
+     derecho incluido— como espacio muerto. Se ve descentrado aunque el
+     contenedor esté bien. Sin efecto en navegadores que no son WebKit. */
+  input[type='date'] {
+    -webkit-min-logical-width: 100%;
+  }
   /* iOS/Android hacen auto-zoom al enfocar inputs con font-size < 16px.
      !important es necesario: esta regla vive en @layer base, que Tailwind
      ordena antes que @layer utilities, así que clases como text-sm ganarían

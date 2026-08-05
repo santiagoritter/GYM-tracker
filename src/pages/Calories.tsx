@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Suspense, lazy, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ArrowLeft, Flame, Plus, Trash2 } from 'lucide-react'
@@ -9,17 +9,17 @@ import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { Card, EmptyState, Row, SectionHeader } from '@/components/ui/Card'
 import { GOAL_TYPE_LABELS, summarizeDay } from '@/lib/calories'
 import { localDayKey } from '@/lib/stats'
-import { cn, nowIso, uid } from '@/lib/utils'
+import { cn, nowIso } from '@/lib/utils'
 import type { LocalProfile } from '@/types'
-import { toast } from '@/stores/toastStore'
+
+const CalorieAddSheet = lazy(() => import('@/components/gym/CalorieAddSheet'))
 
 const GOAL_TYPES: LocalProfile['calorieGoalType'][] = ['maintenance', 'deficit', 'surplus']
 
 export default function Calories() {
   const navigate = useNavigate()
   const userId = useCurrentUserId()
-  const [kcalInput, setKcalInput] = useState('')
-  const [labelInput, setLabelInput] = useState('')
+  const [adding, setAdding] = useState(false)
 
   const profile = useLiveQuery(
     () => (userId ? db.profile.get(userId) : undefined),
@@ -48,26 +48,6 @@ export default function Calories() {
   const today = localDayKey(nowIso())
   const todayEntries = (entries ?? []).filter((e) => localDayKey(e.loggedAt) === today)
   const summary = summarizeDay(entries ?? [], today, goalKcal)
-
-  const handleAdd = async () => {
-    if (!userId) return
-    const kcal = Number(kcalInput)
-    if (!kcal || kcal <= 0) {
-      toast.error('Ingresá un valor válido', 'Las calorías tienen que ser un número mayor a 0.')
-      return
-    }
-    await db.calorieEntries.add({
-      id: uid(),
-      userId,
-      loggedAt: nowIso(),
-      kcal,
-      label: labelInput.trim() || undefined,
-      dirty: 1,
-      updatedAt: nowIso(),
-    })
-    setKcalInput('')
-    setLabelInput('')
-  }
 
   return (
     <div className="mx-auto min-h-screen max-w-lg pb-24">
@@ -177,31 +157,11 @@ export default function Calories() {
 
             <section>
               <SectionHeader title="Agregar" />
-              <Card className="p-4">
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    value={kcalInput}
-                    onChange={(e) => setKcalInput(e.target.value)}
-                    placeholder="kcal"
-                    className="h-11 w-24 rounded-xs bg-surface-2 px-3 text-center font-mono tabular-nums outline-none focus:ring-1 focus:ring-accent"
-                  />
-                  <input
-                    type="text"
-                    value={labelInput}
-                    onChange={(e) => setLabelInput(e.target.value)}
-                    placeholder="Almuerzo (opcional)"
-                    className="h-11 min-w-0 flex-1 rounded-xs bg-surface-2 px-3 text-[15px] outline-none focus:ring-1 focus:ring-accent"
-                  />
-                  <button
-                    onClick={handleAdd}
-                    aria-label="Agregar"
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xs bg-accent text-bg"
-                  >
-                    <Plus size={20} />
-                  </button>
-                </div>
+              <Card>
+                <Row onClick={() => setAdding(true)}>
+                  <Plus size={20} className="shrink-0 text-accent" />
+                  <span className="flex-1 font-semibold">Agregar calorías</span>
+                </Row>
               </Card>
             </section>
 
@@ -234,6 +194,12 @@ export default function Calories() {
           </>
         )}
       </div>
+
+      <Suspense fallback={null}>
+        {adding && userId && (
+          <CalorieAddSheet userId={userId} onClose={() => setAdding(false)} />
+        )}
+      </Suspense>
     </div>
   )
 }

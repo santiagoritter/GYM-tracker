@@ -26,12 +26,6 @@ velocity handoff al soltar, y rubber-banding en los bordes — el drag
 handle de `ExerciseDetailSheet` sigue sin ser arrastrable. Eso es lo que
 falta de esta idea si se retoma.
 
-### Cronómetro que sigue corriendo con la app cerrada
-Hoy el temporizador de descanso vive en memoria: si el usuario sale de la
-app, se pierde. Guardar `endsAt` en Dexie y reconstruirlo al volver lo hace
-sobrevivir a que el sistema descarte la app. En nativo se combina con la
-notificación programada que ya existe.
-
 ### Deshacer al borrar
 Ahora borrar una serie, una medida o una foto es inmediato y definitivo (con
 un `confirm()` en algunos casos, que en móvil es un diálogo feo del sistema).
