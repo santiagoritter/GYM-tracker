@@ -1,6 +1,7 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ArrowLeft, Bell, Mail } from 'lucide-react'
+import { ArrowLeft, Bell, BellRing } from 'lucide-react'
 import { db } from '@/db/schema'
 import type { LocalProfile } from '@/types'
 import { cn } from '@/lib/utils'
@@ -11,6 +12,7 @@ import {
   notificationsSupported,
   requestNotificationPermission,
 } from '@/lib/reminders'
+import { isPushAvailable, subscribeToPush, unsubscribeFromPush } from '@/lib/webPush'
 
 // getDay(): 0 = domingo … 6 = sábado. Orden de visualización lunes→domingo.
 const DAYS: { value: number; label: string }[] = [
@@ -30,9 +32,37 @@ export default function Reminders() {
     () => (userId ? db.profile.get(userId) : undefined),
     [userId]
   )
+  const [pushSubscribed, setPushSubscribed] = useState(false)
+  const [pushBusy, setPushBusy] = useState(false)
+
+  useEffect(() => {
+    if (!isPushAvailable()) return
+    navigator.serviceWorker.ready
+      .then((r) => r.pushManager.getSubscription())
+      .then((sub) => setPushSubscribed(sub !== null))
+  }, [])
 
   const update = (patch: Partial<LocalProfile>) =>
     userId ? db.profile.update(userId, patch) : Promise.resolve(0)
+
+  const handleTogglePush = async () => {
+    if (!userId || pushBusy) return
+    setPushBusy(true)
+    try {
+      if (pushSubscribed) {
+        await unsubscribeFromPush()
+        setPushSubscribed(false)
+        toast.info('Notificaciones push desactivadas')
+      } else {
+        const ok = await subscribeToPush(userId)
+        setPushSubscribed(ok)
+        if (ok) toast.success('Notificaciones push activadas', 'Van a llegar aunque tengas la app cerrada.')
+        else toast.error('No se pudo activar', 'Revisá el permiso de notificaciones del navegador.')
+      }
+    } finally {
+      setPushBusy(false)
+    }
+  }
 
   if (!profile) return null
 
@@ -165,18 +195,54 @@ export default function Reminders() {
           Probar notificación
         </button>
 
-        {/* Email: requiere backend */}
-        <div className="rounded-md border border-info/20 bg-info/5 p-4">
-          <div className="flex items-center gap-2 text-info">
-            <Mail size={16} />
-            <p className="text-sm font-semibold">Recordatorios por email</p>
+        {/* Push real: sobrevive a cerrar la app. Solo se ofrece si el
+            navegador la soporta y hay backend desplegado (VAPID + Supabase)
+            — no tiene sentido mostrar un toggle que no puede andar. */}
+        {isPushAvailable() ? (
+          <section>
+            <SectionHeader title="Notificaciones push" />
+            <Card>
+              <Row onClick={handleTogglePush}>
+                <BellRing size={18} className="shrink-0 text-ink-3" />
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold">Avisos aunque la app esté cerrada</p>
+                  <p className="text-[13px] text-ink-3">
+                    {pushSubscribed ? 'Activadas' : 'Desactivadas'}
+                  </p>
+                </div>
+                <span
+                  className={cn(
+                    'relative h-7 w-12 shrink-0 rounded-full transition-colors',
+                    pushSubscribed ? 'bg-accent' : 'bg-surface-3',
+                    pushBusy && 'opacity-50'
+                  )}
+                  role="switch"
+                  aria-checked={pushSubscribed}
+                >
+                  <span
+                    className={cn(
+                      'absolute top-1 h-5 w-5 rounded-full bg-white transition-all',
+                      pushSubscribed ? 'left-6' : 'left-1'
+                    )}
+                  />
+                </span>
+              </Row>
+            </Card>
+          </section>
+        ) : (
+          <div className="rounded-md border border-info/20 bg-info/5 p-4">
+            <div className="flex items-center gap-2 text-info">
+              <BellRing size={16} />
+              <p className="text-sm font-semibold">Notificaciones push</p>
+            </div>
+            <p className="mt-1 text-xs text-ink-2">
+              El aviso local de arriba solo funciona con la app abierta. Para
+              que llegue aunque esté cerrada hace falta un backend — el
+              código ya está listo, falta desplegar Supabase. Ver
+              <span className="font-mono text-ink-3"> docs/13-BACKEND-SUPABASE.md</span>.
+            </p>
           </div>
-          <p className="mt-1 text-xs text-ink-2">
-            El envío de emails requiere un backend. La app ya trae el diseño y la
-            función lista para desplegar en Supabase (Edge Function + cron). Ver
-            <span className="font-mono text-ink-3"> docs/12-RECORDATORIOS.md</span>.
-          </p>
-        </div>
+        )}
       </div>
     </div>
   )

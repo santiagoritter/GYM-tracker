@@ -11,6 +11,20 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // injectManifest en vez de generateSW (default): es la única forma de
+      // meter código propio en el service worker — acá, el handler de
+      // `push` de la Fase 26. Con generateSW, Workbox arma el SW solo y no
+      // deja agregar nada. src/sw.ts es el service worker real; se bundlea
+      // con Rollup en build.
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
+      injectManifest: {
+        // Mismo patrón de precacheo que tenía el generateSW anterior — se
+        // mueve acá tal cual, no cambia qué se cachea, solo cómo se arma.
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        rollupFormat: 'iife',
+      },
       manifest: {
         name: 'GymTracker',
         short_name: 'GymTracker',
@@ -28,13 +42,6 @@ export default defineConfig({
           { src: `${BASE_PATH}icons/icon-512.png`, sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        // Ya no hay runtimeCaching de fuentes: la app usa las del sistema.
-        // Cuando exista Supabase, su patrón va acá como NetworkOnly — Workbox
-        // cachea por URL e ignora el header Authorization, así que cachear
-        // PostgREST puede servir datos de otra sesión desde el caché.
-      },
     }),
   ],
   resolve: {
@@ -49,10 +56,13 @@ export default defineConfig({
         // lazy-loadeadas, pero sin chunk propio Rollup lo mezclaba con
         // cualquiera de esas páginas. React/react-dom/router cambian mucho
         // menos seguido que el código de la app — separarlos cachea mejor
-        // entre deploys.
+        // entre deploys. `motion` (Fase 28) entra desde ExerciseDetailSheet,
+        // que NO está lazy (se abre desde Exercises.tsx) — sin chunk propio
+        // infla el bundle principal a ~540KB.
         manualChunks: {
           recharts: ['recharts'],
           vendor: ['react', 'react-dom', 'react-router-dom'],
+          motion: ['motion'],
         },
       },
     },

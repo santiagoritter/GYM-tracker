@@ -1,7 +1,8 @@
 # 12 · Recordatorios de entrenamiento
 
 Dos capas complementarias: **notificaciones locales** (funcionan hoy, sin
-servidor) y **emails programados** (requieren backend, ya scaffoldeado).
+servidor) y **Web Push real** (requiere backend, código ya listo — ver
+`docs/13-BACKEND-SUPABASE.md`).
 
 ---
 
@@ -21,58 +22,30 @@ con la app cerrada → capa 2.
 
 ---
 
-## Capa 2 — Emails programados (scaffold en `supabase/functions/send-reminders`)
+## Capa 2 — Web Push real (código en `supabase/functions/send-push-reminders`)
 
-Arquitectura sin servidor propio, sobre Supabase:
+Reemplaza a un intento anterior por email (scaffold `send-reminders`,
+nunca desplegado y referenciaba columnas que no llegaron a existir en el
+SQL real — quedó anotado como deuda en `IDEAS.md` y se borró). Esta versión
+manda una notificación push real al navegador, aunque la PWA esté cerrada:
 
 ```
 pg_cron (cada hora)
-   └─► Edge Function `send-reminders`
-          ├─ lee profiles con reminder_email_enabled = true
-          ├─ filtra por hora/zona horaria del usuario
-          ├─ evita duplicados (tabla reminder_log)
-          └─ envía email vía Resend / Postmark
+   └─► Edge Function `send-push-reminders`
+          ├─ lee profiles con reminder_enabled = true (columna real)
+          ├─ cruza contra push_subscriptions (una fila por navegador
+          │  suscripto, con su propia zona horaria)
+          ├─ evita duplicados (push_subscriptions.last_sent_on)
+          └─ manda el push firmado con VAPID (self.addEventListener('push')
+             en src/sw.ts lo recibe y muestra la notificación)
 ```
 
-### Pasos de despliegue
+**Del lado del cliente** (`src/lib/webPush.ts`): al activar "Notificaciones
+push" en `/recordatorios`, el navegador se suscribe al Push Manager y esa
+suscripción (endpoint + claves + zona horaria del dispositivo) se guarda en
+`push_subscriptions`. Se degrada sola si Supabase no está desplegado o el
+navegador no soporta Push — no rompe nada, simplemente no ofrece la opción
+(`isPushAvailable()`).
 
-1. **Tabla de preferencias** (extiende `profiles`):
-   ```sql
-   alter table profiles
-     add column reminder_email_enabled boolean default false,
-     add column reminder_time time default '18:00',
-     add column reminder_days int[] default '{1,2,3,4,5}',
-     add column timezone text default 'America/Argentina/Buenos_Aires';
-
-   create table reminder_log (
-     user_id uuid references auth.users,
-     sent_on date,
-     primary key (user_id, sent_on)
-   );
-   ```
-
-2. **Proveedor de email**: crear cuenta en [Resend](https://resend.com) (free
-   tier 3k/mes) y guardar `RESEND_API_KEY` como secret:
-   ```bash
-   supabase secrets set RESEND_API_KEY=re_xxx
-   ```
-
-3. **Desplegar la función**:
-   ```bash
-   supabase functions deploy send-reminders
-   ```
-
-4. **Programar con pg_cron** (cada hora en punto):
-   ```sql
-   select cron.schedule(
-     'send-reminders-hourly',
-     '0 * * * *',
-     $$ select net.http_post(
-          url := 'https://<PROJECT>.functions.supabase.co/send-reminders',
-          headers := jsonb_build_object('Authorization', 'Bearer ' || current_setting('app.cron_secret'))
-        ) $$
-   );
-   ```
-
-El esqueleto de la función (Deno/TypeScript) está en
-`supabase/functions/send-reminders/index.ts`, listo para completar credenciales.
+Pasos de despliegue completos (claves VAPID, secrets, cron) en
+`docs/13-BACKEND-SUPABASE.md`.

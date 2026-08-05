@@ -1,9 +1,16 @@
 import { useState } from 'react'
+import { motion, useReducedMotion } from 'motion/react'
 import { X, CalendarDays, Download } from 'lucide-react'
 import Portal from '@/components/ui/Portal'
 import { ROUTINE_TEMPLATES, type RoutineTemplate } from '@/data/routineTemplates'
 import { importPayload } from '@/lib/qr'
 import { toast } from '@/stores/toastStore'
+import {
+  sheetItemVariants,
+  sheetItemVariantsReduced,
+  sheetPanelVariants,
+  sheetPanelVariantsReduced,
+} from '@/lib/motionVariants'
 import { cn } from '@/lib/utils'
 
 const LEVEL_COLOR: Record<RoutineTemplate['level'], string> = {
@@ -22,6 +29,7 @@ export default function TemplatePicker({
   onImported: (routineId: string) => void
 }) {
   const [busy, setBusy] = useState<string | null>(null)
+  const reduced = useReducedMotion()
 
   const handleImport = async (template: RoutineTemplate) => {
     setBusy(template.id)
@@ -45,28 +53,38 @@ export default function TemplatePicker({
     <Portal>
       <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm animate-glass-in" onClick={onClose} />
 
-      <div className="fixed bottom-0 left-1/2 z-50 flex max-h-[88vh] w-full max-w-lg flex-col animate-sheet-in rounded-t-3xl bg-surface shadow-float">
-        <div className="flex justify-center pt-3 pb-1">
-          <div className="h-1 w-10 rounded-full bg-line-2" />
-        </div>
-
-        <div className="flex items-start justify-between px-5 pt-1 pb-3">
-          <div className="pr-4">
-            <h2 className="text-xl font-bold leading-tight">Rutinas clásicas</h2>
-            <p className="mt-0.5 text-[13px] text-ink-2">
-              Importá una y editala como quieras. Los pesos los calcula la app.
-            </p>
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={reduced ? sheetPanelVariantsReduced : sheetPanelVariants}
+        className="fixed bottom-0 left-1/2 z-50 flex max-h-[88vh] w-full max-w-lg flex-col rounded-t-3xl bg-surface shadow-float"
+      >
+        <motion.div variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}>
+          <div className="flex justify-center pt-3 pb-1">
+            <div className="h-1 w-10 rounded-full bg-line-2" />
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Cerrar"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-fill text-ink-2 active:bg-fill-2"
-          >
-            <X size={16} />
-          </button>
-        </div>
 
-        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-5 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+          <div className="flex items-start justify-between px-5 pt-1 pb-3">
+            <div className="pr-4">
+              <h2 className="text-xl font-bold leading-tight">Rutinas clásicas</h2>
+              <p className="mt-0.5 text-[13px] text-ink-2">
+                Importá una y editala como quieras. Los pesos los calcula la app.
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              aria-label="Cerrar"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-fill text-ink-2 active:bg-fill-2"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </motion.div>
+
+        <motion.div
+          variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}
+          className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-5 pb-[calc(2rem+env(safe-area-inset-bottom))]"
+        >
           {ROUTINE_TEMPLATES.map((t) => (
             <div key={t.id} className="rounded-2xl bg-surface-2 p-4">
               <div className="flex items-start justify-between gap-3">
@@ -101,8 +119,8 @@ export default function TemplatePicker({
               </button>
             </div>
           ))}
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </Portal>
   )
 }
