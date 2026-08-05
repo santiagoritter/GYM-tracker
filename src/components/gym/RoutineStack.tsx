@@ -1,10 +1,47 @@
-import { useState } from 'react'
-import { motion, useReducedMotion } from 'motion/react'
+import { useRef, useState } from 'react'
+import type { RefObject } from 'react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { ArrowLeftRight, Play, QrCode, Star, Trash2 } from 'lucide-react'
 import { Card, Row } from '@/components/ui/Card'
 import type { Routine, RoutineDay } from '@/types'
 import { cn } from '@/lib/utils'
 import RoutineStackCard, { FRONT_HEIGHT } from './RoutineStackCard'
+
+/**
+ * Ráfaga de puntitos al tocar "Cambiar rutina" — adaptado de
+ * ParticleButton (kokonutui): mismo mecanismo (posición real del botón
+ * vía getBoundingClientRect, puntos `fixed` para escapar cualquier
+ * overflow, dispersión con delay escalonado), pero con el color de
+ * acento de la app en vez de negro/blanco fijo, sin el ícono
+ * `MousePointerClick` que suma la referencia, y sin el wrapper
+ * `Button`/`ButtonProps` de shadcn (no está instalado en este proyecto,
+ * ver CLAUDE.md §4) — el motion.span se dispara desde el propio botón.
+ */
+function SwitchParticles({ originRef }: { originRef: RefObject<HTMLButtonElement> }) {
+  const rect = originRef.current?.getBoundingClientRect()
+  if (!rect) return null
+  const centerX = rect.left + rect.width / 2
+  const centerY = rect.top + rect.height / 2
+
+  return (
+    <AnimatePresence>
+      {[...Array(6)].map((_, i) => (
+        <motion.span
+          key={i}
+          className="fixed z-40 h-1 w-1 rounded-full bg-accent"
+          style={{ left: centerX, top: centerY }}
+          initial={{ scale: 0, x: 0, y: 0 }}
+          animate={{
+            scale: [0, 1, 0],
+            x: [0, (i % 2 ? 1 : -1) * (Math.random() * 50 + 20)],
+            y: [0, -Math.random() * 50 - 20],
+          }}
+          transition={{ duration: 0.6, delay: i * 0.08, ease: 'easeOut' }}
+        />
+      ))}
+    </AnimatePresence>
+  )
+}
 
 // Mazo derecho, sin ángulo ni desplazamiento lateral — pedido explícito
 // del usuario sobre la versión anterior (que tenía rotación + offset en
@@ -40,6 +77,8 @@ export default function RoutineStack({
   // fondo, la siguiente queda al frente), pedido explícito tras la
   // primera versión, que en cambio abría/seleccionaba una rutina.
   const [frontIndex, setFrontIndex] = useState(0)
+  const [showParticles, setShowParticles] = useState(false)
+  const switchRef = useRef<HTMLButtonElement>(null)
   const reduced = useReducedMotion()
 
   if (routines.length === 0) return null
@@ -140,6 +179,10 @@ export default function RoutineStack({
   const handleSwitch = () => {
     if (routines.length < 2) return
     setFrontIndex((i) => (i + 1) % routines.length)
+    if (!reduced) {
+      setShowParticles(true)
+      setTimeout(() => setShowParticles(false), 600)
+    }
   }
 
   return (
@@ -176,17 +219,21 @@ export default function RoutineStack({
         })}
       </motion.div>
 
-      {/* Más separado del mazo que la primera versión (mt-3 → mt-8):
-          pedido explícito, quedaba pegado. */}
-      {routines.length > 1 && (
+      {/* Fijo, apenas arriba de la tab bar (mismo nivel que la píldora de
+          "Entreno en curso" de Layout.tsx) — pedido explícito: en el flujo
+          normal de la página se iba demasiado abajo con varias rutinas.
+          Desaparece mientras hay una rutina abierta para no interrumpir. */}
+      {routines.length > 1 && !selectedId && (
         <button
+          ref={switchRef}
           onClick={handleSwitch}
-          className="mt-8 flex w-full items-center justify-center gap-2 rounded-full bg-accent py-3 text-sm font-bold text-bg active:bg-accent-dim"
+          className="animate-scale-in fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full bg-accent px-5 py-3 text-sm font-bold text-bg active:bg-accent-dim"
         >
           <ArrowLeftRight size={16} />
           Cambiar rutina
         </button>
       )}
+      {showParticles && <SwitchParticles originRef={switchRef} />}
     </>
   )
 }
