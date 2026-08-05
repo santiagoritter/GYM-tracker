@@ -6,15 +6,11 @@ import type { Routine, RoutineDay } from '@/types'
 import { cn } from '@/lib/utils'
 import RoutineStackCard, { FRONT_HEIGHT } from './RoutineStackCard'
 
-// Aspecto de notas apiladas sobre un escritorio: más dispersión que un
-// mazo de cartas prolijo — ángulo y offset bien visibles para poder
-// agarrar la de abajo sin pelearla contra la de arriba. Offsets subidos
-// bastante respecto a la primera versión (16/7/3): "el espacio para
-// cambiar de una card a otra" era muy chico para distinguir/agarrar una
-// carta puntual del mazo, pedido explícito del usuario.
-const Y_STEP = 48
-const X_STEP = 18
-const ROTATE_STEP = 4
+// Mazo derecho, sin ángulo ni desplazamiento lateral — pedido explícito
+// del usuario sobre la versión anterior (que tenía rotación + offset en
+// X, aspecto de notas desparramadas): solo una debajo de la otra, más
+// separadas todavía que el primer ajuste (48 → 64).
+const Y_STEP = 64
 const MAX_STACK_STEP = 4
 const SPRING = { type: 'spring' as const, damping: 30, stiffness: 300 }
 
@@ -39,6 +35,11 @@ export default function RoutineStack({
 }: RoutineStackProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [heights, setHeights] = useState<Record<string, number>>({})
+  // Qué rutina está al frente del mazo — "Cambiar rutina" gira esto, no
+  // selecciona: cambia el ORDEN de las cartas (la de arriba pasa al
+  // fondo, la siguiente queda al frente), pedido explícito tras la
+  // primera versión, que en cambio abría/seleccionaba una rutina.
+  const [frontIndex, setFrontIndex] = useState(0)
   const reduced = useReducedMotion()
 
   if (routines.length === 0) return null
@@ -128,16 +129,17 @@ export default function RoutineStack({
     ? (heights[selectedId] ?? FRONT_HEIGHT)
     : FRONT_HEIGHT + stackSpread
 
-  // Segundo modo de cambiar de rutina, más cómodo que ir a buscar una
-  // carta puntual en el mazo — pedido explícito, mismo estilo (píldora de
-  // acento) que la de "Entreno en curso" (Layout.tsx). Sin seleccionada
-  // arranca desde la primera; con una seleccionada, pasa a la siguiente
-  // (circular).
+  // Orden visual del mazo, derivado en el render (no en un efecto): rota
+  // el array de rutinas para que la de índice `frontIndex` quede primera
+  // — no muta `routines`, así que las keys/props de cada card siguen
+  // siendo las mismas, solo cambia SU POSICIÓN en el mazo, y motion anima
+  // la transición vía el `animate` prop de RoutineStackCard.
+  const safeFront = routines.length ? frontIndex % routines.length : 0
+  const displayOrder = [...routines.slice(safeFront), ...routines.slice(0, safeFront)]
+
   const handleSwitch = () => {
-    if (routines.length === 0) return
-    const currentIndex = selectedId ? routines.findIndex((r) => r.id === selectedId) : -1
-    const next = routines[(currentIndex + 1) % routines.length]
-    setSelectedId(next.id)
+    if (routines.length < 2) return
+    setFrontIndex((i) => (i + 1) % routines.length)
   }
 
   return (
@@ -147,21 +149,16 @@ export default function RoutineStack({
         animate={{ height: containerHeight }}
         transition={SPRING}
       >
-        {routines.map((routine, index) => {
+        {displayOrder.map((routine, index) => {
           const step = Math.min(index, MAX_STACK_STEP)
-          const side = index % 2 === 0 ? 1 : -1
-          const pose = {
-            x: step * X_STEP * side,
-            y: step * Y_STEP,
-            rotate: step * ROTATE_STEP * side,
-          }
+          const pose = { y: step * Y_STEP }
           return (
             <RoutineStackCard
               key={routine.id}
               routine={routine}
               days={daysByRoutine.get(routine.id) ?? []}
               pose={pose}
-              stackOrder={routines.length - index}
+              stackOrder={displayOrder.length - index}
               isSelected={selectedId === routine.id}
               dimmed={selectedId !== null && selectedId !== routine.id}
               onSelect={() => setSelectedId(routine.id)}
@@ -179,10 +176,12 @@ export default function RoutineStack({
         })}
       </motion.div>
 
+      {/* Más separado del mazo que la primera versión (mt-3 → mt-8):
+          pedido explícito, quedaba pegado. */}
       {routines.length > 1 && (
         <button
           onClick={handleSwitch}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-accent py-3 text-sm font-bold text-bg active:bg-accent-dim"
+          className="mt-8 flex w-full items-center justify-center gap-2 rounded-full bg-accent py-3 text-sm font-bold text-bg active:bg-accent-dim"
         >
           <ArrowLeftRight size={16} />
           Cambiar rutina
