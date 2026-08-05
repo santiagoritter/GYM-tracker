@@ -1,19 +1,6 @@
-import { useMemo } from 'react'
-import { useLiveQuery } from 'dexie-react-hooks'
-import {
-  PolarAngleAxis,
-  PolarGrid,
-  PolarRadiusAxis,
-  Radar,
-  RadarChart,
-  ResponsiveContainer,
-} from 'recharts'
-import { db } from '@/db/schema'
-import { personalRecordsFor } from '@/db/scoped'
-import { useCurrentUserId } from '@/hooks/useCurrentUserId'
-import { useChartColors } from '@/hooks/useChartColors'
-import { getMuscleGroupLevels } from '@/lib/muscleGroupStrength'
-import { LEVEL_LABELS, ageFromDob } from '@/lib/strengthStandards'
+import { useMuscleGroupLevels } from '@/hooks/useMuscleGroupLevels'
+import { MuscleGroupRadar } from '@/components/gym/MuscleGroupRadar'
+import { LEVEL_LABELS } from '@/lib/strengthStandards'
 import { MUSCLE_LABELS } from '@/components/gym/MuscleChip'
 import { Card, EmptyState, Row } from '@/components/ui/Card'
 
@@ -23,31 +10,7 @@ import { Card, EmptyState, Row } from '@/components/ui/Card'
  * explícitamente evitar "badges tipo videojuego con emojis".
  */
 export function MuscleGroupLevels() {
-  const userId = useCurrentUserId()
-  const chartColors = useChartColors()
-  const profile = useLiveQuery(
-    () => (userId ? db.profile.get(userId) : undefined),
-    [userId]
-  )
-  const exercises = useLiveQuery(() => db.exercises.toArray(), []) ?? []
-  const prs = useLiveQuery(
-    () => (userId ? personalRecordsFor(userId).toArray() : []),
-    [userId]
-  ) ?? []
-  const prByExerciseId = useMemo(() => new Map(prs.map((p) => [p.exerciseId, p])), [prs])
-
-  const profileComplete = profile?.sex && profile?.bodyWeightKg && profile?.dob
-
-  const levels = useMemo(() => {
-    if (!profileComplete) return []
-    return getMuscleGroupLevels(
-      exercises,
-      prByExerciseId,
-      profile!.bodyWeightKg!,
-      profile!.sex!,
-      ageFromDob(profile!.dob!)
-    )
-  }, [profileComplete, exercises, prByExerciseId, profile])
+  const { levels, profileComplete } = useMuscleGroupLevels()
 
   if (!profileComplete) return null
 
@@ -61,11 +24,6 @@ export function MuscleGroupLevels() {
     )
   }
 
-  const radarData = levels.map(({ muscle, result }) => ({
-    muscle: MUSCLE_LABELS[muscle],
-    progress: result.progress,
-  }))
-
   return (
     <div className="space-y-3">
       {/* Vista de conjunto arriba de la lista — la lista sigue siendo el
@@ -73,23 +31,7 @@ export function MuscleGroupLevels() {
           no" de un vistazo. Un solo acento: es una sola serie de datos (una
           persona), no hace falta color por grupo. */}
       <div className="h-64 rounded-xl bg-surface p-2">
-        <ResponsiveContainer width="100%" height="100%">
-          <RadarChart data={radarData} outerRadius="70%">
-            <PolarGrid stroke={chartColors.grid} />
-            <PolarAngleAxis
-              dataKey="muscle"
-              stroke={chartColors.axis}
-              tick={{ fill: chartColors.axis, fontSize: 10 }}
-            />
-            <PolarRadiusAxis domain={[0, 1]} tick={false} axisLine={false} />
-            <Radar
-              dataKey="progress"
-              stroke={chartColors.accent}
-              fill={chartColors.accent}
-              fillOpacity={0.25}
-            />
-          </RadarChart>
-        </ResponsiveContainer>
+        <MuscleGroupRadar levels={levels} />
       </div>
       <Card>
         {levels.map(({ muscle, result }) => (

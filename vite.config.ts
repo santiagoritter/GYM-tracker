@@ -57,6 +57,18 @@ export default defineConfig({
     },
   },
   build: {
+    modulePreload: {
+      // El radar de puntos fuertes del reverso de CalendarHeatmap (Home)
+      // usa lazy() para no importar recharts de forma estática — pero
+      // Home no es una ruta lazy (a diferencia de Progress, donde vive el
+      // mismo radar en tamaño completo), así que Vite igual metía un
+      // <link rel="modulepreload"> a recharts en el index.html apenas por
+      // ser alcanzable desde ahí, descargando los ~112KB gzipped en TODA
+      // carga de Inicio así nunca se flippee la card. Se saca del
+      // preload; sigue cargando bien on-demand cuando el lazy() dispara,
+      // solo que sin el prefetch adelantado.
+      resolveDependencies: (_filename, deps) => deps.filter((dep) => !dep.includes('recharts')),
+    },
     rollupOptions: {
       output: {
         // Recharts (~250KB) solo lo usan Progreso/Medidas/Fotos, ya
