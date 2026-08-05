@@ -9,6 +9,18 @@ Orden: impacto real sobre el uso diario, no dificultad.
 
 ## Alto impacto
 
+### Interacciones con spring physics (gestos reales, no CSS transitions)
+`~/.agents/skills/apple-design/SKILL.md` (secciones 1-11) describe cómo
+Apple construye drag/swipe/sheets con física de resortes interrumpible en
+vez de `@keyframes` de duración fija: seguimiento 1:1 del dedo, velocidad
+que se retoma al soltar, rebote solo cuando el gesto trae momentum,
+rubber-banding en los bordes. Los sheets/steppers de esta app hoy usan
+CSS transitions/keyframes (`animate-sheet-in`, el drag handle de
+`ExerciseDetailSheet` no es arrastrable). Implementarlo bien implica sumar
+una librería de springs (Motion/Framer Motion) y reescribir esas
+interacciones — cambio de arquitectura de interacción, no un ajuste de
+blur, por eso queda anotado acá y no en la Fase 16 de Liquid Glass.
+
 ### Cronómetro que sigue corriendo con la app cerrada
 Hoy el temporizador de descanso vive en memoria: si el usuario sale de la
 app, se pierde. Guardar `endsAt` en Dexie y reconstruirlo al volver lo hace

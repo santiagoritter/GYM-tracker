@@ -38,6 +38,11 @@
   --color-warning: 255 214 10;
   --color-danger: 255 69 58;
   --color-info: 10 132 255;
+  /* Borde superior de las superficies de vidrio (apple-design skill, §12
+     "Materials & depth"): la luz agarrando el borde del material. Solo se
+     usa en la tab bar (ver .glass-edge-top) — es el caso canónico de
+     Apple, un toolbar flotando sobre contenido con luz viniendo de arriba. */
+  --color-glass-edge: rgba(255, 255, 255, 0.14);
 }
 
 /* Paleta iOS en modo claro: systemGroupedBackground de fondo, tarjetas en
@@ -72,6 +77,7 @@
   --color-warning: 255 149 0;
   --color-danger: 255 59 48;
   --color-info: 0 122 255;
+  --color-glass-edge: rgba(255, 255, 255, 0.5);
 }
 
 @layer utilities {
@@ -148,6 +154,23 @@
     will-change: backdrop-filter;
   }
 
+  /* Solo para la tab bar: el borde que agarra la luz (ver --color-glass-edge
+     arriba). El header no lleva esto — en iOS las barras de navegación
+     superiores usan un hairline neutro, el "shine" es propio de barras/
+     sheets que flotan sobre contenido desde abajo. */
+  .glass-edge-top {
+    border-top: 1px solid var(--color-glass-edge);
+  }
+
+  /* Materialize: el scrim de un sheet/modal no solo aparece (opacity), el
+     desenfoque también "llega" — apple-design skill §12: "animar blur y
+     scale juntos, no un fade plano". */
+  @keyframes glass-in {
+    from { opacity: 0; backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px); }
+    to   { opacity: 1; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+  }
+  .animate-glass-in { animation: glass-in 220ms ease-out both; }
+
   /* Highlight superior de tarjetas (efecto de luz) */
   .card-shine {
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.07), 0 2px 16px rgba(0,0,0,0.4);
@@ -191,5 +214,52 @@
      por orden de capa aunque tengan menor especificidad. */
   input, select, textarea {
     font-size: 16px !important;
+  }
+}
+
+/*
+ * Accesibilidad de movimiento y transparencia (apple-design skill §14).
+ * Hasta acá el sistema de theming no distinguía estas tres señales — se
+ * agregan ahora junto con el pulido de Liquid Glass porque son la otra
+ * mitad de la misma sección de la skill ("Materials & depth" +
+ * "Reduced motion & accessibility" van de la mano: más vidrio, más
+ * responsabilidad de ofrecer una salida).
+ */
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    background: rgb(var(--color-surface));
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .glass {
+    background: rgb(var(--color-surface));
+    border-color: rgb(var(--color-ink) / 0.4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes reduced-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  /* Los dos casos que centran con -translate-x-1/2 (Layout.tsx: pill de
+     entreno activo, sheets) necesitan conservar ese transform estático —
+     "transform: none" los descentraría, no solo les sacaría la animación. */
+  @keyframes reduced-fade-centered {
+    from { opacity: 0; transform: translateX(-50%); }
+    to   { opacity: 1; transform: translateX(-50%); }
+  }
+  .animate-set-pop,
+  .animate-pr-appear,
+  .animate-fade-up,
+  .animate-glass-in {
+    animation: reduced-fade 150ms ease both;
+  }
+  .animate-sheet-in,
+  .animate-scale-in {
+    animation: reduced-fade-centered 150ms ease both;
   }
 }

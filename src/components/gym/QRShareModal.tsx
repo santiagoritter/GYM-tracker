@@ -30,7 +30,7 @@ export function QRShareModal({ routine, onClose }: { routine: Routine; onClose: 
 
   return (
     <Portal>
-      <div className="fixed inset-0 z-50 flex items-end justify-center bg-bg/80 backdrop-blur-sm">
+      <div className="fixed inset-0 z-50 flex items-end justify-center bg-bg/80 backdrop-blur-sm animate-glass-in">
         <div className="w-full max-w-lg rounded-t-3xl border-t border-line-2 bg-surface p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-bold">Compartir rutina</h2>

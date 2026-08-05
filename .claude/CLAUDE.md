@@ -153,6 +153,10 @@ TanStack Query está en `package.json` pero **no se usa**: no hay
   servidor, no un `if` en el frontend.
 - La anon key de Supabase es pública por diseño. La service_role nunca va al
   frontend ni a CI.
+- Ninguna llamada al backend manda un `userId` para decidir qué filas
+  devolver o escribir — la identidad se resuelve siempre del lado del
+  servidor (`auth.uid()`, ya usado así en las políticas RLS). Ver
+  `docs/13-BACKEND-SUPABASE.md` §3.5.
 
 ---
 

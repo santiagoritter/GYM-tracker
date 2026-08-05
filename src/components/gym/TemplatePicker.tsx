@@ -43,7 +43,7 @@ export default function TemplatePicker({
 
   return (
     <Portal>
-      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm animate-fade-up" onClick={onClose} />
+      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm animate-glass-in" onClick={onClose} />
 
       <div className="fixed bottom-0 left-1/2 z-50 flex max-h-[88vh] w-full max-w-lg flex-col animate-sheet-in rounded-t-3xl bg-surface shadow-float">
         <div className="flex justify-center pt-3 pb-1">

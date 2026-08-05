@@ -209,7 +209,7 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
     <Portal>
       {/* Overlay oscuro */}
       <div
-        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm animate-fade-up"
+        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm animate-glass-in"
         onClick={onClose}
       />
 
