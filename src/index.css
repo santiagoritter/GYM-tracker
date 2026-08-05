@@ -46,9 +46,18 @@
 }
 
 /* Paleta iOS en modo claro: systemGroupedBackground de fondo, tarjetas en
-   blanco puro, labels estándar de Apple. El acento lima se oscurece (no
-   pasa AA sobre blanco tal cual) manteniendo el hue — es el único valor que
-   no viene directo de la paleta de iOS y conviene revisarlo a ojo.
+   blanco puro, labels estándar de Apple.
+
+   El acento (Fase 27, segunda vuelta): el valor anterior (138 154 0, R≈G)
+   daba 3.24:1 contra blanco — pasa el mínimo de AA para elementos grandes
+   (≥3:1) pero NO para texto normal (necesita ≥4.5:1), y el acento se usa
+   como texto chico en varios lugares (racha, tabs activos). Con R≈G y B=0
+   además lee como oliva/mostaza, no como "lima fresco". Se ajusta a
+   84 132 20 — más verde que amarillo (mejor relación G:R, menos "oliva
+   militar") y más oscuro, ronda los 4.5:1 reales contra blanco (calculado
+   a mano, sin poder verificarlo en pantalla real en este entorno — igual
+   que la vez pasada con este mismo token, queda anotado para confirmar a
+   ojo). accent-dim/accent-soft ajustados proporcionalmente.
 
    surface-2/surface-3 NO copian los tokens tertiary/quaternary de iOS tal
    cual — ahí Apple reutiliza el mismo valor que el fondo a propósito (listas
@@ -67,9 +76,9 @@
   --color-ink-2: rgba(60, 60, 67, 0.6);
   --color-ink-3: rgba(60, 60, 67, 0.3);
   --color-ink-4: rgba(60, 60, 67, 0.18);
-  --color-accent: 138 154 0; /* lima oscurecido para AA sobre blanco */
-  --color-accent-dim: 118 132 0;
-  --color-accent-soft: rgba(138, 154, 0, 0.12);
+  --color-accent: 84 132 20; /* verde lima, ~4.5:1 sobre blanco */
+  --color-accent-dim: 66 104 14;
+  --color-accent-soft: rgba(84, 132, 20, 0.12);
   --color-fill: rgba(120, 120, 128, 0.12);
   --color-fill-2: rgba(120, 120, 128, 0.08);
   --color-fill-3: rgba(118, 118, 128, 0.06);
