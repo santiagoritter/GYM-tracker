@@ -6,10 +6,10 @@ import type { Routine, RoutineDay } from '@/types'
 import { cn } from '@/lib/utils'
 
 const SPRING = { type: 'spring' as const, damping: 30, stiffness: 300 }
-// 200: la primera versión (108) era una barra angosta — pedido explícito
-// del usuario de una carta "más cuadrada", con lugar real para mostrar los
-// días sin flippear (ver preview de abajo).
-export const FRONT_HEIGHT = 200
+// 108 → 200 → 240: cada ronda de feedback pidió una carta más grande.
+// Ahora con lugar de sobra para el preview de días (hasta 6, antes 4) sin
+// apretarse.
+export const FRONT_HEIGHT = 240
 
 export interface RoutineStackCardProps {
   routine: Routine
@@ -109,16 +109,18 @@ export default function RoutineStackCard({
           transition={SPRING}
           style={{ transformStyle: 'preserve-3d' }}
         >
-          {/* Frente — más alto que la primera versión (108px → 200px,
-              pedido explícito), con preview de los días para que se pueda
-              "visualizar" la rutina sin tener que flippear. */}
+          {/* Frente — con preview de los días para que se pueda
+              "visualizar" la rutina sin tener que flippear (hasta 6, antes
+              4: la carta más alta da lugar de sobra). Estrella de acento si
+              es la rutina favorita — mismo dato que ya usa el botón de
+              favorito del reverso, ninguna consulta nueva. */}
           <button
             type="button"
             onClick={onSelect}
             disabled={!frontInteractive}
             aria-label={`Ver rutina ${routine.name}`}
             className={cn(
-              'card-shine relative flex h-[200px] w-full flex-col justify-between rounded-2xl bg-surface p-5 text-left [backface-visibility:hidden]',
+              'card-shine relative flex h-[240px] w-full flex-col justify-between rounded-2xl bg-surface p-5 text-left [backface-visibility:hidden]',
               isSelected && 'pointer-events-none'
             )}
           >
@@ -130,14 +132,19 @@ export default function RoutineStackCard({
                 />
                 <span className="truncate text-xl font-semibold">{routine.name}</span>
               </div>
-              <Repeat2 size={18} className="shrink-0 text-ink-3" />
+              <div className="flex shrink-0 items-center gap-2">
+                {routine.isActive === 1 && (
+                  <Star size={16} className="text-accent" fill="currentColor" />
+                )}
+                <Repeat2 size={18} className="text-ink-3" />
+              </div>
             </div>
             <div>
               <p className="text-[13px] text-ink-3">
                 {days.length} {days.length === 1 ? 'día' : 'días'}
               </p>
               <div className="mt-2 flex flex-wrap gap-1.5">
-                {days.slice(0, 4).map((day) => (
+                {days.slice(0, 6).map((day) => (
                   <span
                     key={day.id}
                     className="rounded-full bg-fill px-2.5 py-1 text-[11px] font-medium text-ink-2"
@@ -145,9 +152,9 @@ export default function RoutineStackCard({
                     {day.name}
                   </span>
                 ))}
-                {days.length > 4 && (
+                {days.length > 6 && (
                   <span className="rounded-full bg-fill px-2.5 py-1 text-[11px] font-medium text-ink-3">
-                    +{days.length - 4}
+                    +{days.length - 6}
                   </span>
                 )}
               </div>
