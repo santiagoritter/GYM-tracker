@@ -1,10 +1,21 @@
-import { useMemo, useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Repeat2 } from 'lucide-react'
-import { workoutsFor } from '@/db/scoped'
+import { workoutsFor, personalRecordsFor } from '@/db/scoped'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
+import { useTrainingStats } from '@/hooks/useTrainingStats'
+import { useMuscleGroupLevels } from '@/hooks/useMuscleGroupLevels'
 import { localDayKey } from '@/lib/stats'
 import { cn } from '@/lib/utils'
+
+// Lazy: recharts son ~112KB gzipped. Home no es una ruta lazy (a
+// diferencia de Progress, donde vive el mismo radar en tamaño completo,
+// ver App.tsx) — importar MuscleGroupRadar arriba de forma estática
+// metería recharts entero en el bundle crítico de la home para TODOS,
+// hayan tocado el reverso de esta card o no.
+const MuscleGroupRadar = lazy(() =>
+  import('@/components/gym/MuscleGroupRadar').then((m) => ({ default: m.MuscleGroupRadar }))
+)
 
 const WEEKS = 18
 const DAY_MS = 86_400_000
@@ -30,12 +41,30 @@ const LEVEL_CLASS = [
 export default function CalendarHeatmap() {
   const userId = useCurrentUserId()
   const [flipped, setFlipped] = useState(false)
+  // Sticky: una vez que se flippeó una vez, el radar (y su import lazy)
+  // quedan montados — evita recargarlo cada vez que se vuelve a flippear
+  // de un lado al otro.
+  const [hasFlipped, setHasFlipped] = useState(false)
   const workouts = useLiveQuery(
     () => (userId ? workoutsFor(userId).filter((w) => Boolean(w.finishedAt)).toArray() : []),
     [userId]
   )
+  const trainingStats = useTrainingStats()
+  const { levels, profileComplete } = useMuscleGroupLevels()
+  const withData = levels.filter((l) => l.result.level !== 'no_data')
+  const prs = useLiveQuery(
+    () => (userId ? personalRecordsFor(userId).toArray() : []),
+    [userId]
+  ) ?? []
+  const prsThisMonth = useMemo(() => {
+    const now = new Date()
+    return prs.filter((p) => {
+      const d = new Date(p.achievedAt)
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
+    }).length
+  }, [prs])
 
-  const { columns, monthLabels, stats } = useMemo(() => {
+  const { columns, monthLabels } = useMemo(() => {
     const volByDay = new Map<string, number>()
     for (const w of workouts ?? []) {
       const k = localDayKey(w.startedAt)
@@ -74,28 +103,17 @@ export default function CalendarHeatmap() {
       cols.push(col)
     }
 
-    // Agregados del período mostrado (no de todo el historial): son los
-    // que la cara trasera puede mostrar sin mentir sobre lo que se ve.
-    let sessions = 0
-    let totalVol = 0
-    let best: { date: Date; vol: number } | null = null
-    for (const col of cols) {
-      for (const cell of col) {
-        if (cell.future || cell.vol <= 0) continue
-        sessions += 1
-        totalVol += cell.vol
-        if (!best || cell.vol > best.vol) best = { date: cell.date, vol: cell.vol }
-      }
-    }
-
-    return { columns: cols, monthLabels: labels, stats: { sessions, totalVol, best } }
+    return { columns: cols, monthLabels: labels }
   }, [workouts])
 
   return (
     <div className="[perspective:1200px]">
       <button
         type="button"
-        onClick={() => setFlipped((f) => !f)}
+        onClick={() => {
+          setFlipped((f) => !f)
+          setHasFlipped(true)
+        }}
         aria-pressed={flipped}
         aria-label="Ver resumen del período"
         className={cn(
@@ -157,36 +175,55 @@ export default function CalendarHeatmap() {
           </div>
         </div>
 
-        {/* Cara trasera: agregados del mismo período que no se muestran
-            en ningún otro lado — no repite el anillo semanal de
-            Progreso, que es solo esta semana. */}
+        {/* Cara trasera: el mismo radar de "puntos fuertes" que la
+            pantalla de Niveles (useMuscleGroupLevels/MuscleGroupRadar
+            compartidos), más los números que sí tienen sentido de un
+            vistazo en Inicio — reemplaza los agregados de {WEEKS} semanas
+            de antes, que quedaban redundantes con esto. */}
         <div className="col-start-1 row-start-1 rounded-xl bg-surface p-4 [backface-visibility:hidden] [transform:rotateY(180deg)]">
-          <div className="mb-3 flex items-center justify-between">
-            <span className="text-[11px] text-ink-3">Últimas {WEEKS} semanas</span>
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-[11px] text-ink-3">Puntos fuertes</span>
             <Repeat2 size={13} className="text-ink-3" />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <p className="font-mono text-2xl font-bold leading-none tabular-nums">
-                {stats.sessions}
-              </p>
-              <p className="mt-1 text-[12px] text-ink-3">entrenos</p>
+          {profileComplete && withData.length > 0 ? (
+            <div className="flex items-center gap-3">
+              <div className="h-40 w-[52%] shrink-0">
+                {hasFlipped && (
+                  <Suspense fallback={null}>
+                    <MuscleGroupRadar levels={levels} tickFontSize={8} />
+                  </Suspense>
+                )}
+              </div>
+              <div className="flex flex-1 flex-col gap-3">
+                <div>
+                  <p className="font-mono text-xl font-bold leading-none tabular-nums">
+                    {trainingStats.thisWeekCount}
+                  </p>
+                  <p className="mt-1 text-[11px] text-ink-3">entrenos esta semana</p>
+                </div>
+                <div>
+                  <p className="font-mono text-xl font-bold leading-none tabular-nums">
+                    {trainingStats.currentStreak}
+                  </p>
+                  <p className="mt-1 text-[11px] text-ink-3">
+                    {trainingStats.currentStreak === 1 ? 'día de racha' : 'días de racha'}
+                  </p>
+                </div>
+                <div>
+                  <p className="font-mono text-xl font-bold leading-none tabular-nums">
+                    {prsThisMonth}
+                  </p>
+                  <p className="mt-1 text-[11px] text-ink-3">
+                    {prsThisMonth === 1 ? 'PR este mes' : 'PRs este mes'}
+                  </p>
+                </div>
+              </div>
             </div>
-            <div>
-              <p className="font-mono text-2xl font-bold leading-none tabular-nums">
-                {Math.round(stats.totalVol).toLocaleString('es-AR')}
-              </p>
-              <p className="mt-1 text-[12px] text-ink-3">kg movidos</p>
-            </div>
-          </div>
-          <div className="mt-4 border-t border-line-2 pt-3">
-            <p className="text-[12px] text-ink-3">Mejor día</p>
-            <p className="mt-0.5 text-[14px] font-medium">
-              {stats.best
-                ? `${stats.best.date.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })} · ${Math.round(stats.best.vol).toLocaleString('es-AR')} kg`
-                : 'Todavía sin datos'}
+          ) : (
+            <p className="py-9 text-center text-[13px] text-ink-3">
+              Completá tu perfil y registrá PRs para ver tus puntos fuertes.
             </p>
-          </div>
+          )}
         </div>
       </button>
     </div>
