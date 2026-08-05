@@ -1,12 +1,11 @@
 # 17 — Estado del rediseño (rama `beta`)
 
-Actualizado al cierre de la quinta pasada (Fases 26-30 de
-`staged-beaming-wind.md`), 5 de agosto de 2026: Web Push real para
-recordatorios (código listo, bloqueado por deploy de Supabase), fix de
-contraste del acento en modo claro, y tres patrones de interacción
-adaptados de referencias puntuales del usuario (kokonutui, bklit) —
-entrada con spring en los sheets, hold-to-start en el CTA principal, y
-radar chart en Niveles.
+Actualizado al cierre de la sexta pasada (Fases 32-36 de
+`staged-beaming-wind.md`), 5 de agosto de 2026: dos bugs reportados sobre
+`main` desplegado, el cronómetro de descanso persistente (primera idea de
+`IDEAS.md` implementada), y dos patrones más adaptados de referencias
+puntuales del usuario (kokonutui) — card flip en la actividad de Inicio y
+sheet para agregar calorías.
 
 ## Ramas
 
@@ -238,6 +237,51 @@ y 29 la resuelven parcialmente (entrada de sheets + hold button), pero el
 drag interrumpible con seguimiento 1:1 del dedo y rubber-banding en los
 bordes sigue sin implementarse — anotado en `IDEAS.md` qué falta
 puntualmente.
+
+### Sexta pasada — Fases 32-36, completas
+Dos bugs reportados sobre `main` ya desplegado, más el pedido de seguir
+con `IDEAS.md` y con Liquid Glass, más dos componentes de referencia
+nuevos (kokonutui) — mismo criterio de adaptación que el batch anterior:
+técnica sí, colores/forma/texto no.
+
+32. **Fecha de nacimiento descentrada** (Perfil): no era un problema del
+    layout de `Row`/`Card` (ya usan `tailwind-merge`, el padding es
+    simétrico) sino un bug conocido de WebKit/iOS Safari —
+    `input[type=date]` ignora `width:100%` y colapsa al ancho intrínseco
+    de sus segmentos, dejando el resto del box como espacio muerto. Fix
+    de una línea (`-webkit-min-logical-width: 100%`) en `index.css`,
+    corrige los dos usos del repo (`Profile.tsx`, `Onboarding.tsx`) a la
+    vez. Sin poder confirmarse en un iPhone real en este entorno.
+33. **Texto que no entraba en el anillo semanal** (`StreakWeekCard`): con
+    stroke de 7px sobre 72px, el espacio libre real ronda 58px de
+    diámetro — insuficiente para "de X días" con metas de dos dígitos.
+    Se elimina esa segunda línea; el texto al lado del anillo ya da el
+    contexto de la meta.
+34. **Cronómetro de descanso persistente**: primera idea de "Alto
+    impacto" de `IDEAS.md` implementada. `useWorkoutStore` (`restTimer`)
+    se persiste en localStorage vía el middleware `persist` de Zustand,
+    mismo patrón que `themeStore.ts`. Riesgo manejado explícitamente: si
+    la app murió de golpe con un descanso corriendo, la notificación
+    nativa ya agendada de esa sesión sigue pendiente en el SO —
+    `onRehydrateStorage` la cancela antes de que `RestTimer.tsx` agende
+    una nueva para el mismo horario al montar, así no llegan avisos
+    duplicados.
+35. **Card Flip** (kokonutui, adaptado) en `CalendarHeatmap` de Inicio:
+    tap gira la card en 3D (CSS puro, sin `motion`) y revela agregados
+    del mismo período de 18 semanas que no se mostraban en ningún lado
+    (entrenos, kg movidos, mejor día). Se elimina el glow del ejemplo
+    (prohibido por `DESIGN.md`), el disparo pasa de hover a tap, y ambas
+    caras comparten celda de grid en vez de un alto fijo inventado.
+36. **Sheet para agregar calorías** (Smooth Drawer, adaptado): la sección
+    "Agregar" de `Calories.tsx`, antes inline y siempre visible, pasa a
+    un `CalorieAddSheet.tsx` lazy con el mismo patrón de sheet que ya
+    usan `TemplatePicker`/`QRShareModal` (Portal + `sheetPanelVariants`).
+    Mismos inputs y guardado de siempre, solo cambia el contenedor — y de
+    paso es la respuesta concreta al pedido de más Liquid Glass sin
+    expandir `backdrop-filter` fuera de header/tab bar/sheets, que sigue
+    siendo una restricción deliberada de `DESIGN.md`.
+
+`IDEAS.md` se actualiza sacando el cronómetro persistente de la lista.
 
 ---
 
