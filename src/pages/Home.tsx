@@ -103,7 +103,7 @@ export default function Home() {
           <HoldButton
             onComplete={handleStart}
             holdDuration={500}
-            className="flex w-full flex-col items-center gap-0.5 rounded-2xl bg-accent py-5 font-bold text-bg active:bg-accent-dim"
+            className="card-shine flex w-full flex-col items-center gap-0.5 rounded-2xl bg-accent py-5 font-bold text-bg active:bg-accent-dim"
           >
             <span className="flex items-center gap-2 text-lg">
               <Play size={22} fill="currentColor" /> Iniciar entrenamiento
