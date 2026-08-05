@@ -16,9 +16,12 @@ export default function StreakWeekCard() {
 
   return (
     <div className="flex items-center gap-4 rounded-2xl bg-surface p-4">
+      {/* Solo el número: "de X días" no entraba dentro del anillo con
+          metas de dos dígitos. El texto de al lado ya da el contexto de
+          la meta ("Faltan X" / "Meta cumplida"), el número solo no
+          queda ambiguo. */}
       <ProgressRing progress={goal > 0 ? done / goal : 0} size={72} stroke={7}>
         <span className="font-mono text-2xl font-bold leading-none tabular-nums">{done}</span>
-        <span className="text-[11px] text-ink-3">de {goal} días</span>
       </ProgressRing>
       <div className="min-w-0">
         <p className="text-[15px] font-semibold">
