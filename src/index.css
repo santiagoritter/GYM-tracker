@@ -129,11 +129,17 @@
 
   /* Frosted glass — únicos dos usos permitidos: cabecera fija y tab bar
      (DESIGN.md §3). Resuelve un problema real (contenido que scrollea por
-     debajo de un chrome fijo); en cualquier otro lado sería decoración. */
+     debajo de un chrome fijo); en cualquier otro lado sería decoración.
+     blur(14px) en vez de 20px, y will-change: le pide al compositor una
+     capa propia para este elemento en vez de recalcular el blur contra el
+     árbol completo en cada frame — un blur(20px) fijo sobre contenido que
+     scrollea por debajo es caro de recompositar en GPUs Android de gama
+     media (reportado: traqueteo de scroll en un Redmi Note 14). */
   .glass {
     background: var(--color-surface-glass);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(14px) saturate(180%);
+    -webkit-backdrop-filter: blur(14px) saturate(180%);
+    will-change: backdrop-filter;
   }
 
   /* Highlight superior de tarjetas (efecto de luz) */

@@ -217,7 +217,7 @@ export default function Workout() {
 
   return (
     <div className="mx-auto min-h-screen max-w-lg pb-40">
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-bg/95 px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] backdrop-blur">
+      <header className="glass sticky top-0 z-30 flex items-center justify-between border-b border-line px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
         <button onClick={() => navigate('/')} className="p-2 text-ink-2">
           <ArrowLeft size={22} />
         </button>
