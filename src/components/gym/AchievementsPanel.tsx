@@ -6,6 +6,7 @@ import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { ACHIEVEMENTS, syncAchievements } from '@/lib/achievements'
 import { useTrainingStats } from '@/hooks/useTrainingStats'
 import AchievementIcon from '@/components/gym/AchievementIcon'
+import { SectionHeader } from '@/components/ui/Card'
 import { cn } from '@/lib/utils'
 
 export default function AchievementsPanel() {
@@ -32,17 +33,19 @@ export default function AchievementsPanel() {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-2">Logros</h2>
-        <span className="font-mono text-sm text-accent">
-          {count}/{total}
-        </span>
-      </div>
+      <SectionHeader
+        title="Logros"
+        action={
+          <span className="font-mono text-sm text-accent">
+            {count}/{total}
+          </span>
+        }
+      />
 
       <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
         <div
-          className="h-full rounded-full bg-accent transition-all duration-700"
-          style={{ width: `${(count / total) * 100}%` }}
+          className="h-full origin-left rounded-full bg-accent transition-transform duration-700"
+          style={{ transform: `scaleX(${count / total})` }}
         />
       </div>
 
@@ -62,7 +65,7 @@ export default function AchievementsPanel() {
               </span>
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold">{a.name}</p>
-                <p className="truncate text-[11px] text-ink-3">{a.description}</p>
+                <p className="truncate text-[12px] text-ink-3">{a.description}</p>
               </div>
             </div>
           )

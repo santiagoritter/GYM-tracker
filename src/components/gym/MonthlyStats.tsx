@@ -8,21 +8,8 @@ import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useChartColors } from '@/hooks/useChartColors'
 import type { MuscleGroup } from '@/types'
 import { MUSCLE_LABELS } from '@/components/gym/MuscleChip'
-
-const MUSCLE_COLORS: Record<string, string> = {
-  chest: '#F97316',
-  back: '#3B82F6',
-  shoulders: '#A855F7',
-  biceps: '#EC4899',
-  triceps: '#EC4899',
-  forearms: '#EC4899',
-  quads: '#10B981',
-  hamstrings: '#10B981',
-  glutes: '#EF4444',
-  calves: '#10B981',
-  core: '#F59E0B',
-  cardio: '#06B6D4',
-}
+import { EmptyState, SectionHeader } from '@/components/ui/Card'
+import { MUSCLE_HEX } from '@/lib/muscleColors'
 
 export function MonthlyStats() {
   const userId = useCurrentUserId()
@@ -168,9 +155,7 @@ export function MonthlyStats() {
 
       {stats.distribution.length > 0 && (
         <section>
-          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-2">
-            Distribución muscular
-          </h3>
+          <SectionHeader title="Distribución muscular" />
           <div className="rounded-xl bg-surface p-3">
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
@@ -185,7 +170,7 @@ export function MonthlyStats() {
                     stroke="none"
                   >
                     {stats.distribution.map((entry) => (
-                      <Cell key={entry.muscle} fill={MUSCLE_COLORS[entry.muscle]} />
+                      <Cell key={entry.muscle} fill={MUSCLE_HEX[entry.muscle]} />
                     ))}
                   </Pie>
                   <Tooltip
@@ -205,7 +190,7 @@ export function MonthlyStats() {
                 <span key={entry.muscle} className="flex items-center gap-1.5 text-xs text-ink-2">
                   <span
                     className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: MUSCLE_COLORS[entry.muscle] }}
+                    style={{ backgroundColor: MUSCLE_HEX[entry.muscle] }}
                   />
                   {entry.name}
                 </span>
@@ -216,9 +201,7 @@ export function MonthlyStats() {
       )}
 
       {stats.sessions === 0 && (
-        <p className="rounded-xl bg-surface p-8 text-center text-sm text-ink-3">
-          Sin entrenos este mes.
-        </p>
+        <EmptyState title="Sin entrenos este mes" />
       )}
     </div>
   )
