@@ -221,7 +221,25 @@
        afirmación explícita, no una restricción nueva. Si esto NO resuelve
        el bug reportado, hace falta debug remoto real (chrome://inspect
        con un Android conectado) para ver qué pasa de verdad: no hay forma
-       de reproducir esto en este entorno. */
+       de reproducir esto en este entorno.
+
+       Actualización (reporte del usuario en dispositivo real, después de
+       este cambio): el bug sigue. Dato nuevo que achica la lista de
+       sospechosos — el arrastre SÍ funciona si arranca sobre la barra de
+       navegación (tab bar); el problema está en el resto de la pantalla,
+       no ahí. Esto descarta todavía más a la píldora `drag="x"` de la
+       tab bar (esa zona anda bien) y apunta a algo puntual del contenido
+       principal — más compatible con un elemento que capture el
+       puntero/gesto (`setPointerCapture`, o `preventDefault` en
+       `touchstart`/`pointerdown` sin soltar) que con un problema de
+       `touch-action` en general, ya que el fix de acá es global y no lo
+       resolvió. Sin evidencia todavía de qué componente es. Sigue sin
+       poder reproducirse en este entorno — hace falta debug remoto real
+       (chrome://inspect) para avanzar con evidencia en vez de otra
+       corrección a ciegas. Candidatos a revisar cuando eso sea posible:
+       componentes con gestos propios montados fuera de la tab bar
+       (RestTimer.tsx, los steppers dentro de ExerciseCard.tsx, los
+       sheets vía Portal). */
     touch-action: pan-y;
   }
   body {
