@@ -9,6 +9,7 @@ import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { ExercisePicker } from '@/components/gym/ExercisePicker'
 import { RestTimer } from '@/components/gym/RestTimer'
 import ExerciseCard from '@/components/gym/ExerciseCard'
+import ExerciseDetailSheet from '@/components/gym/ExerciseDetailSheet'
 import Confetti from '@/components/ui/Confetti'
 import AchievementIcon from '@/components/gym/AchievementIcon'
 import type { Exercise, PersonalRecord, WorkoutSet } from '@/types'
@@ -32,6 +33,10 @@ export default function Workout() {
   const store = useWorkoutStore()
   const userId = useCurrentUserId()
   const [pickerOpen, setPickerOpen] = useState(false)
+  // Mismo sheet de detalle que Exercises.tsx (técnica, músculos, foto de
+  // referencia) — repasar la técnica de lo que se está haciendo ahora
+  // mismo no debería obligar a salir del entreno.
+  const [infoExercise, setInfoExercise] = useState<Exercise | null>(null)
   const [elapsed, setElapsed] = useState('')
   const [screen, setScreen] = useState<WorkoutScreen>({ kind: 'active' })
   const [isFinishing, setIsFinishing] = useState(false)
@@ -352,6 +357,7 @@ export default function Workout() {
               onAddSet={() => store.addSet(workoutId, m.exercise!.id)}
               onRemoveSet={() => store.removeSet(m.sets[m.sets.length - 1].id)}
               onEqualizeSets={() => applyFirstSetToRest(m.sets)}
+              onShowInfo={() => m.exercise && setInfoExercise(m.exercise)}
             />
           ))
         )}
@@ -381,6 +387,8 @@ export default function Workout() {
         />
       )}
       <RestTimer />
+
+      <ExerciseDetailSheet exercise={infoExercise} onClose={() => setInfoExercise(null)} />
     </div>
   )
 }

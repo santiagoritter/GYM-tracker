@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
-import { Check, CopyCheck } from 'lucide-react'
+import { Check, CopyCheck, Info } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { MuscleChip } from '@/components/gym/MuscleChip'
 import NumberStepper from '@/components/ui/NumberStepper'
@@ -28,6 +28,10 @@ export interface ExerciseCardProps {
   onAddSet: () => void
   onRemoveSet: () => void
   onEqualizeSets: () => void
+  /** Abre el mismo sheet de detalle que usa Exercises.tsx — sin tener
+   * que salir del entreno para repasar la técnica de lo que se está
+   * haciendo ahora mismo. */
+  onShowInfo: () => void
 }
 
 /**
@@ -55,6 +59,7 @@ export default function ExerciseCard({
   onAddSet,
   onRemoveSet,
   onEqualizeSets,
+  onShowInfo,
 }: ExerciseCardProps) {
   const reduced = useReducedMotion()
   const contentRef = useRef<HTMLDivElement>(null)
@@ -96,7 +101,12 @@ export default function ExerciseCard({
             // chips de músculo — el h-14 fijo es solo para la versión
             // colapsada de una sola línea, de abajo.
             <div className="flex items-start justify-between gap-3 border-b border-line-2 px-1 py-3.5">
-              <ExerciseHeaderContent exercise={exercise} isSuperset={isSuperset} showChips />
+              <ExerciseHeaderContent
+                exercise={exercise}
+                isSuperset={isSuperset}
+                showChips
+                onShowInfo={onShowInfo}
+              />
               <ExerciseCounter completed={completedCount} total={sets.length} />
             </div>
           ) : (
@@ -107,7 +117,12 @@ export default function ExerciseCard({
               aria-label={`Expandir ${exercise?.name ?? 'ejercicio'}`}
               className="flex h-14 w-full items-center justify-between gap-3 border-b border-line-2 px-1 py-3.5 text-left"
             >
-              <ExerciseHeaderContent exercise={exercise} isSuperset={isSuperset} showChips={false} />
+              <ExerciseHeaderContent
+                exercise={exercise}
+                isSuperset={isSuperset}
+                showChips={false}
+                onShowInfo={onShowInfo}
+              />
               <ExerciseCounter completed={completedCount} total={sets.length} />
             </button>
           )}
@@ -178,10 +193,12 @@ function ExerciseHeaderContent({
   exercise,
   isSuperset,
   showChips,
+  onShowInfo,
 }: {
   exercise: Exercise | undefined
   isSuperset: boolean
   showChips: boolean
+  onShowInfo: () => void
 }) {
   return (
     <div className="min-w-0">
@@ -194,9 +211,20 @@ function ExerciseHeaderContent({
         )}
       </div>
       {showChips && (
-        <div className="mt-1.5 flex flex-wrap gap-1">
-          {exercise?.musclePrimary.map((m) => <MuscleChip key={m} muscle={m} />)}
-        </div>
+        <>
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {exercise?.musclePrimary.map((m) => <MuscleChip key={m} muscle={m} />)}
+          </div>
+          {exercise && (
+            <button
+              type="button"
+              onClick={onShowInfo}
+              className="mt-2 flex items-center gap-1 text-[12px] font-medium text-accent"
+            >
+              <Info size={13} /> Ver info y técnica
+            </button>
+          )}
+        </>
       )}
     </div>
   )
