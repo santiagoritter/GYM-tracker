@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { motion, useReducedMotion } from 'motion/react'
-import { X, CheckCircle2, AlertTriangle, Camera, Trash2, PlayCircle } from 'lucide-react'
+import { X, CheckCircle2, AlertTriangle, Camera, ListPlus, Trash2, PlayCircle } from 'lucide-react'
 import type { Exercise } from '@/types'
 import { getExerciseInfo, getTechniqueVideoUrl } from '@/data/exerciseInfo'
 import { getExerciseSetup, SETUP_LABEL } from '@/data/exerciseSetup'
@@ -21,6 +21,7 @@ import {
 import { nowIso } from '@/lib/utils'
 import MuscleBodySVG from './MuscleBodySVG'
 import EquipmentIcon from './EquipmentIcon'
+import AddToRoutineSheet from './AddToRoutineSheet'
 import Portal from '@/components/ui/Portal'
 import { cn } from '@/lib/utils'
 
@@ -185,6 +186,7 @@ function SetupSection({ exercise }: { exercise: Exercise }) {
 export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
   const info = exercise ? getExerciseInfo(exercise.id) : null
   const reduced = useReducedMotion()
+  const [addingToRoutine, setAddingToRoutine] = useState(false)
 
   // Cerrar con Escape
   useEffect(() => {
@@ -274,6 +276,13 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
           >
             <PlayCircle size={18} /> Ver la técnica en video
           </a>
+
+          <button
+            onClick={() => setAddingToRoutine(true)}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-line-2 py-3 text-[15px] font-semibold text-ink-2 active:bg-surface-2"
+          >
+            <ListPlus size={18} /> Agregar a rutina
+          </button>
 
           {/* Cómo reconocer la máquina */}
           <SetupSection exercise={exercise} />
@@ -373,6 +382,10 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
           )}
         </motion.div>
       </motion.div>
+
+      {addingToRoutine && (
+        <AddToRoutineSheet exercise={exercise} onClose={() => setAddingToRoutine(false)} />
+      )}
     </Portal>
   )
 }
