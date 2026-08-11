@@ -7,7 +7,7 @@ import { personalRecordsFor } from '@/db/scoped'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useRecentExerciseIds } from '@/hooks/useRecentExerciseIds'
 import type { Equipment, Exercise, MuscleGroup } from '@/types'
-import { MUSCLE_STYLES, MuscleChip } from '@/components/gym/MuscleChip'
+import { MUSCLE_LABELS, MUSCLE_STYLES } from '@/components/gym/MuscleChip'
 import ExerciseDetailSheet from '@/components/gym/ExerciseDetailSheet'
 import ExerciseFiltersSheet from '@/components/gym/ExerciseFiltersSheet'
 import EquipmentIcon from '@/components/gym/EquipmentIcon'
@@ -60,7 +60,7 @@ export default function Exercises() {
   const listRef = useRef<HTMLDivElement>(null)
   const virtualizer = useWindowVirtualizer({
     count: filtered.length,
-    estimateSize: () => 96,
+    estimateSize: () => 84,
     overscan: 8,
     scrollMargin: listRef.current?.offsetTop ?? 0,
   })
@@ -183,31 +183,28 @@ export default function Exercises() {
                         <EquipmentIcon equipment={e.equipment} size={22} />
                       </span>
                       <div className="min-w-0 flex-1">
-                        {/* Un solo elemento dominante por fila: el nombre.
-                            El nombre en inglés se saca de acá (sigue en el
-                            header de ExerciseDetailSheet, y el buscador lo
-                            sigue indexando aunque no se muestre) — antes
-                            competía con el nombre real por la misma
-                            atención. */}
-                        <div className="flex items-start justify-between gap-3">
-                          <p className="min-w-0 truncate font-semibold leading-tight">{e.name}</p>
-                          <span
-                            className="mt-0.5 flex shrink-0 items-center gap-1 text-[12px] text-ink-3"
-                            title={DIFFICULTY_LABELS[e.difficulty]}
-                          >
-                            <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', DIFFICULTY_DOT[e.difficulty])} />
-                            {EQUIPMENT_LABELS[e.equipment]}
+                        {/* Un solo elemento dominante por fila: el nombre,
+                            a ancho completo (sin nada compitiendo en la
+                            misma línea). El nombre en inglés se saca de acá
+                            (sigue en el header de ExerciseDetailSheet, y el
+                            buscador lo sigue indexando aunque no se
+                            muestre). */}
+                        <p className="truncate font-semibold leading-tight">{e.name}</p>
+                        {/* Una sola línea de metadatos, texto plano — sin
+                            chip de color: la insignia ya dice el músculo
+                            con su tinte, repetirlo en un pill aparte era
+                            una capa decorativa de más. Mismo criterio que
+                            las filas de Home.tsx (nombre + una línea muda,
+                            sin badges). */}
+                        <p
+                          className="mt-0.5 flex items-center gap-1.5 text-[12px] text-ink-3"
+                          title={DIFFICULTY_LABELS[e.difficulty]}
+                        >
+                          <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', DIFFICULTY_DOT[e.difficulty])} />
+                          <span className="truncate">
+                            {EQUIPMENT_LABELS[e.equipment]} · {MUSCLE_LABELS[e.musclePrimary[0]]}
                           </span>
-                        </div>
-                        {/* Un solo chip (el músculo primario) — el color de
-                            la insignia ya dice lo mismo; mostrar además los
-                            hasta 4 chips de antes repetía el dato, no
-                            agregaba uno nuevo. El detalle completo
-                            primarios/secundarios vive en
-                            ExerciseDetailSheet. */}
-                        <div className="mt-1.5">
-                          <MuscleChip muscle={e.musclePrimary[0]} />
-                        </div>
+                        </p>
                         {pr && (
                           <div className="mt-1.5 flex items-center gap-1.5 text-[12px] text-accent">
                             <Trophy size={12} />
