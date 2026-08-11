@@ -118,7 +118,7 @@ function ExercisePhotoSection({ exerciseId }: { exerciseId: string }) {
   }
 
   return (
-    <div className="rounded-2xl bg-surface-2 p-4">
+    <div>
       <h3 className="mb-3 text-sm font-semibold text-ink-2">
         Tu foto de referencia
       </h3>
@@ -171,7 +171,7 @@ function ExercisePhotoSection({ exerciseId }: { exerciseId: string }) {
 function SetupSection({ exercise }: { exercise: Exercise }) {
   const kind = getExerciseSetup(exercise.id, exercise.equipment)
   return (
-    <div className="flex items-center gap-4 rounded-2xl bg-surface-2 p-4">
+    <div className="flex items-center gap-4">
       <SetupIllustration kind={kind} className="h-20 w-24 shrink-0" />
       <div className="min-w-0">
         <h3 className="text-sm font-semibold text-ink-2">
@@ -291,7 +291,7 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
           <ExercisePhotoSection exerciseId={exercise.id} />
 
           {/* Diagrama muscular */}
-          <div className="rounded-2xl bg-surface-2 p-4">
+          <div>
             <h3 className="mb-3 text-sm font-semibold text-ink-2">
               Músculos involucrados
             </h3>
