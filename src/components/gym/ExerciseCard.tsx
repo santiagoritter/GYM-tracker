@@ -324,7 +324,7 @@ function SetRow({
       {expanded && (
         <div className="mt-1 space-y-1.5 px-1 pb-1.5">
           <div className="grid grid-cols-[3.25rem_1fr] items-center gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-3">
+            <span className="text-[12px] font-semibold text-ink-3">
               Reps
             </span>
             <NumberStepper
@@ -338,7 +338,7 @@ function SetRow({
             />
           </div>
           <div className="grid grid-cols-[3.25rem_1fr] items-center gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-3">
+            <span className="text-[12px] font-semibold text-ink-3">
               {weightLabel}
             </span>
             <NumberStepper
@@ -356,7 +356,7 @@ function SetRow({
       {/* RPE: aparece al completar la serie de trabajo (opcional, un tap) */}
       {set.completed === 1 && set.isWarmup === 0 && (
         <div className="mt-1 flex items-center gap-1.5 px-1 pb-1">
-          <span className="text-[10px] font-semibold uppercase text-ink-3">RPE</span>
+          <span className="text-[12px] font-semibold uppercase text-ink-3">RPE</span>
           {[6, 7, 8, 8.5, 9, 10].map((value) => (
             <button
               key={value}

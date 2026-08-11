@@ -218,7 +218,7 @@ export default function Registro() {
               <p className="mt-1 font-mono text-2xl font-bold tracking-[0.3em] tabular-nums text-ink">
                 {devCode}
               </p>
-              <p className="mt-1 text-[11px] text-ink-3">
+              <p className="mt-1 text-[12px] text-ink-3">
                 Este código solo aparece acá porque la app no tiene un servicio de
                 email conectado todavía.
               </p>

@@ -25,7 +25,7 @@ import { PhotoGallery } from '@/components/gym/PhotoGallery'
 import StatsOverview from '@/components/gym/StatsOverview'
 import StreakWeekCard from '@/components/gym/StreakWeekCard'
 import RecentWorkouts from '@/components/gym/RecentWorkouts'
-import { SectionHeader } from '@/components/ui/Card'
+import { EmptyState, SectionHeader } from '@/components/ui/Card'
 import AchievementsPanel from '@/components/gym/AchievementsPanel'
 import { cn } from '@/lib/utils'
 
@@ -202,9 +202,10 @@ function Charts() {
 
   if (trainedExercises.length === 0) {
     return (
-      <p className="rounded-xl bg-surface p-8 text-center text-sm text-ink-3">
-        Los gráficos aparecen cuando completes tu primer entreno.
-      </p>
+      <EmptyState
+        title="Sin datos todavía"
+        description="Los gráficos aparecen cuando completes tu primer entreno."
+      />
     )
   }
 
@@ -327,7 +328,7 @@ function ExerciseTooltip({ active, payload }: TooltipProps<number, string>) {
   if (!point) return null
   return (
     <div className="rounded-md border border-line-2 bg-surface-3 px-3 py-2 shadow-float">
-      <p className="text-[11px] text-ink-3">
+      <p className="text-[12px] text-ink-3">
         {new Date(point.date).toLocaleDateString('es-AR', {
           day: 'numeric',
           month: 'long',
@@ -338,7 +339,7 @@ function ExerciseTooltip({ active, payload }: TooltipProps<number, string>) {
         {point.kg} kg × {point.reps}
       </p>
       {point.isPR && (
-        <p className="mt-0.5 flex items-center gap-1 text-[11px] font-bold text-accent">
+        <p className="mt-0.5 flex items-center gap-1 text-[12px] font-bold text-accent">
           <Trophy size={11} /> Récord en ese momento
         </p>
       )}
@@ -356,9 +357,10 @@ function PRList() {
 
   if (sorted.length === 0) {
     return (
-      <p className="rounded-xl bg-surface p-8 text-center text-sm text-ink-3">
-        Tus récords personales aparecen acá al terminar entrenos.
-      </p>
+      <EmptyState
+        title="Sin récords todavía"
+        description="Tus récords personales aparecen acá al terminar entrenos."
+      />
     )
   }
 

@@ -31,7 +31,7 @@ export default function StatsOverview() {
         <div key={label} className="rounded-xl bg-surface p-3">
           <Icon size={16} className={color} />
           <p className="mt-2 font-mono text-lg font-bold leading-none">{value}</p>
-          <p className="mt-1 text-[11px] text-ink-3">{label}</p>
+          <p className="mt-1 text-xs text-ink-3">{label}</p>
         </div>
       ))}
     </div>

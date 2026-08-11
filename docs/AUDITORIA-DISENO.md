@@ -256,3 +256,75 @@ corresponde revertir sin que lo pida; #6 y #7 son tensiones/cambios de
 alcance mayor al de un ajuste de estilo. `npx tsc -b`, `npm test`
 (incluye `test:style`) y el build de producción pasaron en verde sobre
 el resultado final.
+
+---
+
+## Fase 7b — segunda pasada (pantallas fuera del alcance original)
+
+La primera pasada dijo explícitamente "pantallas principales" — quedó
+afuera todo lo que vive en sheets/paneles secundarios. A pedido de
+seguir puliendo lo visual, se corrió el mismo grep sistemático (eyebrow
+labels, texto por debajo de 12px, estados vacíos ad-hoc) sobre el resto
+del árbol de `src/`.
+
+### Headers eyebrow corregidos
+
+`ExerciseDetailSheet.tsx` tenía **seis** `<h3>` con el patrón
+`text-[11px] uppercase tracking-widest` ("Tu foto de referencia",
+"Dónde se hace", "Músculos involucrados", "Descripción", "Técnica",
+"Errores comunes") — el mismo anti-patrón de los hallazgos #2/#4 de la
+primera pasada, pero en la pantalla de detalle de ejercicio, no
+auditada antes. Se reemplazaron por `text-sm font-semibold text-ink-2`,
+el estilo de label ya establecido en `Onboarding.tsx` (sin mayúsculas,
+sin tracking, sin necesidad de forzar el token `heading` de 20px que
+sería desproporcionado dentro de una card de 4px de padding en un
+sheet). Mismo fix en `PhotoGallery.tsx` ("Peso corporal") y
+`MuscleBodySVG.tsx` (figcaptions "Frente"/"Espalda", que además estaban
+en 10px).
+
+### Piso de 12px
+
+Bajo el piso en una decena de lugares más: labels de "Reps"/peso y
+"RPE" en `ExerciseCard.tsx`, caption "Descanso" en `RestTimer.tsx`
+(alineado al patrón ya usado por `StatCard`/`StatsOverview` — label
+plano, sin mayúsculas, sobre un número grande), fecha y badge de PR en
+el tooltip del gráfico de `Progress.tsx`, labels de stat cards en
+`StatsOverview.tsx`, texto explicativo del código de verificación en
+`Registro.tsx`, badge de fecha sobre miniatura en `PhotoGallery.tsx`,
+equipamiento en la fila de `Exercises.tsx`, y — por ser componentes
+compartidos usados en toda la app — `MuscleChip.tsx` (11→12px, afecta
+cada chip de músculo de la app) y las píldoras de días en
+`RoutineStackCard.tsx`. También el label del tab bar en `Layout.tsx`
+(11→12px).
+
+### Estados vacíos migrados a `EmptyState`
+
+`PhotoGallery.tsx`, `HistoryList.tsx` y las dos vistas vacías de
+`Progress.tsx` (gráficos, PRs) reinventaban el mismo
+`rounded-xl bg-surface p-8 text-center` que ya resuelve `EmptyState` —
+migrados con título corto + la descripción existente como body.
+
+### Revisado, dejado como está
+
+- **`CalendarHeatmap.tsx`**, etiquetas de mes (9px) y de día (8px) en la
+  grilla de actividad: es el patrón estándar de heatmap tipo GitHub,
+  con celdas de `h-3 w-3` — forzar 12px rompe la alineación de una
+  grilla ya afinada a propósito (nota `i % 2 === 1 ? d : ''` para no
+  saturarla). Tensión real, mismo criterio que el hallazgo #6 de la
+  primera pasada: no se fuerza un fix que rompe algo ya cuidado.
+- **`Workout.tsx`**, "Logro desbloqueado" sobre el nombre del logro en
+  la pantalla de resultados: es un kicker sobre contenido real (el
+  nombre del logro, no un título vacío disfrazado), patrón habitual en
+  UI de celebración/logro. No es el "tell" que DESIGN.md describe
+  (encabezado de sección sin título real).
+  Se revisó y se dejó igual, no es un hallazgo.
+- **Badges/tags** (`Admin` en `Layout.tsx`/`Admin.tsx`, `SS` en
+  `ExerciseCard.tsx`, nivel en `TemplatePicker.tsx`, badge de
+  `RoutineEditor.tsx`, iniciales de avatar en `Layout.tsx`): conjunto
+  consistente de tags cortos en 10-11px con fondo de color — patrón
+  deliberado y repetido en toda la app, distinto de texto funcional
+  corrido. Se dejaron igual para no romper la consistencia visual entre
+  ellos tocando solo algunos.
+
+Mismo resultado de verificación: `npx tsc -b`, `npm test` (con
+`test:style`) y build de producción en verde.

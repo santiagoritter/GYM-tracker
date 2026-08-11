@@ -119,7 +119,7 @@ function ExercisePhotoSection({ exerciseId }: { exerciseId: string }) {
 
   return (
     <div className="rounded-2xl bg-surface-2 p-4">
-      <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-ink-3">
+      <h3 className="mb-3 text-sm font-semibold text-ink-2">
         Tu foto de referencia
       </h3>
       <input
@@ -174,7 +174,7 @@ function SetupSection({ exercise }: { exercise: Exercise }) {
     <div className="flex items-center gap-4 rounded-2xl bg-surface-2 p-4">
       <SetupIllustration kind={kind} className="h-20 w-24 shrink-0" />
       <div className="min-w-0">
-        <h3 className="text-[11px] font-semibold uppercase tracking-widest text-ink-3">
+        <h3 className="text-sm font-semibold text-ink-2">
           Dónde se hace
         </h3>
         <p className="mt-1 text-[15px] font-medium leading-snug">{SETUP_LABEL[kind]}</p>
@@ -292,7 +292,7 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
 
           {/* Diagrama muscular */}
           <div className="rounded-2xl bg-surface-2 p-4">
-            <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-ink-3">
+            <h3 className="mb-3 text-sm font-semibold text-ink-2">
               Músculos involucrados
             </h3>
             <div className="mx-auto max-w-[220px]">
@@ -305,7 +305,7 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
             <div className="mt-4 space-y-3">
               {exercise.musclePrimary.length > 0 && (
                 <div>
-                  <p className="mb-1.5 text-[11px] font-medium text-accent">Primarios</p>
+                  <p className="mb-1.5 text-[12px] font-medium text-accent">Primarios</p>
                   <div className="flex flex-wrap gap-1.5">
                     {exercise.musclePrimary.map((m) => (
                       <span key={m} className="rounded-lg bg-accent/15 px-2.5 py-1 text-[12px] font-medium text-accent">
@@ -317,7 +317,7 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
               )}
               {exercise.muscleSecondary.length > 0 && (
                 <div>
-                  <p className="mb-1.5 text-[11px] font-medium text-ink-2">Secundarios</p>
+                  <p className="mb-1.5 text-[12px] font-medium text-ink-2">Secundarios</p>
                   <div className="flex flex-wrap gap-1.5">
                     {exercise.muscleSecondary.map((m) => (
                       <span key={m} className="rounded-lg bg-fill px-2.5 py-1 text-[12px] text-ink-2">
@@ -333,7 +333,7 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
           {/* Descripción */}
           {info?.description && (
             <div>
-              <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-ink-3">
+              <h3 className="mb-2 text-sm font-semibold text-ink-2">
                 Descripción
               </h3>
               <p className="text-[15px] leading-relaxed text-ink-2">{info.description}</p>
@@ -343,7 +343,7 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
           {/* Tips */}
           {info?.tips && info.tips.length > 0 && (
             <div>
-              <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-ink-3">
+              <h3 className="mb-3 text-sm font-semibold text-ink-2">
                 Técnica
               </h3>
               <div className="space-y-2.5">
@@ -360,7 +360,7 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
           {/* Errores comunes */}
           {info?.commonMistakes && info.commonMistakes.length > 0 && (
             <div>
-              <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-ink-3">
+              <h3 className="mb-3 text-sm font-semibold text-ink-2">
                 Errores comunes
               </h3>
               <div className="space-y-2.5">

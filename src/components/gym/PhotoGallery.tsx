@@ -18,6 +18,7 @@ import { useChartColors } from '@/hooks/useChartColors'
 import { compressImage } from '@/lib/photos'
 import type { ProgressPhoto } from '@/types'
 import { cn, nowIso, uid } from '@/lib/utils'
+import { EmptyState } from '@/components/ui/Card'
 
 export function PhotoGallery() {
   const userId = useCurrentUserId()
@@ -147,7 +148,7 @@ export function PhotoGallery() {
 
       {weightData.length >= 2 && !compareMode && (
         <div className="rounded-xl bg-surface p-3">
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-3">
+          <p className="mb-1 text-sm font-semibold text-ink-2">
             Peso corporal
           </p>
           <div className="h-32">
@@ -200,10 +201,11 @@ export function PhotoGallery() {
       )}
 
       {photos?.length === 0 && (
-        <p className="rounded-xl bg-surface p-8 text-center text-sm text-ink-3">
-          Sacá una foto por semana y mirá el cambio con el tiempo. Las fotos se guardan
-          solo en tu dispositivo.
-        </p>
+        <EmptyState
+          icon={<Camera size={28} />}
+          title="Sin fotos todavía"
+          description="Sacá una foto por semana y mirá el cambio con el tiempo. Las fotos se guardan solo en tu dispositivo."
+        />
       )}
 
       {viewing && (
@@ -252,7 +254,7 @@ function PhotoThumb({
       )}
     >
       <img src={url} alt="" className="h-full w-full object-cover" />
-      <span className="absolute bottom-1 left-1 rounded bg-bg/80 px-1.5 py-0.5 text-[10px] font-medium">
+      <span className="absolute bottom-1 left-1 rounded bg-bg/80 px-1.5 py-0.5 text-[12px] font-medium">
         {new Date(photo.takenAt).toLocaleDateString('es-AR', {
           day: 'numeric',
           month: 'numeric',

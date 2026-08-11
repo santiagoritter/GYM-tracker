@@ -65,7 +65,7 @@ export function RestTimer() {
     >
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-ink-3">
+          <p className="text-xs text-ink-3">
             Descanso
           </p>
           <span className="font-mono text-[38px] font-bold leading-none tabular-nums text-accent">

@@ -176,7 +176,7 @@ export default function Exercises() {
                             <p className="mt-0.5 truncate text-[12px] text-ink-3">{e.nameEn}</p>
                           </div>
                           <span
-                            className="mt-1 flex shrink-0 items-center gap-1 text-[11px] text-ink-3"
+                            className="mt-1 flex shrink-0 items-center gap-1 text-[12px] text-ink-3"
                             title={DIFFICULTY_LABELS[e.difficulty]}
                           >
                             <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', DIFFICULTY_DOT[e.difficulty])} />
