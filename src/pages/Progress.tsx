@@ -55,8 +55,8 @@ export default function Progress() {
             key={key}
             onClick={() => setTab(key)}
             className={cn(
-              'whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors',
-              tab === key ? 'border-accent bg-accent text-bg' : 'border-line-2 text-ink-3'
+              'flex h-11 shrink-0 items-center whitespace-nowrap rounded-full px-3.5 text-sm font-semibold transition-colors',
+              tab === key ? 'bg-accent text-bg' : 'text-ink-3 active:text-ink-2'
             )}
           >
             {label}
