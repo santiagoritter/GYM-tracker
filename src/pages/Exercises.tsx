@@ -1,36 +1,27 @@
 import { useMemo, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
-import { Search, Trophy } from 'lucide-react'
+import { Search, SlidersHorizontal, Trophy } from 'lucide-react'
 import { db } from '@/db/schema'
 import { personalRecordsFor } from '@/db/scoped'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
+import { useRecentExerciseIds } from '@/hooks/useRecentExerciseIds'
 import type { Equipment, Exercise, MuscleGroup } from '@/types'
-import { MUSCLE_LABELS, MUSCLE_STYLES, MuscleChip } from '@/components/gym/MuscleChip'
+import { MUSCLE_STYLES, MuscleChip } from '@/components/gym/MuscleChip'
 import ExerciseDetailSheet from '@/components/gym/ExerciseDetailSheet'
+import ExerciseFiltersSheet from '@/components/gym/ExerciseFiltersSheet'
 import EquipmentIcon from '@/components/gym/EquipmentIcon'
-import { Card, EmptyState } from '@/components/ui/Card'
+import { Card, EmptyState, SectionHeader } from '@/components/ui/Card'
 import { DIFFICULTY_DOT, DIFFICULTY_LABELS } from '@/lib/difficulty'
+import { EQUIPMENT_LABELS } from '@/lib/exerciseFilters'
 import { cn } from '@/lib/utils'
-
-const MUSCLE_FILTERS = Object.keys(MUSCLE_LABELS) as MuscleGroup[]
-
-const EQUIPMENT_LABELS: Record<Equipment, string> = {
-  barbell: 'Barra',
-  dumbbell: 'Mancuernas',
-  machine: 'Máquina',
-  cable: 'Polea',
-  bodyweight: 'Peso corporal',
-  band: 'Banda',
-  kettlebell: 'Kettlebell',
-  other: 'Otro',
-}
 
 export default function Exercises() {
   const userId = useCurrentUserId()
   const [query, setQuery] = useState('')
   const [muscle, setMuscle] = useState<MuscleGroup | null>(null)
   const [equipment, setEquipment] = useState<Equipment | null>(null)
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null)
 
   const exercises = useLiveQuery(() => db.exercises.toArray(), []) ?? []
@@ -39,6 +30,16 @@ export default function Exercises() {
     [userId]
   ) ?? []
   const prMap = useMemo(() => new Map(prs.map((p) => [p.exerciseId, p])), [prs])
+
+  const exerciseMap = useMemo(() => new Map(exercises.map((e) => [e.id, e])), [exercises])
+  const recentIds = useRecentExerciseIds(userId)
+  const recentExercises = useMemo(
+    () => recentIds.map((id) => exerciseMap.get(id)).filter((e): e is Exercise => Boolean(e)),
+    [recentIds, exerciseMap]
+  )
+
+  const hasActiveFilter = query.trim() !== '' || muscle !== null || equipment !== null
+  const activeFilterCount = (muscle ? 1 : 0) + (equipment ? 1 : 0)
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -59,7 +60,7 @@ export default function Exercises() {
   const listRef = useRef<HTMLDivElement>(null)
   const virtualizer = useWindowVirtualizer({
     count: filtered.length,
-    estimateSize: () => 112,
+    estimateSize: () => 96,
     overscan: 8,
     scrollMargin: listRef.current?.offsetTop ?? 0,
   })
@@ -70,52 +71,64 @@ export default function Exercises() {
         {/* Header */}
         <h1 className="text-2xl font-bold">Ejercicios</h1>
 
-        {/* Buscador iOS */}
-        <div className="flex h-11 items-center gap-2.5 rounded-sm bg-fill px-4">
-          <Search size={16} className="shrink-0 text-ink-3" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar ejercicios…"
-            className="w-full bg-transparent text-[15px] outline-none placeholder:text-ink-3"
-          />
+        {/* Buscador + acceso a filtros. Antes había acá dos filas
+            completas de pills (12 de músculo + 8 de equipo, 20 botones
+            siempre visibles) — ocupaban ~25% del viewport en 393px
+            antes de llegar a un solo ejercicio. Ahora viven en
+            ExerciseFiltersSheet; acá solo queda el punto de entrada. */}
+        <div className="flex gap-2">
+          <div className="flex h-11 flex-1 items-center gap-2.5 rounded-sm bg-fill px-4">
+            <Search size={16} className="shrink-0 text-ink-3" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar ejercicios…"
+              className="w-full bg-transparent text-[15px] outline-none placeholder:text-ink-3"
+            />
+          </div>
+          <button
+            onClick={() => setFiltersOpen(true)}
+            aria-label="Filtros"
+            className={cn(
+              'flex h-11 shrink-0 items-center gap-1.5 rounded-sm px-3.5 text-[13px] font-semibold transition-colors',
+              activeFilterCount > 0
+                ? 'bg-accent text-bg'
+                : 'bg-fill text-ink-2 active:bg-fill-2'
+            )}
+          >
+            <SlidersHorizontal size={16} />
+            {activeFilterCount > 0 && <span className="font-mono">{activeFilterCount}</span>}
+          </button>
         </div>
 
-        {/* Filtros músculo */}
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none]">
-          {MUSCLE_FILTERS.map((m) => (
-            <button
-              key={m}
-              onClick={() => setMuscle(muscle === m ? null : m)}
-              className={cn(
-                'flex h-11 shrink-0 items-center whitespace-nowrap rounded-full px-3.5 text-[12px] font-medium transition-colors',
-                muscle === m
-                  ? 'bg-accent text-bg'
-                  : 'bg-fill text-ink-2 active:bg-fill-2'
-              )}
-            >
-              {MUSCLE_LABELS[m]}
-            </button>
-          ))}
-        </div>
-
-        {/* Filtros equipo */}
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none]">
-          {(Object.keys(EQUIPMENT_LABELS) as Equipment[]).map((eq) => (
-            <button
-              key={eq}
-              onClick={() => setEquipment(equipment === eq ? null : eq)}
-              className={cn(
-                'flex h-11 shrink-0 items-center whitespace-nowrap rounded-full px-3.5 text-[12px] font-medium transition-colors',
-                equipment === eq
-                  ? 'bg-info text-white'
-                  : 'bg-fill text-ink-2 active:bg-fill-2'
-              )}
-            >
-              {EQUIPMENT_LABELS[eq]}
-            </button>
-          ))}
-        </div>
+        {/* Recientes: mismo criterio que ya usa ExercisePicker.tsx (el
+            sheet para elegir ejercicio desde una rutina) — le da a la
+            pantalla un punto de entrada real en vez de arrancar directo
+            en el scroll alfabético de 107 ejercicios. */}
+        {!hasActiveFilter && recentExercises.length > 0 && (
+          <section>
+            <SectionHeader title="Recientes" />
+            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+              {recentExercises.map((e) => (
+                <button
+                  key={e.id}
+                  onClick={() => setSelectedExercise(e)}
+                  className="flex h-11 shrink-0 items-center gap-2 rounded-full bg-fill py-2 pl-2 pr-3.5 text-left active:bg-fill-2"
+                >
+                  <span
+                    className={cn(
+                      'flex h-7 w-7 shrink-0 items-center justify-center rounded-full',
+                      MUSCLE_STYLES[e.musclePrimary[0]]
+                    )}
+                  >
+                    <EquipmentIcon equipment={e.equipment} size={14} />
+                  </span>
+                  <span className="max-w-[140px] truncate text-[13px] font-medium">{e.name}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         <p className="px-1 text-[13px] text-ink-3">{filtered.length} ejercicios</p>
 
@@ -154,45 +167,49 @@ export default function Exercises() {
                     >
                       {/* Insignia de equipo, teñida con el color del músculo
                           primario — un solo elemento visual comunica equipo
-                          (ícono) y grupo muscular (color), reusando la misma
-                          paleta que ya usan los chips de abajo. Vidrio, no
-                          relleno plano: pedido explícito del usuario sobre
-                          la primera versión — mismo backdrop-blur-xs ya
-                          sancionado para la pastilla de la tab bar (Fase 46),
-                          nueva superficie pero mismo material, no uno
-                          inventado. */}
+                          (ícono) y grupo muscular (color). Más grande que
+                          antes (48px, ícono 22px): son dibujo propio
+                          (EquipmentIcon.tsx), vale la pena que se noten en
+                          vez de quedar chicos. Vidrio, no relleno plano:
+                          pedido explícito del usuario sobre la primera
+                          versión — mismo backdrop-blur-xs ya sancionado
+                          para la pastilla de la tab bar (Fase 46). */}
                       <span
                         className={cn(
-                          'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border backdrop-blur-xs',
+                          'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border backdrop-blur-xs',
                           MUSCLE_STYLES[e.musclePrimary[0]]
                         )}
                       >
-                        <EquipmentIcon equipment={e.equipment} size={20} />
+                        <EquipmentIcon equipment={e.equipment} size={22} />
                       </span>
                       <div className="min-w-0 flex-1">
+                        {/* Un solo elemento dominante por fila: el nombre.
+                            El nombre en inglés se saca de acá (sigue en el
+                            header de ExerciseDetailSheet, y el buscador lo
+                            sigue indexando aunque no se muestre) — antes
+                            competía con el nombre real por la misma
+                            atención. */}
                         <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="font-semibold leading-tight">{e.name}</p>
-                            <p className="mt-0.5 truncate text-[12px] text-ink-3">{e.nameEn}</p>
-                          </div>
+                          <p className="min-w-0 truncate font-semibold leading-tight">{e.name}</p>
                           <span
-                            className="mt-1 flex shrink-0 items-center gap-1 text-[12px] text-ink-3"
+                            className="mt-0.5 flex shrink-0 items-center gap-1 text-[12px] text-ink-3"
                             title={DIFFICULTY_LABELS[e.difficulty]}
                           >
                             <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', DIFFICULTY_DOT[e.difficulty])} />
                             {EQUIPMENT_LABELS[e.equipment]}
                           </span>
                         </div>
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          {e.musclePrimary.map((m) => (
-                            <MuscleChip key={m} muscle={m} />
-                          ))}
-                          {e.muscleSecondary.slice(0, 2).map((m) => (
-                            <MuscleChip key={m} muscle={m} secondary />
-                          ))}
+                        {/* Un solo chip (el músculo primario) — el color de
+                            la insignia ya dice lo mismo; mostrar además los
+                            hasta 4 chips de antes repetía el dato, no
+                            agregaba uno nuevo. El detalle completo
+                            primarios/secundarios vive en
+                            ExerciseDetailSheet. */}
+                        <div className="mt-1.5">
+                          <MuscleChip muscle={e.musclePrimary[0]} />
                         </div>
                         {pr && (
-                          <div className="mt-2 flex items-center gap-1.5 text-[12px] text-accent">
+                          <div className="mt-1.5 flex items-center gap-1.5 text-[12px] text-accent">
                             <Trophy size={12} />
                             <span className="font-mono font-bold tabular-nums">
                               {pr.weightKg} kg × {pr.reps}
@@ -211,6 +228,17 @@ export default function Exercises() {
           </Card>
         )}
       </div>
+
+      {filtersOpen && (
+        <ExerciseFiltersSheet
+          muscle={muscle}
+          equipment={equipment}
+          resultCount={filtered.length}
+          onMuscleChange={setMuscle}
+          onEquipmentChange={setEquipment}
+          onClose={() => setFiltersOpen(false)}
+        />
+      )}
 
       <ExerciseDetailSheet
         exercise={selectedExercise}

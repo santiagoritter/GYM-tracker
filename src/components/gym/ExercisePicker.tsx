@@ -2,27 +2,14 @@ import { useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Search, X } from 'lucide-react'
 import { db } from '@/db/schema'
-import { workoutsFor } from '@/db/scoped'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
+import { useRecentExerciseIds } from '@/hooks/useRecentExerciseIds'
 import type { Equipment, Exercise, MuscleGroup } from '@/types'
 import { MUSCLE_LABELS, MuscleChip } from '@/components/gym/MuscleChip'
 import EquipmentIcon from '@/components/gym/EquipmentIcon'
 import Portal from '@/components/ui/Portal'
 import { cn } from '@/lib/utils'
-
-const MUSCLE_FILTERS = Object.keys(MUSCLE_LABELS) as MuscleGroup[]
-
-const EQUIPMENT_LABELS: Record<Equipment, string> = {
-  barbell: 'Barra',
-  dumbbell: 'Mancuernas',
-  machine: 'Máquina',
-  cable: 'Polea',
-  bodyweight: 'Peso corporal',
-  band: 'Banda',
-  kettlebell: 'Kettlebell',
-  other: 'Otro',
-}
-const EQUIPMENT_FILTERS = Object.keys(EQUIPMENT_LABELS) as Equipment[]
+import { EQUIPMENT_LABELS, EQUIPMENT_FILTERS, MUSCLE_FILTERS } from '@/lib/exerciseFilters'
 
 interface Props {
   onSelect: (exercise: Exercise) => void
@@ -37,25 +24,7 @@ export function ExercisePicker({ onSelect, onClose, excludeIds = [] }: Props) {
   const [equipment, setEquipment] = useState<Equipment | null>(null)
 
   const exercises = useLiveQuery(() => db.exercises.toArray(), []) ?? []
-
-  // Últimos ejercicios distintos entrenados por este usuario, más reciente primero.
-  const recentIds = useLiveQuery(async () => {
-    if (!userId) return []
-    const ownWorkoutIds = new Set((await workoutsFor(userId).toArray()).map((w) => w.id))
-    const allSets = await db.workoutSets.toArray()
-    const ordered = allSets
-      .filter((s) => ownWorkoutIds.has(s.workoutId))
-      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-    const seen = new Set<string>()
-    const ids: string[] = []
-    for (const s of ordered) {
-      if (seen.has(s.exerciseId)) continue
-      seen.add(s.exerciseId)
-      ids.push(s.exerciseId)
-      if (ids.length >= 6) break
-    }
-    return ids
-  }, [userId]) ?? []
+  const recentIds = useRecentExerciseIds(userId)
 
   const exerciseMap = useMemo(() => new Map(exercises.map((e) => [e.id, e])), [exercises])
   const recentExercises = useMemo(
