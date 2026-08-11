@@ -206,9 +206,18 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
 
   return (
     <Portal>
-      {/* Overlay oscuro */}
+      {/* Overlay oscuro, sin backdrop-blur ni su animación (misma razón
+          que AddToRoutineSheet.tsx, ver ese comentario): este sheet se
+          abre sobre Exercises.tsx, cuya lista virtualizada ya renderiza
+          varias insignias con backdrop-blur-xs propio detrás — es el
+          sheet de toda la app con más blur acumulado atrás, y encima el
+          único que puede tener OTRO sheet (AddToRoutineSheet) abierto
+          arriba. Reportado: pantalla negra en Android al abrir "Agregar
+          a rutina" desde acá — sigue sin poder confirmarse la causa
+          exacta sin debug remoto real, pero sacar este blur reduce la
+          carga de composición en el escenario más pesado de la app. */}
       <div
-        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm animate-glass-in"
+        className="fixed inset-0 z-50 bg-black/70"
         onClick={onClose}
       />
 
