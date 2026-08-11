@@ -171,12 +171,17 @@ huecos grandes entre tarjetas, no un mazo. El aura de acento en la
 carta al frente (hallazgo #3) hoy hace buena parte del trabajo de
 "esto es un conjunto, no una lista" que antes hacía la geometría.
 
-**No hay una corrección obvia que no reabra la usabilidad que se
-arregló** — se anota como algo a tener en cuenta si en algún momento
-se vuelve a tocar esta pantalla: por ejemplo, un espaciado NO uniforme
-entre cartas (que decrece a medida que se aleja del frente, en vez de
-`Y_STEP` fijo) daría sensación de profundidad sin reintroducir el
-ángulo que complicaba agarrar una carta puntual.
+**Resuelto**: `RoutineStack.tsx` reemplaza el paso fijo `Y_STEP` por
+`poseForStep(step)` — el desplazamiento vertical entre cartas decae
+geométricamente con la profundidad (`STACK_DECAY = 0.72`, cada paso se
+junta más con el anterior en vez de equiespaciarse), y cada carta
+detrás del frente pierde además un poco de escala (`SCALE_STEP =
+0.025`) y de opacidad (`OPACITY_STEP = 0.08`) por paso. La carta al
+frente (`step === 0`) sigue siendo `{y:0, scale:1, opacity:1}` —
+idéntica a antes, con su aura de acento intacta. Solo se anima
+`transform`/`opacity` (DESIGN.md §4), sin reintroducir ángulo ni
+offset en X — la carta sigue en su lugar exacto para agarrarla, que
+era el problema que se había resuelto sacando el ángulo.
 
 ---
 
@@ -195,10 +200,20 @@ apps de referencia (Hevy separa "Historial"/"Estadísticas"/"Rutinas"
 como destinos de navegación distintos, no sub-pestañas de una sola
 pantalla) resuelve distinto: menos ítems por nivel, más jerarquía.
 
-**No se propone una restructuración acá** (es un cambio de
-arquitectura de información, no un ajuste de estilo) — se deja anotado
-para una eventual revisión de cuántas de estas ocho vistas son
-realmente de uso frecuente vs. archivo/consulta ocasional.
+**Resuelto, con datos reales en vez de una suposición**: se le
+preguntó al usuario qué pestañas mira seguido además de Resumen.
+Respuesta: Gráficos, Niveles, Mes, Logros y Fotos — todo menos
+Historial y PRs. Con 6 de 8 usadas seguido, esconder la mayoría detrás
+de un "Más" no tenía sustento — el problema real no era "hay pestañas
+de sobra" sino que las 8 competían con el mismo peso visual sin que
+ninguna se leyera como "acá estás parado". La corrección fue de **peso
+visual, no de acceso**: las pestañas inactivas perdieron el borde y el
+fondo (quedan como texto plano mudo), y la activa sigue siendo el
+único pill relleno de acento — un solo foco visual, las ocho siguen
+alcanzables con el mismo scroll de siempre, nada se esconde ni se
+reordena. De paso se corrigió que la fila (`py-1.5`, ~32px) estaba por
+debajo del piso táctil de 44px que exige DESIGN.md §6 sin excepciones
+— ahora usa `h-11`, igual que los filtros de Exercises.tsx.
 
 ---
 

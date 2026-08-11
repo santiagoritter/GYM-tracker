@@ -52,6 +52,27 @@ const Y_STEP = 64
 const MAX_STACK_STEP = 4
 const SPRING = { type: 'spring' as const, damping: 30, stiffness: 300 }
 
+// Profundidad del mazo sin ángulo ni offset en X (auditoría de diseño,
+// hallazgo #6): el paso fijo Y_STEP dejaba el mazo leyéndose como una
+// lista vertical con huecos. Acá cada paso hacia atrás se junta más con
+// el anterior (decae, no es equiespaciado) y además pierde un poco de
+// escala y opacidad — sensación de profundidad real sin reintroducir lo
+// que complicaba agarrar una carta puntual. La carta al frente (step 0)
+// da siempre {y:0, scale:1, opacity:1}, idéntico a antes.
+const STACK_DECAY = 0.72
+const SCALE_STEP = 0.025
+const OPACITY_STEP = 0.08
+
+function poseForStep(step: number): { y: number; scale: number; opacity: number } {
+  let y = 0
+  let delta = Y_STEP
+  for (let i = 0; i < step; i++) {
+    y += delta
+    delta *= STACK_DECAY
+  }
+  return { y, scale: 1 - step * SCALE_STEP, opacity: 1 - step * OPACITY_STEP }
+}
+
 export interface RoutineStackProps {
   routines: Routine[]
   daysByRoutine: Map<string, RoutineDay[]>
@@ -176,7 +197,7 @@ export default function RoutineStack({
     )
   }
 
-  const stackSpread = Math.min(routines.length - 1, MAX_STACK_STEP) * Y_STEP
+  const stackSpread = poseForStep(Math.min(routines.length - 1, MAX_STACK_STEP)).y
   const containerHeight = selectedId
     ? (heights[selectedId] ?? FRONT_HEIGHT)
     : FRONT_HEIGHT + stackSpread
@@ -207,7 +228,7 @@ export default function RoutineStack({
       >
         {displayOrder.map((routine, index) => {
           const step = Math.min(index, MAX_STACK_STEP)
-          const pose = { y: step * Y_STEP }
+          const pose = poseForStep(step)
           return (
             <RoutineStackCard
               key={routine.id}
