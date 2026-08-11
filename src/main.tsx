@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from '@/App'
+import ErrorBoundary from '@/components/ErrorBoundary'
 import { db, seedIfEmpty } from '@/db/schema'
 import { installSyncHooks, setSyncUser } from '@/db/syncHooks'
 import { useAuthStore } from '@/stores/authStore'
@@ -46,7 +47,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         ruta matchea, el catch-all de App.tsx reescribe la URL a la raíz del
         dominio y al recargar GitHub Pages devuelve su propio 404. */}
     <BrowserRouter basename={import.meta.env.BASE_URL}>
-      <App />
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
     </BrowserRouter>
   </React.StrictMode>
 )
