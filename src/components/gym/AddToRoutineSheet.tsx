@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from 'motion/react'
 import { CheckCircle2, Circle, Plus, Search, X } from 'lucide-react'
 import { db } from '@/db/schema'
 import { routinesFor } from '@/db/scoped'
-import { addDay, addExerciseToDay, createRoutine } from '@/db/routines'
+import { addExerciseToDay, createRoutine } from '@/db/routines'
 import { softDelete } from '@/db/mutations'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import Portal from '@/components/ui/Portal'
@@ -90,8 +90,11 @@ export default function AddToRoutineSheet({
     const trimmed = newRoutineName.trim()
     if (!trimmed || !userId) return
     const routineId = await createRoutine(userId, trimmed)
-    const dayId = await addDay(routineId, userId, 'Día 1')
-    await addExerciseToDay(dayId, userId, exercise.id)
+    // createRoutine ya crea un "Día 1" por su cuenta — se reusa ese día
+    // en vez de sumar otro (antes esto dejaba la rutina con DOS "Día 1",
+    // uno vacío y otro con el ejercicio).
+    const day = await db.routineDays.where('routineId').equals(routineId).first()
+    if (day) await addExerciseToDay(day.id, userId, exercise.id)
     setNewRoutineName('')
     setCreatingRoutine(false)
     toast.success('Rutina creada', `${exercise.name} se agregó a "${trimmed}"`)
@@ -99,7 +102,20 @@ export default function AddToRoutineSheet({
 
   return (
     <Portal>
-      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm animate-glass-in" onClick={onClose} />
+      {/* Sin backdrop-blur ni su animación (`animate-glass-in` también
+          anima `backdrop-filter`, no solo opacity): este sheet se abre
+          ANIDADO sobre ExerciseDetailSheet, que ya tiene su propio
+          overlay `backdrop-blur-sm` de pantalla completa. Apilar una
+          segunda capa de `backdrop-filter` (más los `backdrop-blur-xs`
+          de las insignias de la lista de Ejercicios, detrás de todo) es
+          carga extra de GPU sin beneficio visual — el fondo ya está
+          desenfocado por la capa de abajo — y en Android de gama media
+          agota las capas de composición del navegador y tira la
+          pestaña (pantalla negra reportada). Mismo problema de costo de
+          backdrop-blur ya documentado para esta pantalla; acá el fix es
+          no apilarlo dos veces. Un scrim sólido, sin animar, alcanza
+          igual — el sheet ya entra con su propio spring. */}
+      <div className="fixed inset-0 z-50 bg-black/70" onClick={onClose} />
 
       <motion.div
         initial="hidden"
