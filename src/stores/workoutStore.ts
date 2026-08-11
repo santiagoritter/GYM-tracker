@@ -3,9 +3,10 @@ import { persist } from 'zustand/middleware'
 import { db } from '@/db/schema'
 import { softDelete, softDeleteMany } from '@/db/mutations'
 import type { PersonalRecord, Workout, WorkoutSet } from '@/types'
-import { calc1RM, nowIso, uid } from '@/lib/utils'
+import { nowIso, uid } from '@/lib/utils'
 import { recommend } from '@/lib/recommendation'
 import { cancelScheduledNotifications } from '@/lib/native'
+import { computeVolumeKg, previewPRs } from '@/lib/workoutSummary'
 
 interface RestTimerState {
   endsAt: number | null // epoch ms
@@ -133,8 +134,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
 
       finishWorkout: async (userId, workoutId, notes) => {
         const sets = await db.workoutSets.where('workoutId').equals(workoutId).toArray()
-        const workingSets = sets.filter((s) => s.completed === 1 && s.isWarmup === 0)
-        const totalVolumeKg = workingSets.reduce((sum, s) => sum + s.weightKg * s.reps, 0)
+        const totalVolumeKg = computeVolumeKg(sets)
 
         await db.workouts.update(workoutId, {
           finishedAt: nowIso(),
@@ -142,40 +142,26 @@ export const useWorkoutStore = create<WorkoutStore>()(
           totalVolumeKg,
         })
 
-        // Detección de PRs: mejor 1RM estimado por ejercicio
+        // Se recalcula acá (no se reusa lo ya mostrado en la vista previa):
+        // prioriza corrección contra una preview que pudo quedar
+        // desactualizada por una escritura concurrente, sobre nunca releer.
+        const candidates = await previewPRs(userId, sets)
         const newPRs: PersonalRecord[] = []
-        const byExercise = new Map<string, WorkoutSet[]>()
-        for (const s of workingSets) {
-          const list = byExercise.get(s.exerciseId) ?? []
-          list.push(s)
-          byExercise.set(s.exerciseId, list)
-        }
-
-        for (const [exerciseId, exSets] of byExercise) {
-          const best = exSets.reduce((a, b) =>
-            calc1RM(b.weightKg, b.reps) > calc1RM(a.weightKg, a.reps) ? b : a
-          )
-          const oneRm = calc1RM(best.weightKg, best.reps)
-          if (oneRm <= 0) continue
-
-          const prId = `${userId}_${exerciseId}`
-          const current = await db.personalRecords.get(prId)
-          if (!current || oneRm > current.oneRmKg) {
-            const pr: PersonalRecord = {
-              id: prId,
-              userId,
-              exerciseId,
-              weightKg: best.weightKg,
-              reps: best.reps,
-              oneRmKg: oneRm,
-              achievedAt: nowIso(),
-              workoutId,
-              dirty: 1,
-              updatedAt: nowIso(),
-            }
-            await db.personalRecords.put(pr)
-            newPRs.push(pr)
+        for (const c of candidates) {
+          const pr: PersonalRecord = {
+            id: `${userId}_${c.exerciseId}`,
+            userId,
+            exerciseId: c.exerciseId,
+            weightKg: c.weightKg,
+            reps: c.reps,
+            oneRmKg: c.oneRmKg,
+            achievedAt: nowIso(),
+            workoutId,
+            dirty: 1,
+            updatedAt: nowIso(),
           }
+          await db.personalRecords.put(pr)
+          newPRs.push(pr)
         }
 
         return newPRs
