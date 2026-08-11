@@ -98,6 +98,16 @@
   }
   .animate-set-pop { animation: set-pop 200ms cubic-bezier(0.34,1.56,0.64,1); }
 
+  /* Flash de fila al completar una serie — refuerza el cambio de color del
+     botón de check sin sumar un segundo rebote: curva standard, no la de
+     overshoot que ya usa .animate-set-pop (la única sancionada). */
+  @keyframes row-flash {
+    0%   { opacity: 0; }
+    30%  { opacity: 1; }
+    100% { opacity: 0; }
+  }
+  .animate-row-flash { animation: row-flash 420ms cubic-bezier(0.25,0.46,0.45,0.94) both; }
+
   /* Aparición de PR con spring */
   @keyframes pr-appear {
     from { opacity: 0; transform: translateY(24px) scale(0.95); }
@@ -273,7 +283,8 @@
   .animate-set-pop,
   .animate-pr-appear,
   .animate-fade-up,
-  .animate-glass-in {
+  .animate-glass-in,
+  .animate-row-flash {
     animation: reduced-fade 150ms ease both;
   }
   .animate-scale-in {

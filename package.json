@@ -16,7 +16,8 @@
     "test:style": "node scripts/test-style-rules.mjs",
     "test:levels": "esbuild scripts/test-muscle-group-levels.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/mgl.mjs --log-level=error && node node_modules/.tmp/mgl.mjs",
     "test:backup": "esbuild scripts/test-backup.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/backup.mjs --log-level=error && node node_modules/.tmp/backup.mjs",
-    "test": "npm run test:style && npm run test:db && npm run test:rec && npm run test:levels && npm run test:backup"
+    "test:workout": "esbuild scripts/test-workout-summary.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/workout.mjs --log-level=error && node node_modules/.tmp/workout.mjs",
+    "test": "npm run test:style && npm run test:db && npm run test:rec && npm run test:levels && npm run test:backup && npm run test:workout"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",
