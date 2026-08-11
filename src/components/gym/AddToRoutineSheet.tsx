@@ -45,8 +45,17 @@ export default function AddToRoutineSheet({
     [userId]
   ) ?? []
   const days = useLiveQuery(() => db.routineDays.toArray(), []) ?? []
+  // `exerciseId` nunca estuvo indexado en `routineExercises` (ver
+  // schema.ts — el índice es 'id, dayId, userId, exerciseOrder, dirty'),
+  // así que un `.where('exerciseId')` tira un error real de Dexie
+  // ("KeyPath exerciseId... is not indexed") apenas se ejecuta la
+  // query — esta era la causa real del crash de pantalla negra al
+  // abrir este sheet (confirmado con el mensaje real capturado por
+  // ErrorBoundary). `.filter()` no necesita índice — la tabla es chica
+  // (entradas de rutina de un usuario), un recorrido completo es
+  // instantáneo.
   const entries = useLiveQuery(
-    () => db.routineExercises.where('exerciseId').equals(exercise.id).toArray(),
+    () => db.routineExercises.filter((e) => e.exerciseId === exercise.id).toArray(),
     [exercise.id]
   ) ?? []
 
