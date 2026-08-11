@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Calendar, ScanLine, Sparkles } from 'lucide-react'
+import { Calendar, ScanLine, Search, Sparkles, Star } from 'lucide-react'
 import { db } from '@/db/schema'
 import { routinesFor, workoutsFor } from '@/db/scoped'
 import {
@@ -14,6 +14,7 @@ import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { Suspense, lazy } from 'react'
 import { EmptyState } from '@/components/ui/Card'
 import RoutineStack from '@/components/gym/RoutineStack'
+import RoutinePickerSheet from '@/components/gym/RoutinePickerSheet'
 import type { Routine } from '@/types'
 
 // Lazy: qrcode + jsqr + lz-string solo se descargan al compartir/escanear
@@ -35,6 +36,11 @@ export default function Routines() {
   const [sharing, setSharing] = useState<Routine | null>(null)
   const [scanning, setScanning] = useState(false)
   const [pickingTemplate, setPickingTemplate] = useState(false)
+  const [pickingRoutine, setPickingRoutine] = useState(false)
+  // Qué rutina está al frente del mazo — vive acá (no en RoutineStack)
+  // para que "volver a favorita" y el picker de búsqueda puedan saltar
+  // directo a una posición, no solo avanzar de a una (Fase 4).
+  const [frontIndex, setFrontIndex] = useState(0)
 
   const routines = useLiveQuery(
     () => (userId ? routinesFor(userId).filter((r) => r.isArchived === 0).toArray() : []),
@@ -82,16 +88,50 @@ export default function Routines() {
     navigate(`/entreno/${workoutId}`)
   }
 
+  // Salto directo (no round-robin como "Cambiar rutina") a la posición de
+  // la rutina favorita en el mazo.
+  const favoriteIndex = (routines ?? []).findIndex((r) => r.isActive === 1)
+
+  const handleSelectFromPicker = (routine: Routine) => {
+    const index = (routines ?? []).findIndex((r) => r.id === routine.id)
+    if (index >= 0) setFrontIndex(index)
+    setPickingRoutine(false)
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Rutinas</h1>
-        <button
-          onClick={() => setScanning(true)}
-          className="flex h-11 items-center gap-1.5 rounded-sm border border-line-2 px-3 text-sm font-medium text-ink-2 active:bg-surface"
-        >
-          <ScanLine size={16} /> Escanear QR
-        </button>
+        <div className="flex items-center gap-2">
+          {favoriteIndex >= 0 && (routines?.length ?? 0) > 1 && (
+            <button
+              onClick={() => setFrontIndex(favoriteIndex)}
+              aria-label="Ir a la rutina favorita"
+              className="flex h-11 w-11 items-center justify-center rounded-sm border border-line-2 text-accent active:bg-surface"
+            >
+              <Star size={16} fill="currentColor" />
+            </button>
+          )}
+          {(routines?.length ?? 0) > 1 && (
+            <button
+              onClick={() => setPickingRoutine(true)}
+              aria-label="Buscar rutina"
+              className="flex h-11 w-11 items-center justify-center rounded-sm border border-line-2 text-ink-2 active:bg-surface"
+            >
+              <Search size={16} />
+            </button>
+          )}
+          {/* Ícono solo, en línea con favorita/buscar (arriba) — con las
+              tres juntas, un botón con texto largo aparte no entra
+              cómodo en 393px de ancho. */}
+          <button
+            onClick={() => setScanning(true)}
+            aria-label="Escanear QR"
+            className="flex h-11 w-11 items-center justify-center rounded-sm border border-line-2 text-ink-2 active:bg-surface"
+          >
+            <ScanLine size={16} />
+          </button>
+        </div>
       </div>
 
       {creating ? (
@@ -131,12 +171,23 @@ export default function Routines() {
       <RoutineStack
         routines={routines ?? []}
         daysByRoutine={daysByRoutine}
+        frontIndex={frontIndex}
+        onFrontIndexChange={setFrontIndex}
         onTrain={handleTrain}
         onEdit={(routine) => navigate(`/rutina/${routine.id}`)}
         onShare={setSharing}
         onToggleFavorite={(routineId) => userId && setActiveRoutine(userId, routineId)}
         onDelete={handleDelete}
       />
+
+      {pickingRoutine && (
+        <RoutinePickerSheet
+          routines={routines ?? []}
+          daysByRoutine={daysByRoutine}
+          onSelect={handleSelectFromPicker}
+          onClose={() => setPickingRoutine(false)}
+        />
+      )}
 
       <Suspense fallback={null}>
         {sharing && <QRShareModal routine={sharing} onClose={() => setSharing(null)} />}
