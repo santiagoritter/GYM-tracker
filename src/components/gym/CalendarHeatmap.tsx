@@ -124,7 +124,7 @@ export default function CalendarHeatmap() {
         {/* Cara frontal: la grilla de actividad, sin cambios. */}
         <div className="col-start-1 row-start-1 rounded-xl bg-surface p-4 [backface-visibility:hidden]">
           <div className="mb-1 flex items-center justify-between">
-            <span className="text-[11px] text-ink-3">Actividad</span>
+            <span className="text-xs text-ink-3">Actividad</span>
             <Repeat2 size={13} className="text-ink-3" />
           </div>
           <div className="overflow-x-auto [scrollbar-width:none]">
@@ -166,7 +166,7 @@ export default function CalendarHeatmap() {
               </div>
             </div>
           </div>
-          <div className="mt-3 flex items-center justify-end gap-1 text-[10px] text-ink-3">
+          <div className="mt-3 flex items-center justify-end gap-1 text-xs text-ink-3">
             <span>menos</span>
             {LEVEL_CLASS.map((c, i) => (
               <div key={i} className={cn('h-3 w-3 rounded-sm', c)} />
@@ -182,7 +182,7 @@ export default function CalendarHeatmap() {
             de antes, que quedaban redundantes con esto. */}
         <div className="col-start-1 row-start-1 rounded-xl bg-surface p-4 [backface-visibility:hidden] [transform:rotateY(180deg)]">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-[11px] text-ink-3">Puntos fuertes</span>
+            <span className="text-xs text-ink-3">Puntos fuertes</span>
             <Repeat2 size={13} className="text-ink-3" />
           </div>
           {profileComplete && withData.length > 0 ? (
@@ -199,13 +199,13 @@ export default function CalendarHeatmap() {
                   <p className="font-mono text-xl font-bold leading-none tabular-nums">
                     {trainingStats.thisWeekCount}
                   </p>
-                  <p className="mt-1 text-[11px] text-ink-3">entrenos esta semana</p>
+                  <p className="mt-1 text-xs text-ink-3">entrenos esta semana</p>
                 </div>
                 <div>
                   <p className="font-mono text-xl font-bold leading-none tabular-nums">
                     {trainingStats.currentStreak}
                   </p>
-                  <p className="mt-1 text-[11px] text-ink-3">
+                  <p className="mt-1 text-xs text-ink-3">
                     {trainingStats.currentStreak === 1 ? 'día de racha' : 'días de racha'}
                   </p>
                 </div>
@@ -213,7 +213,7 @@ export default function CalendarHeatmap() {
                   <p className="font-mono text-xl font-bold leading-none tabular-nums">
                     {prsThisMonth}
                   </p>
-                  <p className="mt-1 text-[11px] text-ink-3">
+                  <p className="mt-1 text-xs text-ink-3">
                     {prsThisMonth === 1 ? 'PR este mes' : 'PRs este mes'}
                   </p>
                 </div>

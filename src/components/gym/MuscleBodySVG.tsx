@@ -51,7 +51,7 @@ export default function MuscleBodySVG({ primary, secondary = [], view = 'both', 
           <BodySvg>
             <FrontBody fill={fill} cardio={isCardio} />
           </BodySvg>
-          <figcaption className="mt-1 text-center text-[10px] font-medium uppercase tracking-wider text-ink-3">
+          <figcaption className="mt-1 text-center text-[12px] font-medium text-ink-3">
             Frente
           </figcaption>
         </figure>
@@ -61,7 +61,7 @@ export default function MuscleBodySVG({ primary, secondary = [], view = 'both', 
           <BodySvg>
             <BackBody fill={fill} cardio={isCardio} />
           </BodySvg>
-          <figcaption className="mt-1 text-center text-[10px] font-medium uppercase tracking-wider text-ink-3">
+          <figcaption className="mt-1 text-center text-[12px] font-medium text-ink-3">
             Espalda
           </figcaption>
         </figure>

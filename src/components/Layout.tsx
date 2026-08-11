@@ -161,7 +161,7 @@ export default function Layout() {
                 end={to === '/'}
                 className={({ isActive }) =>
                   cn(
-                    'relative flex flex-1 flex-col items-center gap-1 py-3 text-[11px] font-medium tracking-wide transition-colors duration-150',
+                    'relative flex flex-1 flex-col items-center gap-1 py-3 text-[12px] font-medium tracking-wide transition-colors duration-150',
                     isActive
                       // Por encima de la pastilla (z-20): si no, el blur de
                       // atrás la ensucia. pointer-events-none deja pasar el

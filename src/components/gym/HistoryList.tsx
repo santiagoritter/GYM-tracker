@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { ChevronDown } from 'lucide-react'
 import { db } from '@/db/schema'
 import { cn, formatDate, formatDuration } from '@/lib/utils'
+import { EmptyState } from '@/components/ui/Card'
 
 export function HistoryList() {
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -85,9 +86,10 @@ export function HistoryList() {
       })}
 
       {workouts?.length === 0 && (
-        <p className="rounded-xl bg-surface p-8 text-center text-sm text-ink-3">
-          Tu historial va a aparecer acá cuando termines tu primer entreno.
-        </p>
+        <EmptyState
+          title="Sin historial todavía"
+          description="Tu historial va a aparecer acá cuando termines tu primer entreno."
+        />
       )}
     </div>
   )

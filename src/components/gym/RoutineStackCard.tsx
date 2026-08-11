@@ -158,13 +158,13 @@ export default function RoutineStackCard({
                 {days.slice(0, 6).map((day) => (
                   <span
                     key={day.id}
-                    className="rounded-full bg-fill px-2.5 py-1 text-[11px] font-medium text-ink-2"
+                    className="rounded-full bg-fill px-2.5 py-1 text-[12px] font-medium text-ink-2"
                   >
                     {day.name}
                   </span>
                 ))}
                 {days.length > 6 && (
-                  <span className="rounded-full bg-fill px-2.5 py-1 text-[11px] font-medium text-ink-3">
+                  <span className="rounded-full bg-fill px-2.5 py-1 text-[12px] font-medium text-ink-3">
                     +{days.length - 6}
                   </span>
                 )}
