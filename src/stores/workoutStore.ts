@@ -70,6 +70,12 @@ export const useWorkoutStore = create<WorkoutStore>()(
           updatedAt: nowIso(),
         }
         await db.workouts.add(workout)
+        // restTimer es un store global, no atado a workoutId — si el
+        // entreno anterior terminó con un descanso todavía corriendo (sin
+        // llegar a 0 ni tocar "Saltar"), ese endsAt quedaba vivo y
+        // aparecía como si ya hubiera un descanso activo en este entreno
+        // recién arrancado, antes de completar ninguna serie.
+        get().skipRest()
         return workout.id
       },
 
@@ -164,6 +170,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
           newPRs.push(pr)
         }
 
+        get().skipRest()
         return newPRs
       },
 
@@ -171,6 +178,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
         const sets = await db.workoutSets.where('workoutId').equals(workoutId).toArray()
         await softDeleteMany('workoutSets', sets.map((s) => s.id))
         await softDelete('workouts', workoutId)
+        get().skipRest()
       },
     }),
     {
