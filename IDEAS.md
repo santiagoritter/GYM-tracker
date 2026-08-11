@@ -33,6 +33,17 @@ Un toast con "Deshacer" durante 5 segundos es el patrón correcto: no
 interrumpe y protege igual. La infraestructura ya está: `softDelete` deja
 lápida, así que restaurar es leerla de vuelta.
 
+### Borrar un entreno ya finalizado
+Hoy no existe en ningún lado de la app una forma de borrar un `Workout`
+finalizado — ni desde el historial (`HistoryList.tsx`/`RecentWorkouts.tsx`)
+ni desde "Cargar entreno pasado" (Fase 3): si alguien se equivoca al cargar
+uno retroactivo (fecha, ejercicio o peso mal tipeado), queda ahí para
+siempre. `softDelete('workouts', id)` + `softDeleteMany('workoutSets', ...)`
+ya existen y son exactamente lo que hace falta (mismo patrón que
+`discardWorkout` para un entreno en curso) — falta el botón. Se dejó fuera
+de la Fase 3 a propósito (no era lo pedido), pero es la pieza que falta
+para que cargar mal algo no sea un error permanente.
+
 ### Historial por ejercicio
 Al abrir un ejercicio, ver directamente las últimas sesiones: peso, reps y
 la curva de 1RM estimado. Hoy el dato existe (`workoutSets` con el índice

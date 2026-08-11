@@ -54,6 +54,15 @@ export function formatDuration(startIso: string, endIso?: string): string {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
+/** El input `<input type="date">` da "YYYY-MM-DD" — `new Date(string)` lo
+ * interpreta como medianoche UTC, no local: en UTC-3 eso cae en el día
+ * anterior. Se arma con el constructor (y,m,d), que sí es local, al
+ * mediodía para tener margen contra cualquier redondeo de huso horario. */
+export function dateInputToIso(value: string): string {
+  const [y, m, d] = value.split('-').map(Number)
+  return new Date(y, m - 1, d, 12).toISOString()
+}
+
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('es-AR', {
     weekday: 'short',

@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   Bell,
   Calculator,
+  CalendarPlus,
   ChevronRight,
   Download,
   Flame,
@@ -225,6 +226,14 @@ export default function Ajustes() {
               <div className="min-w-0 flex-1">
                 <p className="text-[15px]">Calculadora de 1RM</p>
                 <p className="text-[13px] text-ink-3">Pesos por objetivo, sin abrir un ejercicio</p>
+              </div>
+              <ChevronRight size={16} className="shrink-0 text-ink-4" />
+            </Row>
+            <Row onClick={() => navigate('/entrenos-pasados')}>
+              <CalendarPlus size={18} className="shrink-0 text-ink-3" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[15px]">Cargar entreno pasado</p>
+                <p className="text-[13px] text-ink-3">Para que se refleje en tus métricas y gráficos</p>
               </div>
               <ChevronRight size={16} className="shrink-0 text-ink-4" />
             </Row>
