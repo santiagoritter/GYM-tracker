@@ -201,6 +201,28 @@
        scroll horizontal, inputs, etc.) generaba una franja vacía a la
        derecha en vez de quedar contenido dentro de su propio contenedor. */
     overflow-x: hidden;
+    /* Fase 6 (bug Android/Chrome: scroll con un dedo no anda, con dos sí) —
+       endurecimiento defensivo, NO una corrección confirmada: no se pudo
+       reproducir en este entorno. Investigación real hecha antes de tocar
+       esto: se leyó el código fuente instalado de `motion`
+       (framer-motion@13) y se descartó con evidencia el sospechoso
+       principal de la sesión anterior (la píldora `drag="x"` de la tab
+       bar) — usa Pointer Events modernos, con `touch-action` acotado al
+       propio elemento vía estilo inline (`pan-y` cuando drag="x", no
+       `none`), sin listeners globales en document/window al montar. Se
+       revisó también HoldButton.tsx/NumberStepper.tsx: mismo patrón,
+       acotado, sin fugas. No se encontró ningún `touch-action` en
+       elementos grandes o en el propio scroll root.
+       Este cambio deja explícito lo que hoy es implícito (`auto` en el
+       scroll root): el scroll vertical siempre tiene que estar permitido
+       acá, sin depender de que el navegador resuelva bien el default en
+       cualquier combinación de Android/Chrome. No cambia ningún
+       comportamiento existente si `auto` ya resolvía a esto — es una
+       afirmación explícita, no una restricción nueva. Si esto NO resuelve
+       el bug reportado, hace falta debug remoto real (chrome://inspect
+       con un Android conectado) para ver qué pasa de verdad: no hay forma
+       de reproducir esto en este entorno. */
+    touch-action: pan-y;
   }
   body {
     @apply min-h-screen font-sans;
