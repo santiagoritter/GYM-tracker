@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { ArrowLeftRight, Play, QrCode, Star, Trash2 } from 'lucide-react'
@@ -55,6 +55,12 @@ const SPRING = { type: 'spring' as const, damping: 30, stiffness: 300 }
 export interface RoutineStackProps {
   routines: Routine[]
   daysByRoutine: Map<string, RoutineDay[]>
+  // Qué rutina está al frente del mazo. Controlado desde afuera (en vez de
+  // estado interno) para que "volver a favorita" y el picker de búsqueda
+  // (Fase 4) puedan saltar directo a una posición específica, no solo
+  // avanzar de a una con "Cambiar rutina".
+  frontIndex: number
+  onFrontIndexChange: (index: number) => void
   onTrain: (dayId: string) => void
   onEdit: (routine: Routine) => void
   onShare: (routine: Routine) => void
@@ -65,6 +71,8 @@ export interface RoutineStackProps {
 export default function RoutineStack({
   routines,
   daysByRoutine,
+  frontIndex,
+  onFrontIndexChange,
   onTrain,
   onEdit,
   onShare,
@@ -73,14 +81,18 @@ export default function RoutineStack({
 }: RoutineStackProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [heights, setHeights] = useState<Record<string, number>>({})
-  // Qué rutina está al frente del mazo — "Cambiar rutina" gira esto, no
-  // selecciona: cambia el ORDEN de las cartas (la de arriba pasa al
-  // fondo, la siguiente queda al frente), pedido explícito tras la
-  // primera versión, que en cambio abría/seleccionaba una rutina.
-  const [frontIndex, setFrontIndex] = useState(0)
   const [showParticles, setShowParticles] = useState(false)
   const switchRef = useRef<HTMLButtonElement>(null)
   const reduced = useReducedMotion()
+
+  // Si el frente cambia desde afuera (favorita, picker de búsqueda)
+  // mientras había una carta abierta, se cierra — saltar de posición con
+  // algo flippeado encima se ve raro. No afecta al salto interno de
+  // "Cambiar rutina": ese botón ya está oculto mientras hay selección.
+  useEffect(() => {
+    setSelectedId(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [frontIndex])
 
   if (routines.length === 0) return null
 
@@ -179,7 +191,7 @@ export default function RoutineStack({
 
   const handleSwitch = () => {
     if (routines.length < 2) return
-    setFrontIndex((i) => (i + 1) % routines.length)
+    onFrontIndexChange((frontIndex + 1) % routines.length)
     if (!reduced) {
       setShowParticles(true)
       setTimeout(() => setShowParticles(false), 600)
