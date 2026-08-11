@@ -11,6 +11,7 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  type TooltipProps,
 } from 'recharts'
 import { db } from '@/db/schema'
 import { workoutsFor, personalRecordsFor } from '@/db/scoped'
@@ -141,23 +142,44 @@ function Charts() {
     [effectiveExercise]
   )
 
-  // Mejor peso por entreno para el ejercicio seleccionado
-  const exerciseData = useMemo(() => {
-    const byWorkout = new Map<string, number>()
+  // Mejor set (peso, con sus reps) por entreno para el ejercicio
+  // seleccionado — antes solo se guardaba el peso máximo, sin las reps que
+  // lo acompañaban, así que el tooltip no podía mostrar "80kg x 5".
+  const exerciseData = useMemo<ChartPoint[]>(() => {
+    const byWorkout = new Map<string, { weightKg: number; reps: number }>()
     for (const s of exerciseSets ?? []) {
       if (s.completed !== 1 || s.isWarmup !== 0 || !workoutMap.has(s.workoutId)) continue
-      byWorkout.set(s.workoutId, Math.max(byWorkout.get(s.workoutId) ?? 0, s.weightKg))
+      const current = byWorkout.get(s.workoutId)
+      if (!current || s.weightKg > current.weightKg) {
+        byWorkout.set(s.workoutId, { weightKg: s.weightKg, reps: s.reps })
+      }
     }
-    return [...byWorkout.entries()]
-      .map(([workoutId, maxKg]) => ({
-        date: workoutMap.get(workoutId)!.startedAt,
-        label: new Date(workoutMap.get(workoutId)!.startedAt).toLocaleDateString('es-AR', {
-          day: 'numeric',
-          month: 'numeric',
-        }),
-        kg: maxKg,
-      }))
+    const points = [...byWorkout.entries()]
+      .map(([workoutId, best]) => {
+        const workout = workoutMap.get(workoutId)!
+        return {
+          date: workout.startedAt,
+          label: new Date(workout.startedAt).toLocaleDateString('es-AR', {
+            day: 'numeric',
+            month: 'numeric',
+          }),
+          kg: best.weightKg,
+          reps: best.reps,
+        }
+      })
       .sort((a, b) => a.date.localeCompare(b.date))
+
+    // PR = máximo histórico corriendo hasta ese punto, calculado en el
+    // propio timeline local — no depende de PersonalRecord (que solo
+    // guarda el récord ACTUAL, no el historial completo de mejoras) y por
+    // eso puede marcar cada salto real de la serie, no solo el más
+    // reciente.
+    let running = 0
+    return points.map((p) => {
+      const isPR = p.kg > running
+      if (isPR) running = p.kg
+      return { ...p, isPR }
+    })
   }, [exerciseSets, workoutMap])
 
   // Volumen por semana (últimas 8 semanas)
@@ -188,10 +210,8 @@ function Charts() {
 
   return (
     <div className="space-y-6">
-      <section>
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-2">
-          Mejor peso por entreno
-        </h2>
+      <section className="animate-fade-up">
+        <SectionHeader title="Mejor peso por entreno" />
         <select
           value={effectiveExercise}
           onChange={(e) => setSelectedExercise(e.target.value)}
@@ -209,32 +229,24 @@ function Charts() {
               <CartesianGrid stroke={chartColors.grid} strokeDasharray="3 3" />
               <XAxis dataKey="label" stroke={chartColors.axis} fontSize={11} />
               <YAxis stroke={chartColors.axis} fontSize={11} unit="" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: chartColors.tooltipBg,
-                  border: `1px solid ${chartColors.tooltipBorder}`,
-                  borderRadius: 8,
-                  fontSize: 12,
-                }}
-                labelStyle={{ color: chartColors.tooltipText }}
-                formatter={(value) => [`${value} kg`, 'Mejor set']}
-              />
+              <Tooltip content={<ExerciseTooltip />} cursor={{ stroke: chartColors.grid }} />
               <Line
                 type="monotone"
                 dataKey="kg"
                 stroke={chartColors.accent}
                 strokeWidth={2}
-                dot={{ fill: chartColors.accent, r: 3 }}
+                dot={<ExerciseDot accent={chartColors.accent} hole={chartColors.surface} />}
+                activeDot={{ r: 5, fill: chartColors.accent }}
+                isAnimationActive
+                animationDuration={500}
               />
             </LineChart>
           </ResponsiveContainer>
         </div>
       </section>
 
-      <section>
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-2">
-          Volumen semanal (kg)
-        </h2>
+      <section className="animate-fade-up">
+        <SectionHeader title="Volumen semanal (kg)" />
         <div className="h-48 rounded-xl bg-surface p-3">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={weeklyVolume} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
@@ -268,6 +280,70 @@ function weekKey(date: Date): string {
   const diff = day === 0 ? 6 : day - 1 // lunes como inicio
   d.setDate(d.getDate() - diff)
   return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'numeric' })
+}
+
+interface ChartPoint {
+  date: string
+  label: string
+  kg: number
+  reps: number
+  isPR: boolean
+}
+
+/** Punto normal: círculo chico. Punto de PR: el mismo círculo con un
+ * "hueco" en el medio (color del fondo de la tarjeta) — un anillo en vez
+ * de un relleno más grande, para diferenciarlo sin sumar blur/glow
+ * (DESIGN.md). */
+function ExerciseDot({
+  accent,
+  hole,
+  cx,
+  cy,
+  payload,
+}: {
+  accent: string
+  hole: string
+  cx?: number
+  cy?: number
+  payload?: ChartPoint
+}) {
+  if (cx === undefined || cy === undefined) return null
+  if (!payload?.isPR) return <circle cx={cx} cy={cy} r={3} fill={accent} />
+  return (
+    <g>
+      <circle cx={cx} cy={cy} r={6} fill={accent} />
+      <circle cx={cx} cy={cy} r={2.5} fill={hole} />
+    </g>
+  )
+}
+
+/** Tooltip propio en vez del `contentStyle` genérico de Recharts: fecha
+ * completa, peso × reps del mejor set, y una marca de PR cuando
+ * corresponde — antes solo decía "80 kg · Mejor set", sin reps ni fecha
+ * legible. */
+function ExerciseTooltip({ active, payload }: TooltipProps<number, string>) {
+  if (!active || !payload?.length) return null
+  const point = payload[0]?.payload as ChartPoint | undefined
+  if (!point) return null
+  return (
+    <div className="rounded-md border border-line-2 bg-surface-3 px-3 py-2 shadow-float">
+      <p className="text-[11px] text-ink-3">
+        {new Date(point.date).toLocaleDateString('es-AR', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        })}
+      </p>
+      <p className="font-mono text-sm font-bold tabular-nums">
+        {point.kg} kg × {point.reps}
+      </p>
+      {point.isPR && (
+        <p className="mt-0.5 flex items-center gap-1 text-[11px] font-bold text-accent">
+          <Trophy size={11} /> Récord en ese momento
+        </p>
+      )}
+    </div>
+  )
 }
 
 function PRList() {

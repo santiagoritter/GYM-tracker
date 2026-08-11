@@ -10,6 +10,10 @@ export interface ChartColors {
   cursor: string
   accent: string
   info: string
+  // Fondo real de la tarjeta que envuelve el gráfico (bg-surface) — hace
+  // falta como color "hueco" para el punto de PR (Fase 2): un anillo, no un
+  // círculo relleno, para no sumar un halo/glow (DESIGN.md).
+  surface: string
 }
 
 /** Los custom properties conviven en dos formatos en index.css: tripletas
@@ -31,6 +35,7 @@ function computeChartColors(): ChartColors {
     cursor: readVar('--color-fill'),
     accent: readVar('--color-accent'),
     info: readVar('--color-info'),
+    surface: readVar('--color-surface'),
   }
 }
 
