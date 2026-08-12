@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ChevronRight, Play, Flame } from 'lucide-react'
@@ -8,11 +8,10 @@ import { useWorkoutStore } from '@/stores/workoutStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { HOME_MESSAGES } from '@/lib/motivational'
-import { cn, formatDuration } from '@/lib/utils'
+import { formatDuration } from '@/lib/utils'
 import CalendarHeatmap from '@/components/gym/CalendarHeatmap'
-import CalorieSummaryRow from '@/components/gym/CalorieSummaryRow'
 import SpotifyNowPlaying from '@/components/gym/SpotifyNowPlaying'
-import { Card, Row, SectionHeader } from '@/components/ui/Card'
+import RoutineDaysSheet from '@/components/gym/RoutineDaysSheet'
 import HoldButton from '@/components/ui/HoldButton'
 
 export default function Home() {
@@ -21,6 +20,7 @@ export default function Home() {
   const { name } = useAuthStore()
   const userId = useCurrentUserId()
   const quote = useMemo(() => HOME_MESSAGES[Math.floor(Math.random() * HOME_MESSAGES.length)], [])
+  const [daysSheetOpen, setDaysSheetOpen] = useState(false)
 
   const activeWorkout = useLiveQuery(
     () => (userId ? workoutsFor(userId).filter((w) => !w.finishedAt).first() : undefined),
@@ -66,6 +66,12 @@ export default function Home() {
     navigate(`/entreno/${id}`)
   }
 
+  const handleStartDay = async (dayId: string) => {
+    if (!userId) return
+    const id = await startWorkoutFromDay(userId, dayId)
+    navigate(`/entreno/${id}`)
+  }
+
   return (
     <div className="space-y-6">
       <header>
@@ -81,9 +87,8 @@ export default function Home() {
         </p>
       </header>
 
-      {/* Solo aparece si el usuario activó el contador desde Ajustes — no
-          se le agrega peso visual a Home a nadie que no lo pidió. */}
-      <CalorieSummaryRow />
+      {/* El resumen de calorías vive en el header (CalorieHeaderBadge,
+          junto al avatar) — visible desde cualquier pantalla, no solo acá. */}
       <SpotifyNowPlaying />
 
       {activeWorkout ? (
@@ -132,45 +137,29 @@ export default function Home() {
       <CalendarHeatmap />
 
       {activeRoutine && !activeWorkout && (routineDays?.length ?? 0) > 0 && (
-        <section>
-          <SectionHeader
-            title={activeRoutine.name}
-            action={
-              <span
-                className="mb-1.5 h-2 w-2 shrink-0 rounded-full"
-                style={{ backgroundColor: activeRoutine.color }}
-                aria-hidden="true"
-              />
-            }
-          />
-          <Card>
-            {routineDays!.map((day) => (
-              <Row key={day.id}>
-                <span
-                  className={cn(
-                    'min-w-0 flex-1 truncate text-[15px]',
-                    day.isRest === 1 && 'text-ink-3'
-                  )}
-                >
-                  {day.name}
-                  {day.isRest === 1 && ' · descanso'}
-                </span>
-                {day.isRest === 0 && (
-                  <button
-                    onClick={async () => {
-                      if (!userId) return
-                      const id = await startWorkoutFromDay(userId, day.id)
-                      navigate(`/entreno/${id}`)
-                    }}
-                    className="flex h-9 shrink-0 items-center gap-1.5 rounded-xs bg-accent px-3 text-[13px] font-bold text-bg active:bg-accent-dim"
-                  >
-                    <Play size={13} fill="currentColor" /> Entrenar
-                  </button>
-                )}
-              </Row>
-            ))}
-          </Card>
-        </section>
+        <button
+          onClick={() => setDaysSheetOpen(true)}
+          className="flex w-full items-center justify-between rounded-2xl bg-surface p-4 text-left"
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            <span
+              className="h-2 w-2 shrink-0 rounded-full"
+              style={{ backgroundColor: activeRoutine.color }}
+              aria-hidden="true"
+            />
+            <span className="truncate font-semibold">{activeRoutine.name}</span>
+          </span>
+          <ChevronRight size={18} className="shrink-0 text-ink-3" />
+        </button>
+      )}
+
+      {daysSheetOpen && activeRoutine && (
+        <RoutineDaysSheet
+          routine={activeRoutine}
+          days={routineDays ?? []}
+          onStartDay={handleStartDay}
+          onClose={() => setDaysSheetOpen(false)}
+        />
       )}
 
       {/* La frase va al final: es un cierre, no puede empujar hacia abajo la

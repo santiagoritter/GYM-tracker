@@ -147,3 +147,74 @@ export async function fetchAvailableDevices(): Promise<SpotifyDevice[] | null> {
     return null
   }
 }
+
+export interface SpotifyPlaylist {
+  id: string
+  uri: string
+  name: string
+  imageUrl: string | null
+  trackCount: number
+}
+
+/** Playlists del usuario (propias + seguidas) — requiere el scope
+ * `playlist-read-private`, ver spotifyAuth.ts. `null` si no hay token o
+ * falla la request; el sheet lo trata igual que "sin playlists". */
+export async function fetchUserPlaylists(): Promise<SpotifyPlaylist[] | null> {
+  const token = await getValidAccessToken()
+  if (!token) return null
+  try {
+    const res = await fetch('https://api.spotify.com/v1/me/playlists?limit=50', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!res.ok) return null
+    const data = (await res.json()) as {
+      items: {
+        id: string
+        uri: string
+        name: string
+        images: { url: string }[]
+        tracks: { total: number }
+      }[]
+    }
+    return data.items.map((p) => ({
+      id: p.id,
+      uri: p.uri,
+      name: p.name,
+      imageUrl: p.images[0]?.url ?? null,
+      trackCount: p.tracks.total,
+    }))
+  } catch {
+    return null
+  }
+}
+
+/** Arranca la reproducción de una playlist (u otro `context_uri`) —
+ * distinto de `sendPlaybackCommand`: ese comanda lo que ya está sonando,
+ * esto cambia QUÉ suena. */
+export async function playContext(
+  contextUri: string,
+  deviceId?: string
+): Promise<PlaybackCommandResult> {
+  const token = await getValidAccessToken()
+  if (!token) return 'reauth-required'
+
+  const query = deviceId ? `?device_id=${encodeURIComponent(deviceId)}` : ''
+  try {
+    const res = await fetch(`https://api.spotify.com/v1/me/player/play${query}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ context_uri: contextUri }),
+    })
+    if (res.status === 204) return 'ok'
+    if (res.status === 401) return 'reauth-required'
+    if (res.status === 404) return 'no-device'
+    if (res.status === 403) {
+      const body = (await res.json().catch(() => null)) as { error?: { reason?: string } } | null
+      if (body?.error?.reason === 'PREMIUM_REQUIRED') return 'premium-required'
+      return 'no-device'
+    }
+    return 'error'
+  } catch {
+    return 'error'
+  }
+}
