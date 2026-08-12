@@ -86,15 +86,21 @@ const COMMAND_ENDPOINTS: Record<'play' | 'pause' | 'next' | 'previous', { method
   previous: { method: 'POST', path: 'previous' },
 }
 
+/** `deviceId`: fuerza el comando a un dispositivo puntual en vez del que
+ * Spotify considera "activo" — hace falta para reanudar cuando Spotify
+ * soltó esa marca por la pausa (ver `fetchAvailableDevices`) pero la app
+ * sigue abierta ahí y puede volver a tomar la reproducción. */
 export async function sendPlaybackCommand(
-  action: 'play' | 'pause' | 'next' | 'previous'
+  action: 'play' | 'pause' | 'next' | 'previous',
+  deviceId?: string
 ): Promise<PlaybackCommandResult> {
   const token = await getValidAccessToken()
   if (!token) return 'reauth-required'
 
   const { method, path } = COMMAND_ENDPOINTS[action]
+  const query = deviceId ? `?device_id=${encodeURIComponent(deviceId)}` : ''
   try {
-    const res = await fetch(`https://api.spotify.com/v1/me/player/${path}`, {
+    const res = await fetch(`https://api.spotify.com/v1/me/player/${path}${query}`, {
       method,
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -109,5 +115,35 @@ export async function sendPlaybackCommand(
     return 'error'
   } catch {
     return 'error'
+  }
+}
+
+export interface SpotifyDevice {
+  id: string
+  name: string
+  isActive: boolean
+}
+
+/**
+ * `/me/player` reporta 204 (sin dispositivo) bastante antes de que
+ * Spotify realmente se haya "ido" — con solo pausar, algunos celulares
+ * sueltan la marca de "dispositivo activo" en pocos segundos aunque la
+ * app siga abierta y lista para retomar. Este endpoint lista los
+ * dispositivos conocidos aunque ninguno esté activo — sirve para
+ * ofrecer "reanudar acá" en vez de mandar al usuario a destrabarlo a
+ * mano desde Spotify.
+ */
+export async function fetchAvailableDevices(): Promise<SpotifyDevice[] | null> {
+  const token = await getValidAccessToken()
+  if (!token) return null
+  try {
+    const res = await fetch('https://api.spotify.com/v1/me/player/devices', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!res.ok) return null
+    const data = (await res.json()) as { devices: { id: string; name: string; is_active: boolean }[] }
+    return data.devices.map((d) => ({ id: d.id, name: d.name, isActive: d.is_active }))
+  } catch {
+    return null
   }
 }

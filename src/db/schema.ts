@@ -251,17 +251,32 @@ export async function seedIfEmpty(): Promise<void> {
   await db.exercises.bulkPut(EXERCISES_SEED)
 }
 
-/** Perfil por defecto para un usuario recién autenticado. */
+/**
+ * Perfil por defecto para un usuario recién autenticado.
+ *
+ * El get+add corre en una sola transacción a propósito: en un dispositivo
+ * nuevo, el login/recuperación de contraseña dispara `runSync()` (ver
+ * main.tsx) que en paralelo baja el perfil real del servidor y lo escribe
+ * local con `put()` — sin esta transacción, esta función podía ver "no
+ * hay perfil" un instante antes de que el pull lo escribiera, y su propio
+ * `add()` chocaba contra esa fila que acababa de aparecer
+ * (`ConstraintError`, visto en producción al recuperar contraseña desde
+ * un navegador donde la cuenta nunca había entrado). Una transacción
+ * Dexie sobre la misma tabla serializa ambas escrituras, así que ya no
+ * pueden pisarse.
+ */
 export async function ensureProfile(userId: string): Promise<void> {
-  const profile = await db.profile.get(userId)
-  if (!profile) {
-    // updatedAt/dirty los sella el hook `creating` de syncHooks.ts
-    await db.profile.add({
-      id: userId,
-      units: 'kg',
-      restTimerDefault: 90,
-      onboardingComplete: 0,
-      calorieTrackingEnabled: 1,
-    } as LocalProfile)
-  }
+  await db.transaction('rw', db.profile, async () => {
+    const profile = await db.profile.get(userId)
+    if (!profile) {
+      // updatedAt/dirty los sella el hook `creating` de syncHooks.ts
+      await db.profile.add({
+        id: userId,
+        units: 'kg',
+        restTimerDefault: 90,
+        onboardingComplete: 0,
+        calorieTrackingEnabled: 1,
+      } as LocalProfile)
+    }
+  })
 }
