@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import { Plus, X } from 'lucide-react'
 import Portal from '@/components/ui/Portal'
+import { useSheetDrag } from '@/hooks/useSheetDrag'
 import { db } from '@/db/schema'
 import { nowIso, uid } from '@/lib/utils'
 import { toast } from '@/stores/toastStore'
@@ -30,6 +31,7 @@ export default function CalorieAddSheet({
   const [kcalInput, setKcalInput] = useState('')
   const [labelInput, setLabelInput] = useState('')
   const reduced = useReducedMotion()
+  const { panelDragProps, handleDragProps } = useSheetDrag(onClose)
 
   const handleAdd = async () => {
     const kcal = Number(kcalInput)
@@ -57,10 +59,11 @@ export default function CalorieAddSheet({
         initial="hidden"
         animate="visible"
         variants={reduced ? sheetPanelVariantsReduced : sheetPanelVariants}
+        {...panelDragProps}
         className="fixed bottom-0 left-1/2 z-50 w-full max-w-lg rounded-t-3xl bg-surface shadow-float"
       >
         <motion.div variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}>
-          <div className="flex justify-center pt-3 pb-1">
+          <div className="flex justify-center pt-3 pb-1" {...handleDragProps}>
             <div className="h-1 w-10 rounded-full bg-line-2" />
           </div>
 

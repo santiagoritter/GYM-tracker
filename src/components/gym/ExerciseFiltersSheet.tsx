@@ -3,6 +3,7 @@ import { X } from 'lucide-react'
 import type { Equipment, MuscleGroup } from '@/types'
 import { MUSCLE_LABELS } from '@/components/gym/MuscleChip'
 import Portal from '@/components/ui/Portal'
+import { useSheetDrag } from '@/hooks/useSheetDrag'
 import { EQUIPMENT_FILTERS, EQUIPMENT_LABELS, MUSCLE_FILTERS } from '@/lib/exerciseFilters'
 import {
   sheetItemVariants,
@@ -35,6 +36,7 @@ export default function ExerciseFiltersSheet({
   onClose: () => void
 }) {
   const reduced = useReducedMotion()
+  const { panelDragProps, handleDragProps } = useSheetDrag(onClose)
   const hasFilters = muscle !== null || equipment !== null
 
   return (
@@ -45,10 +47,11 @@ export default function ExerciseFiltersSheet({
         initial="hidden"
         animate="visible"
         variants={reduced ? sheetPanelVariantsReduced : sheetPanelVariants}
+        {...panelDragProps}
         className="fixed bottom-0 left-1/2 z-50 flex max-h-[85vh] w-full max-w-lg flex-col rounded-t-3xl bg-surface shadow-float"
       >
         <motion.div variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}>
-          <div className="flex justify-center pt-3 pb-1">
+          <div className="flex justify-center pt-3 pb-1" {...handleDragProps}>
             <div className="h-1 w-10 rounded-full bg-line-2" />
           </div>
 

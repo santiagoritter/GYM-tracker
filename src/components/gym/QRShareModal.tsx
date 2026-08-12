@@ -4,6 +4,7 @@ import { Copy, Download, X } from 'lucide-react'
 import { buildPayload, encodePayload, generateQRDataUrl } from '@/lib/qr'
 import type { Routine } from '@/types'
 import Portal from '@/components/ui/Portal'
+import { useSheetDrag } from '@/hooks/useSheetDrag'
 import {
   sheetItemVariants,
   sheetItemVariantsReduced,
@@ -18,6 +19,7 @@ export function QRShareModal({ routine, onClose }: { routine: Routine; onClose: 
   const [encoded, setEncoded] = useState('')
   const [tooBig, setTooBig] = useState(false)
   const reduced = useReducedMotion()
+  const { panelDragProps, handleDragProps } = useSheetDrag(onClose)
 
   useEffect(() => {
     let cancelled = false
@@ -43,11 +45,13 @@ export function QRShareModal({ routine, onClose }: { routine: Routine; onClose: 
           initial="hidden"
           animate="visible"
           variants={reduced ? sheetPanelVariantsFlexReduced : sheetPanelVariantsFlex}
+          {...panelDragProps}
           className="w-full max-w-lg rounded-t-3xl border-t border-line-2 bg-surface p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
         >
           <motion.div
             variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}
             className="mb-4 flex items-center justify-between"
+            {...handleDragProps}
           >
             <h2 className="text-lg font-bold">Compartir rutina</h2>
             <button onClick={onClose} className="rounded-lg p-2 text-ink-2">

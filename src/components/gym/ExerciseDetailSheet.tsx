@@ -23,6 +23,7 @@ import MuscleBodySVG from './MuscleBodySVG'
 import EquipmentIcon from './EquipmentIcon'
 import AddToRoutineSheet from './AddToRoutineSheet'
 import Portal from '@/components/ui/Portal'
+import { useSheetDrag } from '@/hooks/useSheetDrag'
 import { cn } from '@/lib/utils'
 
 interface Props {
@@ -186,6 +187,7 @@ function SetupSection({ exercise }: { exercise: Exercise }) {
 export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
   const info = exercise ? getExerciseInfo(exercise.id) : null
   const reduced = useReducedMotion()
+  const { panelDragProps, handleDragProps } = useSheetDrag(onClose)
   const [addingToRoutine, setAddingToRoutine] = useState(false)
 
   // Cerrar con Escape
@@ -231,11 +233,12 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
         initial="hidden"
         animate="visible"
         variants={reduced ? sheetPanelVariantsReduced : sheetPanelVariants}
+        {...panelDragProps}
         className="fixed bottom-0 left-1/2 z-50 w-full max-w-lg rounded-t-3xl bg-surface shadow-float overflow-hidden"
       >
         {/* Drag handle + header + badges: primer grupo del stagger */}
         <motion.div variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}>
-          <div className="flex justify-center pt-3 pb-1">
+          <div className="flex justify-center pt-3 pb-1" {...handleDragProps}>
             <div className="h-1 w-10 rounded-full bg-line-2" />
           </div>
 

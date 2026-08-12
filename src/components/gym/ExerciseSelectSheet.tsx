@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import { Check, Search, X } from 'lucide-react'
 import Portal from '@/components/ui/Portal'
+import { useSheetDrag } from '@/hooks/useSheetDrag'
 import type { Exercise } from '@/types'
 import { cn } from '@/lib/utils'
 import {
@@ -29,6 +30,7 @@ export default function ExerciseSelectSheet({
   onClose: () => void
 }) {
   const reduced = useReducedMotion()
+  const { panelDragProps, handleDragProps } = useSheetDrag(onClose)
   const [query, setQuery] = useState('')
 
   const filtered = useMemo(() => {
@@ -45,10 +47,11 @@ export default function ExerciseSelectSheet({
         initial="hidden"
         animate="visible"
         variants={reduced ? sheetPanelVariantsReduced : sheetPanelVariants}
+        {...panelDragProps}
         className="fixed bottom-0 left-1/2 z-50 flex max-h-[80vh] w-full max-w-lg flex-col rounded-t-3xl bg-surface shadow-float"
       >
         <motion.div variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}>
-          <div className="flex justify-center pt-3 pb-1">
+          <div className="flex justify-center pt-3 pb-1" {...handleDragProps}>
             <div className="h-1 w-10 rounded-full bg-line-2" />
           </div>
 
