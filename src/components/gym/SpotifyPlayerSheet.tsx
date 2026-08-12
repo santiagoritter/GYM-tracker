@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, useReducedMotion } from 'motion/react'
 import { ListMusic, Music, Pause, Play, SkipBack, SkipForward, X } from 'lucide-react'
 import {
@@ -6,6 +7,7 @@ import {
   playContext,
   sendPlaybackCommand,
   type PlaybackState,
+  type PlaylistsResult,
   type SpotifyPlaylist,
 } from '@/lib/spotifyPlayer'
 import { hapticTick } from '@/lib/native'
@@ -35,16 +37,17 @@ export default function SpotifyPlayerSheet({
   playback: PlaybackState
   onClose: () => void
 }) {
+  const navigate = useNavigate()
   const reduced = useReducedMotion()
   const { panelDragProps, handleDragProps } = useSheetDrag(onClose)
-  const [playlists, setPlaylists] = useState<SpotifyPlaylist[] | null>(null)
+  const [playlistsResult, setPlaylistsResult] = useState<PlaylistsResult | null>(null)
   const [loadingUri, setLoadingUri] = useState<string | null>(null)
   const [isPlaying, setIsPlaying] = useState(playback.isPlaying)
 
   useEffect(() => {
     let cancelled = false
     fetchUserPlaylists().then((result) => {
-      if (!cancelled) setPlaylists(result ?? [])
+      if (!cancelled) setPlaylistsResult(result)
     })
     return () => {
       cancelled = true
@@ -154,13 +157,44 @@ export default function SpotifyPlayerSheet({
             <ListMusic size={15} /> Tus playlists
           </p>
 
-          {playlists === null ? (
+          {playlistsResult === null ? (
             <p className="py-6 text-center text-sm text-ink-3">Cargando…</p>
-          ) : playlists.length === 0 ? (
+          ) : playlistsResult.kind === 'missing-scope' ? (
+            <div className="flex flex-col items-center gap-2 py-6 text-center">
+              <p className="text-sm text-ink-2">
+                Tu conexión con Spotify es de antes de esta función y no tiene el permiso
+                para ver playlists.
+              </p>
+              <button
+                onClick={() => {
+                  onClose()
+                  navigate('/ajustes')
+                }}
+                className="text-sm font-semibold text-accent"
+              >
+                Reconectar en Ajustes
+              </button>
+            </div>
+          ) : playlistsResult.kind === 'reauth-required' ? (
+            <div className="flex flex-col items-center gap-2 py-6 text-center">
+              <p className="text-sm text-ink-2">Tu sesión de Spotify venció.</p>
+              <button
+                onClick={() => {
+                  onClose()
+                  navigate('/ajustes')
+                }}
+                className="text-sm font-semibold text-accent"
+              >
+                Reconectar en Ajustes
+              </button>
+            </div>
+          ) : playlistsResult.kind === 'error' ? (
+            <p className="py-6 text-center text-sm text-ink-3">No se pudieron cargar las playlists.</p>
+          ) : playlistsResult.playlists.length === 0 ? (
             <p className="py-6 text-center text-sm text-ink-3">No encontramos playlists en tu cuenta.</p>
           ) : (
             <div className="space-y-1">
-              {playlists.map((playlist) => (
+              {playlistsResult.playlists.map((playlist) => (
                 <button
                   key={playlist.id}
                   onClick={() => handlePlaylist(playlist)}
