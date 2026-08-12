@@ -77,17 +77,28 @@ export default function LogPastWorkout() {
     const entries = await db.routineExercises.where('dayId').equals(day.id).sortBy('exerciseOrder')
     const existingIds = new Set(draftExercises.map((e) => e.exerciseId))
 
+    // Historial completo del usuario, traído una sola vez antes del loop
+    // (no por ejercicio): recommend() lo usa como fallback para ejercicios
+    // sin marcas propias, filtrando acá adentro por lift de referencia.
+    const allHistory = await db.workoutSets
+      .where('userId')
+      .equals(userId)
+      .filter((s) => s.completed === 1 && s.isWarmup === 0)
+      .toArray()
+    const historyByExercise = new Map<string, typeof allHistory>()
+    for (const s of allHistory) {
+      const list = historyByExercise.get(s.exerciseId)
+      if (list) list.push(s)
+      else historyByExercise.set(s.exerciseId, [s])
+    }
+
     const newDrafts: DraftExercise[] = []
     for (const entry of entries) {
       if (existingIds.has(entry.exerciseId)) continue
       const exercise = exerciseMap.get(entry.exerciseId)
       if (!exercise) continue
-      const history = await db.workoutSets
-        .where('exerciseId')
-        .equals(entry.exerciseId)
-        .filter((s) => s.userId === userId && s.completed === 1 && s.isWarmup === 0)
-        .toArray()
-      const rec = recommend(exercise, profile, history)
+      const history = historyByExercise.get(entry.exerciseId) ?? []
+      const rec = recommend(exercise, profile, history, allHistory)
       newDrafts.push({
         exerciseId: entry.exerciseId,
         sets: Array.from({ length: entry.setsTarget }, () => ({

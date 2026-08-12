@@ -226,13 +226,22 @@ export async function startWorkoutFromDay(userId: string, dayId: string): Promis
     (await db.exercises.bulkGet(exerciseIds)).filter(Boolean).map((e) => [e!.id, e!])
   )
 
+  // Historial completo del usuario, traído una sola vez (no por ejercicio
+  // dentro del loop): recommend() lo usa como fallback para ejercicios sin
+  // marcas propias, filtrando acá adentro por lift de referencia.
+  const allHistory = await db.workoutSets
+    .filter((s) => s.completed === 1 && s.isWarmup === 0 && ownWorkoutIds.has(s.workoutId))
+    .toArray()
+  const historyByExercise = new Map<string, WorkoutSet[]>()
+  for (const s of allHistory) {
+    const list = historyByExercise.get(s.exerciseId)
+    if (list) list.push(s)
+    else historyByExercise.set(s.exerciseId, [s])
+  }
+
   const sets: WorkoutSet[] = []
   for (const entry of entries) {
-    const history = await db.workoutSets
-      .where('exerciseId')
-      .equals(entry.exerciseId)
-      .filter((s) => s.completed === 1 && s.isWarmup === 0 && ownWorkoutIds.has(s.workoutId))
-      .toArray()
+    const history = historyByExercise.get(entry.exerciseId) ?? []
 
     const exercise = exerciseMap.get(entry.exerciseId)
     let suggestedKg = 0
@@ -249,7 +258,7 @@ export async function startWorkoutFromDay(userId: string, dayId: string): Promis
         lastSets.length >= entry.setsTarget && lastSets.every((s) => s.reps >= entry.repsMax)
       suggestedKg = progressWeight(topWeight, metTarget, exercise.equipment)
     } else if (exercise) {
-      suggestedKg = recommend(exercise, profile, []).weightKg
+      suggestedKg = recommend(exercise, profile, [], allHistory).weightKg
     }
 
     for (let n = 1; n <= entry.setsTarget; n++) {

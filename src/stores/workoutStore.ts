@@ -87,16 +87,21 @@ export const useWorkoutStore = create<WorkoutStore>()(
         const exercise = await db.exercises.get(exerciseId)
         if (!workout || !exercise) return
 
-        const [profile, history] = await Promise.all([
+        const [profile, history, otherHistory] = await Promise.all([
           db.profile.get(workout.userId),
           db.workoutSets
             .where('exerciseId')
             .equals(exerciseId)
             .filter((s) => s.userId === workout.userId && s.completed === 1 && s.isWarmup === 0)
             .toArray(),
+          db.workoutSets
+            .where('userId')
+            .equals(workout.userId)
+            .filter((s) => s.exerciseId !== exerciseId && s.completed === 1 && s.isWarmup === 0)
+            .toArray(),
         ])
 
-        const rec = recommend(exercise, profile, history)
+        const rec = recommend(exercise, profile, history, otherHistory)
         for (let i = 0; i < rec.sets; i++) {
           await get().addSet(workoutId, exerciseId, {
             reps: rec.repsMin,
