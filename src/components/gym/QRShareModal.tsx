@@ -3,14 +3,9 @@ import { motion, useReducedMotion } from 'motion/react'
 import { Copy, Download, X } from 'lucide-react'
 import { buildShareUrl, generateQRDataUrl, shareRoutine } from '@/lib/qr'
 import type { Routine } from '@/types'
-import Portal from '@/components/ui/Portal'
+import ResponsiveSheet from '@/components/ui/ResponsiveSheet'
 import { useSheetDrag } from '@/hooks/useSheetDrag'
-import {
-  sheetItemVariants,
-  sheetItemVariantsReduced,
-  sheetPanelVariantsFlex,
-  sheetPanelVariantsFlexReduced,
-} from '@/lib/motionVariants'
+import { sheetItemVariants, sheetItemVariantsReduced } from '@/lib/motionVariants'
 import { cn } from '@/lib/utils'
 
 export function QRShareModal({ routine, onClose }: { routine: Routine; onClose: () => void }) {
@@ -43,30 +38,26 @@ export function QRShareModal({ routine, onClose }: { routine: Routine; onClose: 
   }, [routine, includeWeights])
 
   return (
-    <Portal>
-      <div className="fixed inset-0 z-50 flex items-end justify-center bg-bg/80 backdrop-blur-sm animate-glass-in">
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={reduced ? sheetPanelVariantsFlexReduced : sheetPanelVariantsFlex}
-          {...panelDragProps}
-          className="w-full max-w-lg rounded-t-3xl border-t border-line-2 bg-surface p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
-        >
-          <motion.div
-            variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}
-            className="mb-4 flex items-center justify-between"
-            {...handleDragProps}
-          >
-            <h2 className="text-lg font-bold">Compartir rutina</h2>
-            <button onClick={onClose} className="rounded-lg p-2 text-ink-2">
-              <X size={22} />
-            </button>
-          </motion.div>
+    <ResponsiveSheet
+      onClose={onClose}
+      dragProps={panelDragProps}
+      panelClassName="border-t border-line-2 p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
+    >
+      <motion.div
+        variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}
+        className="mb-4 flex items-center justify-between"
+        {...handleDragProps}
+      >
+        <h2 className="text-lg font-bold">Compartir rutina</h2>
+        <button onClick={onClose} className="rounded-lg p-2 text-ink-2">
+          <X size={22} />
+        </button>
+      </motion.div>
 
-          <motion.div
-            variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}
-            className="flex flex-col items-center gap-4"
-          >
+      <motion.div
+        variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}
+        className="flex flex-col items-center gap-4"
+      >
             {error ? (
               <div className="flex h-64 w-64 flex-col items-center justify-center gap-2 rounded-2xl bg-surface-2 p-6 text-center">
                 <p className="text-sm text-danger">{error}</p>
@@ -121,8 +112,6 @@ export function QRShareModal({ routine, onClose }: { routine: Routine; onClose: 
               </button>
             </div>
           </motion.div>
-        </motion.div>
-      </div>
-    </Portal>
+    </ResponsiveSheet>
   )
 }

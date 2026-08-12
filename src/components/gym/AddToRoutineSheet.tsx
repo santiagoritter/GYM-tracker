@@ -8,15 +8,10 @@ import { addExerciseToDay, createRoutine } from '@/db/routines'
 import { softDelete } from '@/db/mutations'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useSheetDrag } from '@/hooks/useSheetDrag'
-import Portal from '@/components/ui/Portal'
+import ResponsiveSheet from '@/components/ui/ResponsiveSheet'
 import { toast } from '@/stores/toastStore'
 import type { Exercise, RoutineDay } from '@/types'
-import {
-  sheetItemVariants,
-  sheetItemVariantsReduced,
-  sheetPanelVariants,
-  sheetPanelVariantsReduced,
-} from '@/lib/motionVariants'
+import { sheetItemVariants, sheetItemVariantsReduced } from '@/lib/motionVariants'
 
 /**
  * "Agregar a rutina" al estilo de "Agregar a playlist" de Spotify:
@@ -112,30 +107,18 @@ export default function AddToRoutineSheet({
   }
 
   return (
-    <Portal>
-      {/* Sin backdrop-blur ni su animación (`animate-glass-in` también
-          anima `backdrop-filter`, no solo opacity): este sheet se abre
-          ANIDADO sobre ExerciseDetailSheet, que ya tiene su propio
-          overlay `backdrop-blur-sm` de pantalla completa. Apilar una
-          segunda capa de `backdrop-filter` (más los `backdrop-blur-xs`
-          de las insignias de la lista de Ejercicios, detrás de todo) es
-          carga extra de GPU sin beneficio visual — el fondo ya está
-          desenfocado por la capa de abajo — y en Android de gama media
-          agota las capas de composición del navegador y tira la
-          pestaña (pantalla negra reportada). Mismo problema de costo de
-          backdrop-blur ya documentado para esta pantalla; acá el fix es
-          no apilarlo dos veces. Un scrim sólido, sin animar, alcanza
-          igual — el sheet ya entra con su propio spring. */}
-      <div className="fixed inset-0 z-50 bg-black/70" onClick={onClose} />
-
-      <motion.div
-        initial="hidden"
-        animate="visible"
-        variants={reduced ? sheetPanelVariantsReduced : sheetPanelVariants}
-        {...panelDragProps}
-        className="fixed bottom-0 left-1/2 z-50 flex max-h-[80vh] w-full max-w-lg flex-col rounded-t-3xl bg-surface shadow-float"
-      >
-        <motion.div variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}>
+    // `nested`: este sheet se abre ANIDADO sobre ExerciseDetailSheet, que
+    // ya tiene su propio overlay con blur — apilar un segundo
+    // `backdrop-filter` es carga extra de GPU sin beneficio visual y en
+    // Android de gama media agota las capas de composición (pantalla
+    // negra ya reportada y resuelta una vez). Ver ResponsiveSheet.tsx.
+    <ResponsiveSheet
+      onClose={onClose}
+      dragProps={panelDragProps}
+      nested
+      panelClassName="flex max-h-[80vh] flex-col"
+    >
+      <motion.div variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}>
           <div className="flex justify-center pt-3 pb-1" {...handleDragProps}>
             <div className="h-1 w-10 rounded-full bg-line-2" />
           </div>
@@ -242,7 +225,6 @@ export default function AddToRoutineSheet({
             </button>
           )}
         </motion.div>
-      </motion.div>
-    </Portal>
+    </ResponsiveSheet>
   )
 }

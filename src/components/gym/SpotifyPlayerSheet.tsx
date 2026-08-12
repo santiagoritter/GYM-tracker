@@ -12,14 +12,9 @@ import {
 } from '@/lib/spotifyPlayer'
 import { hapticTick } from '@/lib/native'
 import { toast } from '@/stores/toastStore'
-import Portal from '@/components/ui/Portal'
+import ResponsiveSheet from '@/components/ui/ResponsiveSheet'
 import { useSheetDrag } from '@/hooks/useSheetDrag'
-import {
-  sheetItemVariants,
-  sheetItemVariantsReduced,
-  sheetPanelVariants,
-  sheetPanelVariantsReduced,
-} from '@/lib/motionVariants'
+import { sheetItemVariants, sheetItemVariantsReduced } from '@/lib/motionVariants'
 import { cn } from '@/lib/utils'
 
 /**
@@ -83,18 +78,12 @@ export default function SpotifyPlayerSheet({
   }
 
   return (
-    <Portal>
-      <div className="fixed inset-0 z-50 bg-bg/80 backdrop-blur-sm animate-glass-in" onClick={onClose} />
-
-      <motion.div
-        initial="hidden"
-        animate="visible"
-        variants={reduced ? sheetPanelVariantsReduced : sheetPanelVariants}
-        {...panelDragProps}
-        className="fixed bottom-0 left-1/2 z-50 flex w-full max-w-lg flex-col overflow-hidden rounded-t-3xl bg-surface shadow-float"
-        style={{ maxHeight: '85vh' }}
-      >
-        <motion.div variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}>
+    <ResponsiveSheet
+      onClose={onClose}
+      dragProps={panelDragProps}
+      panelClassName="flex max-h-[85vh] flex-col overflow-hidden"
+    >
+      <motion.div variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}>
           <div className="flex justify-center pt-3 pb-1" {...handleDragProps}>
             <div className="h-1 w-10 rounded-full bg-line-2" />
           </div>
@@ -220,7 +209,6 @@ export default function SpotifyPlayerSheet({
             </div>
           )}
         </motion.div>
-      </motion.div>
-    </Portal>
+    </ResponsiveSheet>
   )
 }

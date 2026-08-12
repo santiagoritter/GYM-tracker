@@ -1,17 +1,12 @@
 import { useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import { X, CalendarDays, Download } from 'lucide-react'
-import Portal from '@/components/ui/Portal'
+import ResponsiveSheet from '@/components/ui/ResponsiveSheet'
 import { useSheetDrag } from '@/hooks/useSheetDrag'
 import { ROUTINE_TEMPLATES, type RoutineTemplate } from '@/data/routineTemplates'
 import { importPayload } from '@/lib/qr'
 import { toast } from '@/stores/toastStore'
-import {
-  sheetItemVariants,
-  sheetItemVariantsReduced,
-  sheetPanelVariants,
-  sheetPanelVariantsReduced,
-} from '@/lib/motionVariants'
+import { sheetItemVariants, sheetItemVariantsReduced } from '@/lib/motionVariants'
 import { cn } from '@/lib/utils'
 
 const LEVEL_COLOR: Record<RoutineTemplate['level'], string> = {
@@ -52,17 +47,12 @@ export default function TemplatePicker({
   }
 
   return (
-    <Portal>
-      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm animate-glass-in" onClick={onClose} />
-
-      <motion.div
-        initial="hidden"
-        animate="visible"
-        variants={reduced ? sheetPanelVariantsReduced : sheetPanelVariants}
-        {...panelDragProps}
-        className="fixed bottom-0 left-1/2 z-50 flex max-h-[88vh] w-full max-w-lg flex-col rounded-t-3xl bg-surface shadow-float"
-      >
-        <motion.div variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}>
+    <ResponsiveSheet
+      onClose={onClose}
+      dragProps={panelDragProps}
+      panelClassName="flex max-h-[88vh] flex-col"
+    >
+      <motion.div variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}>
           <div className="flex justify-center pt-3 pb-1" {...handleDragProps}>
             <div className="h-1 w-10 rounded-full bg-line-2" />
           </div>
@@ -123,7 +113,6 @@ export default function TemplatePicker({
             </div>
           ))}
         </motion.div>
-      </motion.div>
-    </Portal>
+    </ResponsiveSheet>
   )
 }
