@@ -1,13 +1,23 @@
-// Pipeline de QR según docs/07-COMPARTIR-QR.md:
-// rutina → payload mínimo → JSON → lz-string → "GYMTR:<datos>" → imagen QR
-// Sin servidor: todo el contenido viaja dentro del QR.
+// Pipeline de QR: rutina → payload mínimo → se sube a Supabase
+// (shared_routines) → el QR lleva solo un código corto (o la URL de
+// importación con ese código) → el que escanea resuelve el código contra
+// el servidor. Antes (ver docs/07-COMPARTIR-QR.md) el payload entero
+// viajaba comprimido adentro del QR — para una rutina con varios días y
+// ejercicios eso generaba un QR de alta densidad que muchos celulares no
+// leían bien. `decodePayload`/`encodePayload` (el formato viejo
+// "GYMTR:<datos>") se mantienen solo para poder seguir leyendo códigos ya
+// impresos/guardados de antes de este cambio.
 import LZString from 'lz-string'
 import QRCode from 'qrcode'
 import { db } from '@/db/schema'
 import { workoutsFor } from '@/db/scoped'
+import { supabase } from '@/lib/supabaseClient'
 import type { Routine, RoutineDay, RoutineExercise } from '@/types'
 
 const PREFIX = 'GYMTR:'
+// Sin 0/O/1/I/L: se puede transcribir a mano sin ambigüedad si hace falta.
+const CODE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
+const CODE_LENGTH = 8
 
 export interface QRExercise {
   id: string
@@ -102,6 +112,58 @@ export function decodePayload(raw: string): QRPayload | null {
   } catch {
     return null
   }
+}
+
+function generateShareCode(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(CODE_LENGTH))
+  return Array.from(bytes, (b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join('')
+}
+
+/** Sube el payload a `shared_routines` y devuelve el código corto que lleva
+ * el QR — reintenta si el código sorteado ya existe (colisión, altamente
+ * improbable con 8 caracteres de este alfabeto, pero barato de cubrir). */
+export async function shareRoutine(routine: Routine, options: BuildOptions): Promise<string> {
+  if (!supabase) throw new Error('Hace falta conexión para compartir una rutina.')
+  const payload = await buildPayload(routine, options)
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const code = generateShareCode()
+    const { error } = await supabase
+      .from('shared_routines')
+      .insert({ code, payload, created_by: routine.userId })
+    if (!error) return code
+    if (error.code !== '23505') throw new Error(error.message) // no es choque de PK
+  }
+  throw new Error('No se pudo generar un código único, probá de nuevo.')
+}
+
+/** URL que abre directamente la importación — sirve para que cualquier
+ * cámara (no solo la de la app) pueda escanear el QR y llegar acá. */
+export function buildShareUrl(code: string): string {
+  return `${window.location.origin}${import.meta.env.BASE_URL}importar/${code}`
+}
+
+/** Saca el código de lo que se escaneó/pegó: puede ser la URL de share, un
+ * código pelado, o (formato viejo) un payload "GYMTR:" ya local. */
+export function extractShareCode(raw: string): string | null {
+  const trimmed = raw.trim()
+  const match = trimmed.match(/\/importar\/([2-9A-HJ-KM-NP-Z]{8})\b/i)
+  if (match) return match[1].toUpperCase()
+  if (/^[2-9A-HJ-KM-NP-Z]{8}$/i.test(trimmed)) return trimmed.toUpperCase()
+  return null
+}
+
+/** Resuelve un código contra `shared_routines`. `null` si no existe, no hay
+ * conexión, o no está configurado Supabase. */
+export async function resolveShareCode(code: string): Promise<QRPayload | null> {
+  if (!supabase) return null
+  const { data, error } = await supabase
+    .from('shared_routines')
+    .select('payload')
+    .eq('code', code.toUpperCase())
+    .maybeSingle()
+  if (error || !data) return null
+  return data.payload as QRPayload
 }
 
 export async function generateQRDataUrl(data: string): Promise<string> {

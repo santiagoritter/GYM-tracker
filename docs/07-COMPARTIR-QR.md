@@ -1,8 +1,28 @@
 # Compartir Rutinas por QR
 
+> **Desactualizado desde que existe backend real (ver `docs/13`).** Este doc
+> describe el diseño original, "todo el payload adentro del QR, sin
+> servidor" — funcionaba, pero para una rutina con varios días y ejercicios
+> el QR resultante era demasiado denso para que muchos celulares lo
+> escanearan bien (la tabla de "Límites de capacidad" más abajo ya lo
+> anticipaba). Se reemplazó por un código corto: la rutina se sube a
+> `shared_routines` en Supabase (`supabase/migrations/0007_shared_routines.sql`)
+> y el QR lleva solo ese código (o la URL `/importar/:code`). El resto de
+> este archivo (nombres de funciones, formato del payload interno,
+> compresión LZ-String) sigue siendo fiel al código real en
+> `src/lib/qr.ts` — lo que cambió es únicamente *qué* viaja adentro del QR,
+> no el formato del payload en sí. Fuente de verdad: `src/lib/qr.ts`,
+> `src/components/gym/QRShareModal.tsx`, `src/components/gym/QRScanner.tsx`,
+> `src/pages/ImportRoutine.tsx`.
+
 ## Concepto
 
-Inspirado en apps de intercambio de objetos coleccionables: generar un QR que contiene la rutina completa codificada. La otra persona escanea, ve la previsualización y puede importar con un tap. Sin login, sin links, sin servidor requerido.
+Inspirado en apps de intercambio de objetos coleccionables: generar un QR
+con un código corto que apunta a la rutina. La otra persona escanea, ve la
+previsualización y puede importar con un tap. El payload completo (versión
+mínima del original, comprimido) vive en Supabase — hace falta conexión
+para compartir e importar, pero el QR en sí queda chico sin importar qué
+tan grande sea la rutina.
 
 ---
 

@@ -3,8 +3,11 @@
 Este documento describe lo que hay que hacer **a mano** en el dashboard de
 Supabase y en GitHub. El código de la app no puede hacer nada de esto por vos.
 
-> Estado: el esquema SQL está en `supabase/migrations/` (6 archivos — el 6º,
-> `calorie_entries`, se agregó después, ver §2) y la app ya se conecta:
+> Estado: el esquema SQL está en `supabase/migrations/` (7 archivos — el 6º,
+> `calorie_entries`, y el 7º, `shared_routines` — código corto para
+> compartir rutinas por QR en vez de meter todo el payload adentro, ver
+> `docs/07-COMPARTIR-QR.md` — se agregaron después, ver §2) y la app ya se
+> conecta:
 > `src/lib/supabaseAuth.ts` (auth real) y `src/lib/sync.ts` (push/pull). El
 > login usa un código de 6 dígitos vía Supabase Auth, no el link con
 > `{{ .TokenHash }}` que este doc planeaba originalmente — ver §3.3, cambió
@@ -33,7 +36,7 @@ Supabase y en GitHub. El código de la app no puede hacer nada de esto por vos.
 
 ## 2. Correr el SQL
 
-**SQL Editor → New query**, y ejecutá los seis archivos de
+**SQL Editor → New query**, y ejecutá los siete archivos de
 `supabase/migrations/` **en orden**:
 
 1. `0001_helpers.sql` — función de sellado + last-write-wins
@@ -44,6 +47,10 @@ Supabase y en GitHub. El código de la app no puede hacer nada de esto por vos.
 6. `0006_calorie_entries.sql` — registro de calorías (Dexie v10, Fase 21):
    se agregó después de las primeras cuatro migraciones, nunca había tenido
    tabla en Postgres hasta que se construyó el motor de sync de verdad.
+7. `0007_shared_routines.sql` — código corto para compartir rutinas por QR
+   (ver `docs/07-COMPARTIR-QR.md`): reemplaza meter la rutina entera
+   comprimida adentro del QR, que para rutinas grandes generaba un código
+   demasiado denso para escanear con cámara de celular.
 
 ### Verificación obligatoria
 
@@ -297,8 +304,8 @@ esconde en vez de mostrar algo que no puede andar.
 ## Checklist
 
 - [ ] Proyecto creado, URL y anon key anotadas
-- [ ] Los 6 SQL corridos en orden (incluye `0005_push_subscriptions.sql` y
-      `0006_calorie_entries.sql`)
+- [ ] Los 7 SQL corridos en orden (incluye `0005_push_subscriptions.sql`,
+      `0006_calorie_entries.sql` y `0007_shared_routines.sql`)
 - [ ] Advisors → Security sin warnings
 - [ ] Site URL y las 4 Redirect URLs
 - [ ] SMTP de Gmail configurado y probado
