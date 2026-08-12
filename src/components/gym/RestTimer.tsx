@@ -1,16 +1,16 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { FastForward, Plus } from 'lucide-react'
 import { useWorkoutStore } from '@/stores/workoutStore'
+import { useCountdown } from '@/hooks/useCountdown'
 import { cancelScheduledNotifications, hapticSuccess, notify } from '@/lib/native'
 import { REST_END_MESSAGES, getRandomMessage } from '@/lib/motivational'
 
 export function RestTimer() {
   const { restTimer, skipRest, extendRest } = useWorkoutStore()
-  const [remaining, setRemaining] = useState(0)
+  const endsAt = restTimer.endsAt
+  const remaining = useCountdown(endsAt)
   // Evita que un re-render dispare dos veces el aviso de fin
   const firedFor = useRef<number | null>(null)
-
-  const endsAt = restTimer.endsAt
 
   /**
    * Notificación programada con el sistema operativo.
@@ -33,23 +33,16 @@ export function RestTimer() {
     }
   }, [endsAt])
 
+  // Efectos secundarios de llegar a 0 (haptic, notificación web, avanzar
+  // el store) separados del propio conteo — useCountdown es puro display.
   useEffect(() => {
-    if (!endsAt) return
-    const tick = () => {
-      const left = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000))
-      setRemaining(left)
-      if (left === 0 && firedFor.current !== endsAt) {
-        firedFor.current = endsAt
-        hapticSuccess()
-        // En web, la notificación agendada no existe: se dispara acá.
-        notify('Descanso terminado', getRandomMessage(REST_END_MESSAGES).text)
-        skipRest()
-      }
-    }
-    tick()
-    const interval = setInterval(tick, 250)
-    return () => clearInterval(interval)
-  }, [endsAt, skipRest])
+    if (!endsAt || remaining !== 0 || firedFor.current === endsAt) return
+    firedFor.current = endsAt
+    hapticSuccess()
+    // En web, la notificación agendada no existe: se dispara acá.
+    notify('Descanso terminado', getRandomMessage(REST_END_MESSAGES).text)
+    skipRest()
+  }, [remaining, endsAt, skipRest])
 
   if (!endsAt) return null
 
