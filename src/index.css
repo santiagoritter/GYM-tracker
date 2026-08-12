@@ -187,6 +187,19 @@
   .btn-press {
     @apply transition-transform duration-75 active:scale-95;
   }
+
+  /* Ancho de columna para páginas de flujo/detalle (DESIGN.md §3): igual
+     a max-w-lg de siempre en mobile, un poco más de aire en desktop sin
+     llegar a multi-columna — esas páginas (Inicio, Progreso, panel de
+     usuarios) arman su propio grid, no usan esta clase. */
+  .content-width {
+    max-width: 32rem;
+  }
+  @media (min-width: 1024px) {
+    .content-width {
+      max-width: 48rem;
+    }
+  }
 }
 
 @layer base {

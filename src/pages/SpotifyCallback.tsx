@@ -42,7 +42,7 @@ export default function SpotifyCallback() {
   }, [])
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center gap-4 px-6 text-center">
+    <div className="mx-auto flex min-h-screen content-width flex-col items-center justify-center gap-4 px-6 text-center">
       {error ? (
         <>
           <AlertTriangle size={32} className="text-danger" />

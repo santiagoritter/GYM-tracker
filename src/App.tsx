@@ -1,6 +1,6 @@
 import { Suspense, lazy } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
-import Layout from '@/components/Layout'
+import AppShell from '@/components/AppShell'
 import { ProtectedRoute, AdminRoute } from '@/components/ProtectedRoute'
 import Home from '@/pages/Home'
 import Workout from '@/pages/Workout'
@@ -43,7 +43,7 @@ export default function App() {
 
       {/* App principal: requiere auth */}
       <Route element={<ProtectedRoute />}>
-        <Route element={<Layout />}>
+        <Route element={<AppShell />}>
           <Route path="/" element={<Home />} />
           <Route path="/rutinas" element={<Routines />} />
           <Route path="/ejercicios" element={<Exercises />} />
