@@ -6,6 +6,8 @@ import ErrorBoundary from '@/components/ErrorBoundary'
 import { db, seedIfEmpty } from '@/db/schema'
 import { installSyncHooks, setSyncUser } from '@/db/syncHooks'
 import { useAuthStore } from '@/stores/authStore'
+import { supabase } from '@/lib/supabaseClient'
+import type { UserRole } from '@/types'
 import { initNativeShell } from '@/lib/native'
 import { initPwaUpdate } from '@/lib/pwaUpdate'
 import { applyTheme, useThemeStore } from '@/stores/themeStore'
@@ -38,6 +40,22 @@ installSyncHooks(db)
 // también fuera del árbol de React (stores, helpers de db).
 setSyncUser(useAuthStore.getState().userId)
 useAuthStore.subscribe((state) => setSyncUser(state.userId))
+
+// Fuente de verdad de la sesión: Supabase, no cada pantalla de login por
+// separado. Dispara también con la sesión restaurada al recargar la
+// página (evento inicial de onAuthStateChange), así que reemplaza
+// también lo que antes hacía persist() de authStore para ese caso.
+if (supabase) {
+  supabase.auth.onAuthStateChange((_event, session) => {
+    if (session?.user) {
+      const role = (session.user.app_metadata?.role as UserRole | undefined) ?? 'user'
+      const name = (session.user.user_metadata?.name as string | undefined) ?? ''
+      useAuthStore.getState().setSession(session.user.id, role, name, session.user.email ?? '')
+    } else {
+      useAuthStore.getState().clearSession()
+    }
+  })
+}
 
 seedIfEmpty()
 

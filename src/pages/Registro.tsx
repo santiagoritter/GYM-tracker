@@ -1,21 +1,16 @@
 import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Dumbbell, Eye, EyeOff, Mail, RefreshCw } from 'lucide-react'
-import { registerUser, verifyEmailCode, resendVerificationEmail } from '@/lib/auth'
-import { useAuthStore } from '@/stores/authStore'
-import type { User } from '@/types'
+import { signUp, verifySignupCode, resendSignupCode } from '@/lib/supabaseAuth'
+import { ensureProfile } from '@/db/schema'
+import { migrateLocalUserToSupabase } from '@/db/migrateLocalUserToSupabase'
 
 type Step = 'form' | 'verify'
 
 export default function Registro() {
   const navigate = useNavigate()
-  const setSession = useAuthStore((s) => s.setSession)
 
   const [step, setStep] = useState<Step>('form')
-  const [pendingUser, setPendingUser] = useState<User | null>(null)
-  // Solo se llena cuando no hay EmailJS configurado — evita que el usuario
-  // tenga que abrir la consola del navegador para encontrar el código.
-  const [devCode, setDevCode] = useState<string | null>(null)
 
   // Formulario
   const [name, setName] = useState('')
@@ -40,9 +35,7 @@ export default function Registro() {
     if (password !== confirm) { setError('Las contraseñas no coinciden.'); return }
     setLoading(true)
     try {
-      const { user, devCode } = await registerUser(email, password, name.trim())
-      setPendingUser(user)
-      setDevCode(devCode ?? null)
+      await signUp(email, password, name.trim())
       setStep('verify')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al registrarse.')
@@ -68,12 +61,16 @@ export default function Registro() {
   }
 
   const verifyCode = async (fullCode: string) => {
-    if (!pendingUser) return
     setError('')
     setLoading(true)
     try {
-      await verifyEmailCode(pendingUser.id, fullCode)
-      setSession(pendingUser.id, pendingUser.role, pendingUser.name)
+      const user = await verifySignupCode(email, fullCode)
+      // El listener de onAuthStateChange en main.tsx ya actualiza
+      // authStore — acá solo hace falta el perfil local y el remapeo de
+      // datos previos (si esta cuenta ya tenía historial local con un id
+      // viejo, ver migrateLocalUserToSupabase.ts).
+      await migrateLocalUserToSupabase(user.id, user.email)
+      await ensureProfile(user.id)
       navigate('/onboarding', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Código inválido.')
@@ -85,12 +82,11 @@ export default function Registro() {
   }
 
   const handleResend = async () => {
-    if (!pendingUser || resendCooldown > 0) return
+    if (resendCooldown > 0) return
     setError('')
     setLoading(true)
     try {
-      const code = await resendVerificationEmail(pendingUser.id)
-      setDevCode(code ?? null)
+      await resendSignupCode(email)
       setResendCooldown(60)
       const interval = setInterval(() => {
         setResendCooldown((s) => { if (s <= 1) { clearInterval(interval); return 0 } return s - 1 })
@@ -210,21 +206,6 @@ export default function Registro() {
         </form>
       ) : (
         <div className="w-full max-w-sm space-y-6">
-          {devCode && (
-            <div className="rounded-md border border-accent/30 bg-accent/10 px-4 py-3 text-center">
-              <p className="text-[13px] font-medium text-accent">
-                Modo prueba — sin envío de email configurado
-              </p>
-              <p className="mt-1 font-mono text-2xl font-bold tracking-[0.3em] tabular-nums text-ink">
-                {devCode}
-              </p>
-              <p className="mt-1 text-[12px] text-ink-3">
-                Este código solo aparece acá porque la app no tiene un servicio de
-                email conectado todavía.
-              </p>
-            </div>
-          )}
-
           {/* Inputs de código 6 dígitos. gap-2, no gap-3: a 393px de ancho
               6 casillas de 48px + gaps de 12px desbordan por ~3px. */}
           <div className="flex justify-center gap-2">

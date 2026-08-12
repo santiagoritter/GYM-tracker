@@ -1,47 +1,45 @@
 import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Dumbbell, Eye, EyeOff, Mail } from 'lucide-react'
-import { loginUser, resendVerificationEmail, verifyEmailCode } from '@/lib/auth'
-import { useAuthStore } from '@/stores/authStore'
+import { signIn, verifySignupCode, resendSignupCode, EMAIL_NOT_VERIFIED, type AuthUser } from '@/lib/supabaseAuth'
 import { db, ensureProfile } from '@/db/schema'
+import { migrateLocalUserToSupabase } from '@/db/migrateLocalUserToSupabase'
 
 export default function Login() {
   const navigate = useNavigate()
-  const setSession = useAuthStore((s) => s.setSession)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [unverifiedUserId, setUnverifiedUserId] = useState<string | null>(null)
-  const [devCode, setDevCode] = useState<string | null>(null)
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null)
   const [code, setCode] = useState(['', '', '', '', '', ''])
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
 
-  const finishLogin = async (userId: string, role: 'admin' | 'user', name: string) => {
-    setSession(userId, role, name)
-    await ensureProfile(userId)
-    const profile = await db.profile.get(userId)
+  // El listener de onAuthStateChange en main.tsx ya deja authStore al
+  // día — acá solo hace falta el perfil local y, si esta cuenta ya
+  // tenía historial bajo un id local viejo, remapearlo.
+  const finishAuth = async (user: AuthUser) => {
+    await migrateLocalUserToSupabase(user.id, user.email)
+    await ensureProfile(user.id)
+    const profile = await db.profile.get(user.id)
     navigate(profile?.onboardingComplete === 1 ? '/' : '/onboarding', { replace: true })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    setUnverifiedUserId(null)
+    setUnverifiedEmail(null)
     setLoading(true)
     try {
-      const user = await loginUser(email, password)
-      await finishLogin(user.id, user.role, user.name)
+      const user = await signIn(email, password)
+      await finishAuth(user)
     } catch (err) {
-      if (err instanceof Error && err.message === 'EMAIL_NOT_VERIFIED') {
-        const u = await db.users.where('email').equals(email.toLowerCase().trim()).first()
-        if (u) setUnverifiedUserId(u.id)
+      if (err instanceof Error && err.message === EMAIL_NOT_VERIFIED) {
+        const normalized = email.toLowerCase().trim()
+        setUnverifiedEmail(normalized)
         setError('Verificá tu email antes de ingresar. Te reenviamos un código.')
-        if (u) {
-          const code = await resendVerificationEmail(u.id).catch(() => undefined)
-          setDevCode(code ?? null)
-        }
+        await resendSignupCode(normalized).catch(() => undefined)
       } else {
         setError(err instanceof Error ? err.message : 'Error al iniciar sesión.')
       }
@@ -51,12 +49,11 @@ export default function Login() {
   }
 
   const handleResendFromLogin = async () => {
-    if (!unverifiedUserId) return
+    if (!unverifiedEmail) return
     setError('')
     setLoading(true)
     try {
-      const code = await resendVerificationEmail(unverifiedUserId)
-      setDevCode(code ?? null)
+      await resendSignupCode(unverifiedEmail)
       setError('Código reenviado.')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al reenviar.')
@@ -81,13 +78,12 @@ export default function Login() {
   }
 
   const verifyCode = async (fullCode: string) => {
-    if (!unverifiedUserId) return
+    if (!unverifiedEmail) return
     setError('')
     setLoading(true)
     try {
-      await verifyEmailCode(unverifiedUserId, fullCode)
-      const u = await db.users.get(unverifiedUserId)
-      if (u) await finishLogin(u.id, u.role, u.name)
+      const user = await verifySignupCode(unverifiedEmail, fullCode)
+      await finishAuth(user)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Código inválido.')
       setCode(['', '', '', '', '', ''])
@@ -97,7 +93,7 @@ export default function Login() {
     }
   }
 
-  if (unverifiedUserId) {
+  if (unverifiedEmail) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-bg px-6">
         <div className="mb-8 flex flex-col items-center gap-3">
@@ -111,17 +107,6 @@ export default function Login() {
         </div>
 
         <div className="w-full max-w-sm space-y-6">
-          {devCode && (
-            <div className="rounded-md border border-accent/30 bg-accent/10 px-4 py-3 text-center">
-              <p className="text-[13px] font-medium text-accent">
-                Modo prueba — sin envío de email configurado
-              </p>
-              <p className="mt-1 font-mono text-2xl font-bold tracking-[0.3em] tabular-nums text-ink">
-                {devCode}
-              </p>
-            </div>
-          )}
-
           {/* gap-2, no gap-3: 6 casillas de 48px + 5 gaps de 12px = 348px
               desborda los ~345px disponibles en un iPhone 14 Pro (393px). */}
           <div className="flex justify-center gap-2">
@@ -156,7 +141,7 @@ export default function Login() {
           </button>
 
           <button
-            onClick={() => setUnverifiedUserId(null)}
+            onClick={() => setUnverifiedEmail(null)}
             className="h-11 w-full text-center text-sm text-ink-3"
           >
             Volver
