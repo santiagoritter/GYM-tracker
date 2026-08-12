@@ -53,17 +53,28 @@ function mapAuthError(message: string): string {
     return 'Código incorrecto.'
   }
   if (message.toLowerCase().includes('invalid token')) return 'Código incorrecto.'
+  if (message.toLowerCase().includes('should be different from the old password')) {
+    return 'La contraseña nueva tiene que ser distinta de la anterior.'
+  }
   return message
 }
 
 export async function signUp(email: string, password: string, name: string): Promise<void> {
   if (!supabase) throw new Error('Supabase no está configurado.')
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email: email.toLowerCase().trim(),
     password,
     options: { data: { name: name.trim() } },
   })
   if (error) throw new Error(mapAuthError(error.message))
+  // Si el email ya tiene una cuenta confirmada, Supabase no manda error ni
+  // código nuevo — responde con éxito y `identities: []` a propósito, para
+  // no revelarle a un atacante si un email está registrado. Sin este check
+  // la UI seguía de largo al paso de "ingresá el código" y ese código
+  // nunca llegaba, porque nunca se mandó nada.
+  if (data.user && data.user.identities?.length === 0) {
+    throw new Error('Ya existe una cuenta con este email. Iniciá sesión en vez de registrarte.')
+  }
 }
 
 export async function verifySignupCode(email: string, code: string): Promise<AuthUser> {
@@ -108,4 +119,36 @@ export async function signIn(email: string, password: string): Promise<AuthUser>
 export async function signOut(): Promise<void> {
   if (!supabase) return
   await supabase.auth.signOut()
+}
+
+/** Pide el código de recuperación. Mismo criterio que el signup: la
+ * plantilla "Reset password" del dashboard tiene que usar {{ .Token }} en
+ * vez de {{ .ConfirmationURL }} — ver docs/13-BACKEND-SUPABASE.md. */
+export async function requestPasswordReset(email: string): Promise<void> {
+  if (!supabase) throw new Error('Supabase no está configurado.')
+  const { error } = await supabase.auth.resetPasswordForEmail(email.toLowerCase().trim())
+  if (error) throw new Error(mapAuthError(error.message))
+}
+
+/** Verifica el código de recuperación y deja la contraseña nueva. `verifyOtp`
+ * con `type: 'recovery'` ya deja al usuario logueado (arranca una sesión),
+ * así que `updateUser` corre autenticado como esa cuenta. */
+export async function confirmPasswordReset(
+  email: string,
+  code: string,
+  newPassword: string
+): Promise<AuthUser> {
+  if (!supabase) throw new Error('Supabase no está configurado.')
+  const { data, error } = await supabase.auth.verifyOtp({
+    email: email.toLowerCase().trim(),
+    token: code.trim(),
+    type: 'recovery',
+  })
+  if (error || !data.user) throw new Error(error ? mapAuthError(error.message) : 'Código inválido.')
+
+  const { data: updated, error: updateError } = await supabase.auth.updateUser({
+    password: newPassword,
+  })
+  if (updateError) throw new Error(mapAuthError(updateError.message))
+  return toAuthUser(updated.user)
 }

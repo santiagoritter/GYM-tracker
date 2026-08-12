@@ -193,6 +193,9 @@ export default function Login() {
               {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
+          <Link to="/olvide-contrasena" className="mt-1.5 block text-right text-[13px] font-medium text-accent">
+            ¿Olvidaste tu contraseña?
+          </Link>
         </div>
 
         {error && (
