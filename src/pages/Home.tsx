@@ -11,6 +11,7 @@ import { HOME_MESSAGES } from '@/lib/motivational'
 import { cn, formatDuration } from '@/lib/utils'
 import CalendarHeatmap from '@/components/gym/CalendarHeatmap'
 import CalorieSummaryRow from '@/components/gym/CalorieSummaryRow'
+import SpotifyNowPlaying from '@/components/gym/SpotifyNowPlaying'
 import { Card, Row, SectionHeader } from '@/components/ui/Card'
 import HoldButton from '@/components/ui/HoldButton'
 
@@ -83,6 +84,7 @@ export default function Home() {
       {/* Solo aparece si el usuario activó el contador desde Ajustes — no
           se le agrega peso visual a Home a nadie que no lo pidió. */}
       <CalorieSummaryRow />
+      <SpotifyNowPlaying />
 
       {activeWorkout ? (
         <button

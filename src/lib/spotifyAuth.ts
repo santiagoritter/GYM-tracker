@@ -18,7 +18,8 @@
 
 const SPOTIFY_CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID as string | undefined
 
-const SCOPES = 'user-read-email user-read-private'
+const SCOPES =
+  'user-read-email user-read-private user-read-playback-state user-modify-playback-state user-read-currently-playing'
 const VERIFIER_STORAGE_KEY = 'spotify_pkce_verifier'
 
 export function isSpotifyConfigured(): boolean {
@@ -110,6 +111,40 @@ export async function exchangeCodeForToken(code: string): Promise<SpotifyTokenRe
   return {
     accessToken: data.access_token,
     refreshToken: data.refresh_token,
+    expiresAt: Date.now() + data.expires_in * 1000,
+  }
+}
+
+/** Renueva el access token vencido con el refresh token — mismo
+ * esquema sin client_secret que exchangeCodeForToken (PKCE lo permite
+ * también acá). Spotify a veces no manda refresh_token nuevo en la
+ * respuesta; en ese caso se conserva el que ya se tenía. */
+export async function refreshSpotifyAccessToken(
+  refreshToken: string
+): Promise<SpotifyTokenResult> {
+  if (!SPOTIFY_CLIENT_ID) {
+    throw new Error('Falta el Client ID de Spotify.')
+  }
+  const res = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: SPOTIFY_CLIENT_ID,
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+    }),
+  })
+  if (!res.ok) {
+    throw new Error(`No se pudo renovar el token de Spotify (${res.status})`)
+  }
+  const data = (await res.json()) as {
+    access_token: string
+    refresh_token?: string
+    expires_in: number
+  }
+  return {
+    accessToken: data.access_token,
+    refreshToken: data.refresh_token ?? refreshToken,
     expiresAt: Date.now() + data.expires_in * 1000,
   }
 }
