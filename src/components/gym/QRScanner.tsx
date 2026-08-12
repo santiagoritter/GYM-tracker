@@ -2,9 +2,22 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import jsQR from 'jsqr'
 import { ClipboardPaste, X } from 'lucide-react'
-import { decodePayload, importPayload, type QRPayload } from '@/lib/qr'
+import { decodePayload, extractShareCode, importPayload, resolveShareCode, type QRPayload } from '@/lib/qr'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import Portal from '@/components/ui/Portal'
+import { RoutineImportPreview } from '@/components/gym/RoutineImportPreview'
+
+/** Intenta resolver lo escaneado/pegado, en orden: código/URL de share
+ * (Supabase, formato nuevo) y recién si eso falla, el payload local viejo
+ * "GYMTR:" (rutinas compartidas antes de este cambio). */
+async function resolveScannedText(raw: string): Promise<QRPayload | null> {
+  const code = extractShareCode(raw)
+  if (code) {
+    const payload = await resolveShareCode(code)
+    if (payload) return payload
+  }
+  return decodePayload(raw)
+}
 
 export function QRScanner({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate()
@@ -13,11 +26,15 @@ export function QRScanner({ onClose }: { onClose: () => void }) {
   const [payload, setPayload] = useState<QRPayload | null>(null)
   const [name, setName] = useState('')
   const [cameraError, setCameraError] = useState(false)
+  const [resolving, setResolving] = useState(false)
+  const [scanError, setScanError] = useState('')
+  const resolvingRef = useRef(false)
 
   useEffect(() => {
     if (payload) return // cámara pausada durante el preview
     let stream: MediaStream | null = null
     let interval: ReturnType<typeof setInterval> | null = null
+    let cancelled = false
     const canvas = document.createElement('canvas')
 
     ;(async () => {
@@ -31,7 +48,9 @@ export function QRScanner({ onClose }: { onClose: () => void }) {
         await video.play()
 
         interval = setInterval(() => {
-          // El canvas usa el tamaño real del video (no un valor fijo)
+          // Ya hay una resolución en curso (código de Supabase, red de por
+          // medio) — no arrancar otra por el mismo frame.
+          if (resolvingRef.current) return
           if (!video.videoWidth) return
           canvas.width = video.videoWidth
           canvas.height = video.videoHeight
@@ -40,14 +59,22 @@ export function QRScanner({ onClose }: { onClose: () => void }) {
           ctx.drawImage(video, 0, 0)
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
           const code = jsQR(imageData.data, imageData.width, imageData.height)
-          if (code) {
-            const parsed = decodePayload(code.data)
+          if (!code) return
+
+          resolvingRef.current = true
+          setResolving(true)
+          resolveScannedText(code.data).then((parsed) => {
+            if (cancelled) return
+            resolvingRef.current = false
+            setResolving(false)
             if (parsed) {
               navigator.vibrate?.(100)
               setPayload(parsed)
               setName(parsed.n)
+            } else {
+              setScanError('Ese código no es una rutina válida de GymTracker.')
             }
-          }
+          })
         }, 300)
       } catch {
         setCameraError(true)
@@ -55,6 +82,7 @@ export function QRScanner({ onClose }: { onClose: () => void }) {
     })()
 
     return () => {
+      cancelled = true
       if (interval) clearInterval(interval)
       stream?.getTracks().forEach((t) => t.stop())
     }
@@ -63,7 +91,9 @@ export function QRScanner({ onClose }: { onClose: () => void }) {
   const handlePaste = async () => {
     try {
       const text = await navigator.clipboard.readText()
-      const parsed = decodePayload(text.trim())
+      setResolving(true)
+      const parsed = await resolveScannedText(text.trim())
+      setResolving(false)
       if (parsed) {
         setPayload(parsed)
         setName(parsed.n)
@@ -71,6 +101,7 @@ export function QRScanner({ onClose }: { onClose: () => void }) {
         alert('El texto pegado no es una rutina válida de GymTracker')
       }
     } catch {
+      setResolving(false)
       alert('No se pudo leer el portapapeles')
     }
   }
@@ -87,60 +118,16 @@ export function QRScanner({ onClose }: { onClose: () => void }) {
 
   // ── Preview de importación ──
   if (payload) {
-    const totalExercises = payload.d.reduce((sum, d) => sum + (d.e?.length ?? 0), 0)
     return (
       <Portal>
         <div className="fixed inset-0 z-50 flex flex-col bg-bg">
-          <div className="mx-auto flex w-full max-w-lg flex-1 flex-col overflow-hidden">
-            <div className="flex items-center justify-between border-b border-line px-4 py-3">
-              <h2 className="text-lg font-bold">Importar rutina</h2>
-              <button onClick={onClose} className="rounded-lg p-2 text-ink-2">
-                <X size={22} />
-              </button>
-            </div>
-
-            <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-lg bg-surface px-3 py-2.5 font-semibold outline-none focus:ring-1 focus:ring-accent"
-              />
-              <p className="text-sm text-ink-2">
-                {payload.d.length} días · {totalExercises} ejercicios
-              </p>
-
-              {payload.d.map((day, i) => (
-                <div key={i} className="rounded-xl bg-surface p-4">
-                  <p className="font-semibold">
-                    {day.n}
-                    {day.r && <span className="ml-2 text-xs text-ink-3">descanso</span>}
-                  </p>
-                  {day.e && day.e.length > 0 && (
-                    <ul className="mt-2 space-y-1">
-                      {day.e.map((ex, j) => (
-                        <li key={j} className="flex justify-between text-sm text-ink-2">
-                          <ExerciseName id={ex.id} />
-                          <span className="font-mono">
-                            {ex.s}×{ex.r[0]}–{ex.r[1]}
-                            {ex.w ? ` · ${ex.w}kg` : ''}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <div className="border-t border-line px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-              <button
-                onClick={handleImport}
-                className="w-full rounded-xl bg-accent py-4 font-bold text-bg"
-              >
-                Importar rutina
-              </button>
-            </div>
-          </div>
+          <RoutineImportPreview
+            payload={payload}
+            name={name}
+            onNameChange={setName}
+            onImport={handleImport}
+            onClose={onClose}
+          />
         </div>
       </Portal>
     )
@@ -177,9 +164,22 @@ export function QRScanner({ onClose }: { onClose: () => void }) {
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                   <div className="h-56 w-56 rounded-2xl border-2 border-accent/70" />
                 </div>
+                {resolving && (
+                  <div className="absolute inset-x-0 bottom-3 flex justify-center">
+                    <span className="rounded-full bg-bg/80 px-3 py-1.5 text-xs font-medium text-ink-2 backdrop-blur">
+                      Buscando rutina…
+                    </span>
+                  </div>
+                )}
               </>
             )}
           </div>
+
+          {scanError && (
+            <p className="mx-4 mt-3 rounded-lg bg-danger/10 px-3 py-2 text-center text-xs text-danger">
+              {scanError}
+            </p>
+          )}
 
           <div className="px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
             <button
@@ -193,12 +193,4 @@ export function QRScanner({ onClose }: { onClose: () => void }) {
       </div>
     </Portal>
   )
-}
-
-import { useLiveQuery } from 'dexie-react-hooks'
-import { db } from '@/db/schema'
-
-function ExerciseName({ id }: { id: string }) {
-  const exercise = useLiveQuery(() => db.exercises.get(id), [id])
-  return <span>{exercise?.name ?? `(desconocido: ${id})`}</span>
 }

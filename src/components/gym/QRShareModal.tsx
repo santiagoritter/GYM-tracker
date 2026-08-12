@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import { Copy, Download, X } from 'lucide-react'
-import { buildPayload, encodePayload, generateQRDataUrl } from '@/lib/qr'
+import { buildShareUrl, generateQRDataUrl, shareRoutine } from '@/lib/qr'
 import type { Routine } from '@/types'
 import Portal from '@/components/ui/Portal'
 import { useSheetDrag } from '@/hooks/useSheetDrag'
@@ -16,22 +16,26 @@ import { cn } from '@/lib/utils'
 export function QRShareModal({ routine, onClose }: { routine: Routine; onClose: () => void }) {
   const [includeWeights, setIncludeWeights] = useState(true)
   const [qrUrl, setQrUrl] = useState<string | null>(null)
-  const [encoded, setEncoded] = useState('')
-  const [tooBig, setTooBig] = useState(false)
+  const [shareUrl, setShareUrl] = useState('')
+  const [error, setError] = useState('')
   const reduced = useReducedMotion()
   const { panelDragProps, handleDragProps } = useSheetDrag(onClose)
 
   useEffect(() => {
     let cancelled = false
+    setQrUrl(null)
+    setError('')
     ;(async () => {
-      const payload = await buildPayload(routine, { includeWeights })
-      const data = encodePayload(payload)
-      if (cancelled) return
-      setEncoded(data)
-      // ~2KB es el límite práctico para escanear con cámara de celular
-      setTooBig(data.length > 2000)
-      const url = await generateQRDataUrl(data)
-      if (!cancelled) setQrUrl(url)
+      try {
+        const code = await shareRoutine(routine, { includeWeights })
+        if (cancelled) return
+        const url = buildShareUrl(code)
+        setShareUrl(url)
+        const dataUrl = await generateQRDataUrl(url)
+        if (!cancelled) setQrUrl(dataUrl)
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'No se pudo compartir la rutina.')
+      }
     })()
     return () => {
       cancelled = true
@@ -63,7 +67,11 @@ export function QRShareModal({ routine, onClose }: { routine: Routine; onClose: 
             variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}
             className="flex flex-col items-center gap-4"
           >
-            {qrUrl ? (
+            {error ? (
+              <div className="flex h-64 w-64 flex-col items-center justify-center gap-2 rounded-2xl bg-surface-2 p-6 text-center">
+                <p className="text-sm text-danger">{error}</p>
+              </div>
+            ) : qrUrl ? (
               <img
                 src={qrUrl}
                 alt={`QR de ${routine.name}`}
@@ -77,12 +85,6 @@ export function QRShareModal({ routine, onClose }: { routine: Routine; onClose: 
               {routine.name} · el otro escanea desde{' '}
               <span className="text-ink">Rutinas → Escanear QR</span>
             </p>
-
-            {tooBig && (
-              <p className="rounded-lg bg-warning/10 px-3 py-2 text-center text-xs text-warning">
-                Rutina muy grande para un QR confiable — probá sin pesos.
-              </p>
-            )}
 
             <button
               onClick={() => setIncludeWeights((v) => !v)}
@@ -100,16 +102,20 @@ export function QRShareModal({ routine, onClose }: { routine: Routine; onClose: 
               <a
                 href={qrUrl ?? '#'}
                 download={`rutina-${routine.name.toLowerCase().replace(/\s+/g, '-')}.png`}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent py-3 font-bold text-bg"
+                className={cn(
+                  'flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent py-3 font-bold text-bg',
+                  !qrUrl && 'pointer-events-none opacity-50'
+                )}
               >
                 <Download size={18} /> Descargar
               </a>
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText(encoded)
-                  alert('Código copiado — también se puede importar pegándolo')
+                  navigator.clipboard.writeText(shareUrl)
+                  alert('Link copiado — también se puede importar pegándolo')
                 }}
-                className="flex items-center justify-center gap-2 rounded-xl border border-line-2 px-4 py-3 font-semibold text-ink-2"
+                disabled={!shareUrl}
+                className="flex items-center justify-center gap-2 rounded-xl border border-line-2 px-4 py-3 font-semibold text-ink-2 disabled:opacity-50"
               >
                 <Copy size={18} />
               </button>
