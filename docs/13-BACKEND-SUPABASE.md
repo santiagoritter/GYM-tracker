@@ -260,14 +260,18 @@ es un flujo aparte es la función y el cron, ya en producción:
    ```bash
    supabase functions deploy send-push-reminders --project-ref <ref> --no-verify-jwt
    ```
-5. **Habilitar `pg_cron`/`pg_net` y programar** (cada hora en punto):
+5. **Habilitar `pg_cron`/`pg_net` y programar** (cada 15 minutos — probado en
+   producción con hora en punto y el match de `send-push-reminders/index.ts`
+   comparando solo la hora: alguien que configuraba, por ejemplo, "17:11" se
+   quedaba sin aviso ese día apenas el cron pasaba las 17:00, sin otra
+   ventana hasta el día siguiente):
    ```sql
    create extension if not exists pg_cron with schema extensions;
    create extension if not exists pg_net with schema extensions;
 
    select cron.schedule(
-     'send-push-reminders-hourly',
-     '0 * * * *',
+     'send-push-reminders-15m',
+     '*/15 * * * *',
      $$ select net.http_post(
           url := 'https://<ref>.functions.supabase.co/send-push-reminders',
           headers := jsonb_build_object('Authorization', 'Bearer <CRON_SECRET>')
@@ -275,7 +279,8 @@ es un flujo aparte es la función y el cron, ya en producción:
    );
    ```
    Verificar con `select * from cron.job;` — tiene que aparecer
-   `send-push-reminders-hourly` con `active = true`.
+   `send-push-reminders-15m` con `active = true`. El `WINDOW_MINUTES` del
+   propio edge function tiene que coincidir con este intervalo.
 6. **Secret nuevo en GitHub** (mismo lugar que los otros): la clave VAPID
    **pública** (la privada y el `CRON_SECRET` nunca salen de Supabase):
 

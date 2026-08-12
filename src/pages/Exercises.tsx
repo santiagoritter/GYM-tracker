@@ -80,7 +80,6 @@ export default function Exercises() {
           <div className="flex h-11 flex-1 items-center gap-2.5 rounded-sm bg-fill px-4">
             <Search size={16} className="shrink-0 text-ink-3" />
             <input
-              autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Buscar ejercicios…"
