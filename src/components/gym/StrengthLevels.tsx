@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Link } from 'react-router-dom'
+import { Dumbbell, UserCog } from 'lucide-react'
 import { db } from '@/db/schema'
 import { personalRecordsFor } from '@/db/scoped'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
@@ -50,6 +51,7 @@ export function StrengthLevels() {
   if (!profileComplete) {
     return (
       <EmptyState
+        icon={<UserCog size={28} />}
         title="Completá tu perfil"
         description="Para calcular tus niveles de fuerza necesitamos tu sexo, peso corporal y fecha de nacimiento."
         action={
@@ -75,6 +77,7 @@ export function StrengthLevels() {
 
       {withData.length === 0 ? (
         <EmptyState
+          icon={<Dumbbell size={28} />}
           title="Sin entrenos registrados"
           description="Registrá sentadilla, banca, peso muerto, militar o remo para ver tu nivel."
         />

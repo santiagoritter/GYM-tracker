@@ -32,7 +32,7 @@ export default function AchievementsPanel() {
   const total = ACHIEVEMENTS.length
 
   return (
-    <div className="space-y-3">
+    <div className="animate-fade-up space-y-3">
       <SectionHeader
         title="Logros"
         action={

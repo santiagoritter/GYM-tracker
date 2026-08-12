@@ -168,7 +168,7 @@ export default function Calories() {
             <section>
               <SectionHeader title="Registrado hoy" />
               {todayEntries.length === 0 ? (
-                <EmptyState title="Nada registrado todavía" />
+                <EmptyState icon={<Flame size={28} />} title="Nada registrado todavía" />
               ) : (
                 <Card>
                   {todayEntries.map((e) => (

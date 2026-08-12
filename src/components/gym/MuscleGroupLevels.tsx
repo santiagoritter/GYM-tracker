@@ -1,3 +1,4 @@
+import { Dumbbell } from 'lucide-react'
 import { useMuscleGroupLevels } from '@/hooks/useMuscleGroupLevels'
 import { MuscleGroupRadar } from '@/components/gym/MuscleGroupRadar'
 import { LEVEL_LABELS } from '@/lib/strengthStandards'
@@ -18,6 +19,7 @@ export function MuscleGroupLevels() {
   if (withData.length === 0) {
     return (
       <EmptyState
+        icon={<Dumbbell size={28} />}
         title="Sin datos todavía"
         description="A medida que registres PRs en más ejercicios, cada grupo muscular va a mostrar su nivel."
       />

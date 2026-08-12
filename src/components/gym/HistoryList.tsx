@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, History } from 'lucide-react'
 import { db } from '@/db/schema'
 import { cn, formatDate, formatDuration } from '@/lib/utils'
 import { EmptyState } from '@/components/ui/Card'
@@ -28,7 +28,7 @@ export function HistoryList() {
   const exerciseMap = useMemo(() => new Map(exercises.map((e) => [e.id, e])), [exercises])
 
   return (
-    <div className="space-y-3">
+    <div className="animate-fade-up space-y-3">
       {(workouts ?? []).map((w) => {
         const isOpen = expanded === w.id
         const sets = isOpen ? expandedSets.filter((s) => s.completed === 1) : []
@@ -87,6 +87,7 @@ export function HistoryList() {
 
       {workouts?.length === 0 && (
         <EmptyState
+          icon={<History size={28} />}
           title="Sin historial todavía"
           description="Tu historial va a aparecer acá cuando termines tu primer entreno."
         />

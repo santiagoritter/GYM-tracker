@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ArrowLeft, CalendarPlus, Trash2 } from 'lucide-react'
+import { ArrowLeft, CalendarPlus, ListPlus, Trash2 } from 'lucide-react'
 import { db } from '@/db/schema'
 import { logPastWorkout, type PastWorkoutExerciseInput } from '@/db/pastWorkouts'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
@@ -147,6 +147,7 @@ export default function LogPastWorkout() {
           <SectionHeader title="Ejercicios" />
           {draftExercises.length === 0 ? (
             <EmptyState
+              icon={<ListPlus size={28} />}
               title="Todavía no agregaste ninguno"
               description="Sumá los ejercicios que hiciste ese día, con sus series."
             />

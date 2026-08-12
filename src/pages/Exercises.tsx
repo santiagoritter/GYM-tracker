@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
-import { Search, SlidersHorizontal, Trophy } from 'lucide-react'
+import { Search, SearchX, SlidersHorizontal, Trophy } from 'lucide-react'
 import { db } from '@/db/schema'
 import { personalRecordsFor } from '@/db/scoped'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
@@ -138,7 +138,11 @@ export default function Exercises() {
             :not(:first-child) asume hijos DOM estables, y acá se montan y
             desmontan filas al scrollear. */}
         {filtered.length === 0 ? (
-          <EmptyState title="Sin resultados" description="Probá con otro término o sacá algún filtro." />
+          <EmptyState
+            icon={<SearchX size={28} />}
+            title="Sin resultados"
+            description="Probá con otro término o sacá algún filtro."
+          />
         ) : (
           <Card>
             <div ref={listRef} style={{ height: virtualizer.getTotalSize(), position: 'relative', width: '100%' }}>

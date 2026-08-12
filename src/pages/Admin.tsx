@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Crown, Shield, User } from 'lucide-react'
+import { Crown, Shield, User, Users } from 'lucide-react'
 import { db } from '@/db/schema'
 import { useAuthStore } from '@/stores/authStore'
 import { Card, EmptyState, Row, SectionHeader } from '@/components/ui/Card'
@@ -105,6 +105,7 @@ export default function Admin() {
 
       {users.length <= 1 && (
         <EmptyState
+          icon={<Users size={28} />}
           title="Sos el único usuario registrado"
           description="Cuando otros se registren aparecen acá."
         />

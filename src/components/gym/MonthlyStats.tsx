@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { CalendarX, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { db } from '@/db/schema'
 import { workoutsFor, personalRecordsFor } from '@/db/scoped'
@@ -123,7 +123,7 @@ export function MonthlyStats() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="animate-fade-up space-y-4">
       <div className="flex items-center justify-between rounded-xl bg-surface px-2 py-1.5">
         <button onClick={() => setMonthOffset((o) => o - 1)} className="p-2 text-ink-2">
           <ChevronLeft size={20} />
@@ -201,7 +201,7 @@ export function MonthlyStats() {
       )}
 
       {stats.sessions === 0 && (
-        <EmptyState title="Sin entrenos este mes" />
+        <EmptyState icon={<CalendarX size={28} />} title="Sin entrenos este mes" />
       )}
     </div>
   )
