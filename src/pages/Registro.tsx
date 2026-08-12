@@ -20,8 +20,8 @@ export default function Registro() {
   const [showPw, setShowPw] = useState(false)
 
   // Verificación
-  const [code, setCode] = useState(['', '', '', '', '', ''])
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([])
+  const [code, setCode] = useState('')
+  const codeInputRef = useRef<HTMLInputElement>(null)
 
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -45,19 +45,13 @@ export default function Registro() {
   }
 
   // ── Paso 2: verificar código ──────────────────────────────────────────────
-  const handleCodeInput = (i: number, val: string) => {
-    if (!/^\d*$/.test(val)) return
-    const next = [...code]
-    next[i] = val.slice(-1)
-    setCode(next)
-    if (val && i < 5) inputRefs.current[i + 1]?.focus()
-    if (next.every(Boolean)) verifyCode(next.join(''))
-  }
-
-  const handleCodeKeyDown = (i: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !code[i] && i > 0) {
-      inputRefs.current[i - 1]?.focus()
-    }
+  // Un solo campo, no cajita-por-dígito: el código que manda Supabase no
+  // tiene un largo fijo confiable (8 dígitos en la práctica, no los 6 que
+  // se había asumido al principio) — un input de texto normal no depende
+  // de adivinar ese número, y de paso permite pegar el código completo.
+  const handleVerifySubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (code.trim()) verifyCode(code.trim())
   }
 
   const verifyCode = async (fullCode: string) => {
@@ -74,8 +68,8 @@ export default function Registro() {
       navigate('/onboarding', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Código inválido.')
-      setCode(['', '', '', '', '', ''])
-      inputRefs.current[0]?.focus()
+      setCode('')
+      codeInputRef.current?.focus()
     } finally {
       setLoading(false)
     }
@@ -113,7 +107,7 @@ export default function Registro() {
         </h1>
         <p className="text-center text-sm text-ink-3">
           {step === 'verify'
-            ? <>Te mandamos un código de 6 dígitos a<br /><span className="font-semibold text-ink-2">{email}</span></>
+            ? <>Te mandamos un código de verificación a<br /><span className="font-semibold text-ink-2">{email}</span></>
             : 'El primer paso hacia tu mejor versión.'
           }
         </p>
@@ -205,25 +199,26 @@ export default function Registro() {
           </p>
         </form>
       ) : (
-        <div className="w-full max-w-sm space-y-6">
-          {/* Inputs de código 6 dígitos. gap-2, no gap-3: a 393px de ancho
-              6 casillas de 48px + gaps de 12px desbordan por ~3px. */}
-          <div className="flex justify-center gap-2">
-            {code.map((digit, i) => (
-              <input
-                key={i}
-                ref={(el) => { inputRefs.current[i] = el }}
-                type="text"
-                inputMode="numeric"
-                maxLength={1}
-                value={digit}
-                onChange={(e) => handleCodeInput(i, e.target.value)}
-                onKeyDown={(e) => handleCodeKeyDown(i, e)}
-                className="h-14 w-12 rounded-sm bg-surface text-center text-xl font-bold tabular-nums outline-none ring-1 ring-line-2 transition focus:ring-accent"
-                autoFocus={i === 0}
-              />
-            ))}
-          </div>
+        <form onSubmit={handleVerifySubmit} className="w-full max-w-sm space-y-6">
+          <input
+            ref={codeInputRef}
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+            placeholder="Código del email"
+            autoFocus
+            className="h-14 w-full rounded-sm bg-surface text-center text-2xl font-bold tracking-[0.3em] tabular-nums outline-none ring-1 ring-line-2 transition focus:ring-accent"
+          />
+
+          <button
+            type="submit"
+            disabled={loading || !code.trim()}
+            className="h-14 w-full rounded-sm bg-accent font-bold text-bg transition active:opacity-80 disabled:opacity-50"
+          >
+            {loading ? 'Verificando…' : 'Verificar código'}
+          </button>
 
           {error && (
             <p className="rounded-sm bg-danger/10 px-4 py-2.5 text-sm text-danger text-center">
@@ -231,12 +226,9 @@ export default function Registro() {
             </p>
           )}
 
-          {loading && (
-            <p className="text-center text-sm text-ink-3">Verificando…</p>
-          )}
-
           {/* Reenviar código */}
           <button
+            type="button"
             onClick={handleResend}
             disabled={resendCooldown > 0 || loading}
             className="flex h-12 w-full items-center justify-center gap-2 rounded-sm bg-surface text-sm text-ink-2 transition active:opacity-70 disabled:opacity-40"
@@ -251,7 +243,7 @@ export default function Registro() {
           <p className="text-center text-xs text-ink-3">
             El código expira solo — si tarda, pedí uno nuevo.
           </p>
-        </div>
+        </form>
       )}
     </div>
   )
