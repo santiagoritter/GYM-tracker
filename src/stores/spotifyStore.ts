@@ -7,6 +7,7 @@ interface SpotifyState {
   expiresAt: number | null
   displayName: string | null
   connect: (token: { accessToken: string; refreshToken: string; expiresAt: number }, displayName: string | null) => void
+  setTokens: (token: { accessToken: string; refreshToken: string; expiresAt: number }) => void
   disconnect: () => void
 }
 
@@ -30,6 +31,15 @@ export const useSpotifyStore = create<SpotifyState>()(
           refreshToken: token.refreshToken,
           expiresAt: token.expiresAt,
           displayName,
+        }),
+      // Solo renueva el token (lo usa el refresh automático de
+      // spotifyPlayer.ts) — a diferencia de connect(), no toca
+      // displayName porque no viene de vuelta en la respuesta de refresh.
+      setTokens: (token) =>
+        set({
+          accessToken: token.accessToken,
+          refreshToken: token.refreshToken,
+          expiresAt: token.expiresAt,
         }),
       disconnect: () =>
         set({ accessToken: null, refreshToken: null, expiresAt: null, displayName: null }),
