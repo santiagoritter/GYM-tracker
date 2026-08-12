@@ -8,8 +8,15 @@
 //
 // Pensada para correr cada hora vía pg_cron — ver docs/13-BACKEND-SUPABASE.md.
 //
-// Desplegar: supabase functions deploy send-push-reminders
-// Secrets:   supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=...
+// Desplegar (con --no-verify-jwt: la autenticación de abajo es propia, no
+// la de la plataforma — quien llama es pg_cron, no un usuario con sesión):
+//   supabase functions deploy send-push-reminders --no-verify-jwt
+// Secrets:
+//   supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... CRON_SECRET=...
+//
+// CRON_SECRET es un secreto propio (cualquier string random), NO la
+// service_role key — así el cron solo puede invocar esta función puntual
+// en vez de tener el acceso total que da la service_role.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import webpush from 'npm:web-push@3.6.7'
@@ -18,6 +25,7 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY')!
 const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY')!
+const CRON_SECRET = Deno.env.get('CRON_SECRET')!
 
 webpush.setVapidDetails('mailto:santiagoritter26@gmail.com', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
 
@@ -28,7 +36,11 @@ const MESSAGES = [
   '¿Listo para superar tu último entreno?',
 ]
 
-Deno.serve(async () => {
+Deno.serve(async (req) => {
+  if (req.headers.get('Authorization') !== `Bearer ${CRON_SECRET}`) {
+    return new Response('Unauthorized', { status: 401 })
+  }
+
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE)
 
   const { data: profiles, error } = await supabase

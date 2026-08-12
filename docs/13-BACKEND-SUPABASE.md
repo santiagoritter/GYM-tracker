@@ -214,47 +214,64 @@ omite la variable) y publicaría un bundle con auth/sync rotos en silencio.
 
 ---
 
-## 6. Notificaciones push (Fase 26)
+## 6. Notificaciones push (Fase 26) — ya desplegado
 
-El 5º SQL (`0005_push_subscriptions.sql`) todavía no está en la lista del
-paso 2 — correrlo junto con los otros cuatro, en orden, después de esos.
+El 6º SQL (`0006_calorie_entries.sql`, ver §2) corre igual que los otros;
+`0005_push_subscriptions.sql` no necesita nada especial tampoco. Lo que sí
+es un flujo aparte es la función y el cron, ya en producción:
 
-1. **Generar el par de claves VAPID** (identifican a este servidor ante los
-   navegadores — no son secretas de la misma forma que una contraseña, pero
-   la privada no puede filtrarse):
+0. **CLI de Supabase**: el binario de `npx supabase` es un ELF genérico y
+   no arranca en NixOS ("Could not start dynamically linked executable").
+   `nix-shell -p supabase-cli --run "supabase ..."` sí anda (paquete de
+   nixpkgs, linkeado correcto) — no hace falta instalarlo global.
+1. **Generar el par de claves VAPID**:
    ```bash
    npx web-push generate-vapid-keys
    ```
-2. **Secrets de la función** (además de los que ya usa el resto del backend):
+2. **Un secreto propio para el cron** — cualquier string random largo
+   (`openssl rand -hex 32` o similar). Deliberadamente **no** es la
+   service_role key: `send-push-reminders/index.ts` valida este secreto a
+   mano (`Authorization: Bearer <CRON_SECRET>`) contra su propia variable
+   de entorno — así el cron solo puede invocar esta función puntual, no
+   tiene el acceso total que da la service_role. Por eso además se
+   despliega con `--no-verify-jwt`: la autenticación es la propia de la
+   función, no la de la plataforma (que exigiría un JWT de Supabase, y
+   quien llama acá es pg_cron, no un usuario con sesión).
+3. **Secrets de la función**:
    ```bash
-   supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=...
+   supabase secrets set --project-ref <ref> \
+     VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... CRON_SECRET=...
    ```
-3. **Desplegar la función**:
+4. **Desplegar la función**:
    ```bash
-   supabase functions deploy send-push-reminders
+   supabase functions deploy send-push-reminders --project-ref <ref> --no-verify-jwt
    ```
-4. **Programar con pg_cron** (cada hora en punto — mismo patrón que
-   `docs/12-RECORDATORIOS.md` ya documentaba para el intento anterior):
+5. **Habilitar `pg_cron`/`pg_net` y programar** (cada hora en punto):
    ```sql
+   create extension if not exists pg_cron with schema extensions;
+   create extension if not exists pg_net with schema extensions;
+
    select cron.schedule(
      'send-push-reminders-hourly',
      '0 * * * *',
      $$ select net.http_post(
-          url := 'https://<PROJECT>.functions.supabase.co/send-push-reminders',
-          headers := jsonb_build_object('Authorization', 'Bearer ' || current_setting('app.cron_secret'))
+          url := 'https://<ref>.functions.supabase.co/send-push-reminders',
+          headers := jsonb_build_object('Authorization', 'Bearer <CRON_SECRET>')
         ) $$
    );
    ```
-5. **Secret nuevo en GitHub** (mismo lugar que los dos de arriba): la clave
-   VAPID **pública** (la privada nunca sale de Supabase):
+   Verificar con `select * from cron.job;` — tiene que aparecer
+   `send-push-reminders-hourly` con `active = true`.
+6. **Secret nuevo en GitHub** (mismo lugar que los otros): la clave VAPID
+   **pública** (la privada y el `CRON_SECRET` nunca salen de Supabase):
 
    | Nombre | Valor |
    |---|---|
    | `VITE_VAPID_PUBLIC_KEY` | la clave pública generada en el paso 1 |
 
-Sin este paso, `/recordatorios` no ofrece la opción de notificaciones push
-— `isPushAvailable()` en `src/lib/webPush.ts` la esconde en vez de mostrar
-algo que no puede andar.
+Sin `VITE_VAPID_PUBLIC_KEY`, `/recordatorios` no ofrece la opción de
+notificaciones push — `isPushAvailable()` en `src/lib/webPush.ts` la
+esconde en vez de mostrar algo que no puede andar.
 
 ---
 
