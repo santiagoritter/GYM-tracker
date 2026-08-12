@@ -6,7 +6,13 @@
 // cruzando profiles.reminder_* (las columnas reales) contra
 // push_subscriptions (0005_push_subscriptions.sql).
 //
-// Pensada para correr cada hora vía pg_cron — ver docs/13-BACKEND-SUPABASE.md.
+// Pensada para correr cada 15 minutos vía pg_cron — ver
+// docs/13-BACKEND-SUPABASE.md. Antes corría cada hora exacta con match solo
+// por hora: alguien que configuraba, por ejemplo, "17:11" no recibía nada
+// ese día si el cron ya había pasado las 17:00 — la ventana de una hora
+// completa la perdía sin otra oportunidad hasta el día siguiente. Con
+// ventanas de 15 minutos el aviso llega cerca del horario real, y probar en
+// vivo no depende de pegarle al minuto exacto en que tira el cron.
 //
 // Desplegar (con --no-verify-jwt: la autenticación de abajo es propia, no
 // la de la plataforma — quien llama es pg_cron, no un usuario con sesión):
@@ -28,6 +34,12 @@ const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY')!
 const CRON_SECRET = Deno.env.get('CRON_SECRET')!
 
 webpush.setVapidDetails('mailto:santiagoritter26@gmail.com', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
+
+// Tiene que coincidir con la frecuencia del cron (ver docs/13 §5). Si se
+// redespliega esta función sin haber reprogramado el cron a */15 * * * *
+// todavía, subir esto a 60 mientras tanto — con 15 y el cron en modo
+// horario, cualquier reminder_time con minuto >= 15 dejaría de matchear.
+const WINDOW_MINUTES = 15
 
 const MESSAGES = [
   'Tu yo del futuro te agradece cada sesión de hoy. A entrenar.',
@@ -70,8 +82,13 @@ Deno.serve(async (req) => {
 
     // Hora local de ESTA suscripción, no la del servidor.
     const nowLocal = new Date(new Date().toLocaleString('en-US', { timeZone: sub.timezone }))
-    const [h] = (profile.reminder_time as string).split(':').map(Number)
-    if (nowLocal.getHours() !== h) continue
+    const [h, m] = (profile.reminder_time as string).split(':').map(Number)
+    const targetMinutes = h * 60 + m
+    const nowMinutes = nowLocal.getHours() * 60 + nowLocal.getMinutes()
+    // Ventana en vez de igualdad exacta: el cron no tira justo al minuto
+    // configurado, tira cada WINDOW_MINUTES — esto lo cubre sin duplicar
+    // envíos (cada horario cae en una sola ventana por día).
+    if (targetMinutes < nowMinutes || targetMinutes >= nowMinutes + WINDOW_MINUTES) continue
     if (!(profile.reminder_days as number[] | null ?? [1, 2, 3, 4, 5]).includes(nowLocal.getDay())) continue
 
     const today = nowLocal.toISOString().slice(0, 10)
