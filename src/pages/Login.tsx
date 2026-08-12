@@ -90,7 +90,7 @@ export default function Login() {
   if (unverifiedEmail) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-bg px-6">
-        <div className="mb-8 flex flex-col items-center gap-3">
+        <div className="animate-fade-up mb-8 flex flex-col items-center gap-3">
           <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-accent">
             <Mail size={32} className="text-bg" strokeWidth={2.5} />
           </div>
@@ -100,7 +100,7 @@ export default function Login() {
           </p>
         </div>
 
-        <form onSubmit={handleVerifySubmit} className="w-full max-w-sm space-y-6">
+        <form onSubmit={handleVerifySubmit} className="animate-fade-up w-full max-w-sm space-y-6">
           <input
             ref={codeInputRef}
             type="text"
@@ -122,7 +122,7 @@ export default function Login() {
           </button>
 
           {error && (
-            <p className="rounded-sm bg-danger/10 px-4 py-2.5 text-center text-sm text-danger">
+            <p className="animate-fade-up rounded-sm bg-danger/10 px-4 py-2.5 text-center text-sm text-danger">
               {error}
             </p>
           )}
@@ -150,7 +150,7 @@ export default function Login() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-bg px-6">
-      <div className="mb-10 flex flex-col items-center gap-3">
+      <div className="animate-fade-up mb-10 flex flex-col items-center gap-3">
         <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-accent">
           <Dumbbell size={32} className="text-bg" strokeWidth={2.5} />
         </div>
@@ -158,7 +158,7 @@ export default function Login() {
         <p className="text-sm text-ink-3">Tu progreso, siempre con vos.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
+      <form onSubmit={handleSubmit} className="animate-fade-up w-full max-w-sm space-y-4">
         <div>
           <label className="mb-1.5 block text-sm font-medium text-ink-2">Email</label>
           <input
@@ -196,7 +196,7 @@ export default function Login() {
         </div>
 
         {error && (
-          <p className="rounded-sm bg-danger/10 px-4 py-2.5 text-sm text-danger">{error}</p>
+          <p className="animate-fade-up rounded-sm bg-danger/10 px-4 py-2.5 text-sm text-danger">{error}</p>
         )}
 
         <button
