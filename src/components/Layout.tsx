@@ -101,52 +101,49 @@ export default function Layout() {
   return (
     <div className="mx-auto flex min-h-screen max-w-lg flex-col bg-bg">
       {/* Header glass — sticky, siempre visible arriba. El aviso de entreno
-          en curso vive acá adentro (antes era una píldora flotante sobre
-          la tab bar, mismo aviso duplicado en Home.tsx) — así se ve desde
-          cualquier pantalla que use este Layout, no solo scrolleando. */}
-      <header className="sticky top-0 z-30 flex flex-col px-4 pt-[env(safe-area-inset-top)] pb-0">
+          en curso vive acá adentro, a la misma altura que el avatar y las
+          calorías (antes era una píldora flotante sobre la tab bar, mismo
+          aviso duplicado en Home.tsx) — así se ve desde cualquier pantalla
+          que use este Layout, no solo scrolleando. */}
+      <header className="sticky top-0 z-30 flex items-center justify-between px-4 pt-[env(safe-area-inset-top)] pb-0">
         <div className="glass absolute inset-0 -z-10 border-b border-line" />
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => navigate('/perfil')}
-            className="flex min-h-11 items-center gap-2.5 py-3"
-          >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-[11px] font-bold text-bg">
-              {initials}
-            </div>
-            <span className="max-w-[140px] truncate text-[15px] font-semibold text-ink">
-              {name?.split(' ')[0] ?? 'Campeón'}
-            </span>
-            {role === 'admin' && (
-              <span className="rounded-xs bg-accent/15 px-1.5 py-0.5 text-[10px] font-bold text-accent">
-                Admin
-              </span>
-            )}
-          </button>
-          <div className="flex items-center gap-1.5">
-            <CalorieHeaderBadge />
-            {role === 'admin' && (
-              <button
-                onClick={() => navigate('/admin')}
-                className="flex h-11 items-center rounded-sm px-3 text-xs font-medium text-ink-2 transition-colors active:bg-fill"
-              >
-                <Shield size={15} className="mr-1 inline" />Panel
-              </button>
-            )}
+        <button
+          onClick={() => navigate('/perfil')}
+          className="flex min-h-11 items-center gap-2.5 py-3"
+        >
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-[11px] font-bold text-bg">
+            {initials}
           </div>
+          <span className="max-w-[140px] truncate text-[15px] font-semibold text-ink">
+            {name?.split(' ')[0] ?? 'Campeón'}
+          </span>
+          {role === 'admin' && (
+            <span className="rounded-xs bg-accent/15 px-1.5 py-0.5 text-[10px] font-bold text-accent">
+              Admin
+            </span>
+          )}
+        </button>
+        <div className="flex items-center gap-1.5">
+          {activeWorkout && (
+            <button
+              onClick={() => navigate(`/entreno/${activeWorkout.id}`)}
+              aria-label="Entreno en curso"
+              className="flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-accent px-2.5 text-[12px] font-bold text-bg"
+            >
+              <Flame size={13} fill="currentColor" />
+              <span className="font-mono tabular-nums">{formatDuration(activeWorkout.startedAt)}</span>
+            </button>
+          )}
+          <CalorieHeaderBadge />
+          {role === 'admin' && (
+            <button
+              onClick={() => navigate('/admin')}
+              className="flex h-11 items-center rounded-sm px-3 text-xs font-medium text-ink-2 transition-colors active:bg-fill"
+            >
+              <Shield size={15} className="mr-1 inline" />Panel
+            </button>
+          )}
         </div>
-
-        {activeWorkout && (
-          <button
-            onClick={() => navigate(`/entreno/${activeWorkout.id}`)}
-            className="mb-2.5 flex h-10 w-full items-center justify-center gap-2.5 rounded-full bg-accent px-4 text-sm font-bold text-bg active:bg-accent-dim"
-          >
-            <Flame size={15} fill="currentColor" />
-            <span>Entreno en curso</span>
-            <span className="opacity-70">·</span>
-            <span className="font-mono text-xs tabular-nums">{formatDuration(activeWorkout.startedAt)}</span>
-          </button>
-        )}
       </header>
 
       <main className="flex-1 animate-fade-up px-4 pb-[8.5rem] pt-3">
