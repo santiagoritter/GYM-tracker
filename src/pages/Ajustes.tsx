@@ -7,10 +7,12 @@ import {
   Calculator,
   CalendarPlus,
   ChevronRight,
+  CloudOff,
   Download,
   Flame,
   Music,
   Moon,
+  RefreshCw,
   Settings,
   Sun,
   Upload,
@@ -20,11 +22,23 @@ import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useThemeStore } from '@/stores/themeStore'
 import { useSpotifyStore } from '@/stores/spotifyStore'
 import { isSpotifyConfigured, startSpotifyLogin } from '@/lib/spotifyAuth'
+import { isSupabaseAuthConfigured } from '@/lib/supabaseAuth'
+import { runSync } from '@/lib/sync'
+import { useSyncStore } from '@/stores/syncStore'
 import { Card, Row, SectionHeader } from '@/components/ui/Card'
 import type { LocalProfile } from '@/types'
 import { cn } from '@/lib/utils'
 import { exportBackup, importBackup } from '@/lib/backup'
 import { toast } from '@/stores/toastStore'
+
+function timeAgo(iso: string): string {
+  const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60_000)
+  if (minutes < 1) return 'recién'
+  if (minutes < 60) return `hace ${minutes} min`
+  const hours = Math.round(minutes / 60)
+  if (hours < 24) return `hace ${hours} h`
+  return `hace ${Math.round(hours / 24)} d`
+}
 
 export default function Ajustes() {
   const navigate = useNavigate()
@@ -38,6 +52,7 @@ export default function Ajustes() {
   const spotifyDisplayName = useSpotifyStore((s) => s.displayName)
   const spotifyAccessToken = useSpotifyStore((s) => s.accessToken)
   const spotifyDisconnect = useSpotifyStore((s) => s.disconnect)
+  const { status: syncStatus, lastSyncedAt } = useSyncStore()
 
   const update = (patch: Partial<LocalProfile>) => {
     if (userId) db.profile.update(userId, patch)
@@ -104,6 +119,21 @@ export default function Ajustes() {
     } else {
       startSpotifyLogin()
     }
+  }
+
+  const supabaseConfigured = isSupabaseAuthConfigured()
+  const syncSubtitle = !supabaseConfigured
+    ? 'Pendiente de configurar'
+    : syncStatus === 'syncing'
+      ? 'Sincronizando…'
+      : syncStatus === 'error'
+        ? 'No se pudo sincronizar — se reintenta solo'
+        : lastSyncedAt
+          ? `Sincronizado ${timeAgo(lastSyncedAt)}`
+          : 'Todavía no sincronizó'
+  const handleSyncRow = () => {
+    if (!supabaseConfigured || !userId || syncStatus === 'syncing') return
+    runSync(userId)
   }
 
   return (
@@ -282,6 +312,20 @@ export default function Ajustes() {
         <section>
           <SectionHeader title="Datos" />
           <Card>
+            <Row onClick={handleSyncRow} className={cn(!supabaseConfigured && 'opacity-50')}>
+              {supabaseConfigured && syncStatus === 'error' ? (
+                <CloudOff size={18} className="shrink-0 text-danger" />
+              ) : (
+                <RefreshCw
+                  size={18}
+                  className={cn('shrink-0 text-ink-3', syncStatus === 'syncing' && 'animate-spin')}
+                />
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-[15px]">Respaldo en la nube</p>
+                <p className="text-[13px] text-ink-3">{syncSubtitle}</p>
+              </div>
+            </Row>
             <Row onClick={handleExport}>
               <Download size={18} className="shrink-0 text-ink-3" />
               <div className="min-w-0 flex-1">

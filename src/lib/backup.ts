@@ -71,8 +71,10 @@ export async function exportBackup(userId: string): Promise<Blob> {
 
 /** `personalRecords` y `exercisePhotos` tienen un id compuesto que embebe
  * el userId (`${userId}_${exerciseId}`) — hay que reconstruirlo con el
- * userId de la sesión actual, no el que trae el archivo. */
-function remapOwner(table: SyncedTable, row: Record<string, unknown>, newUserId: string): Record<string, unknown> {
+ * userId de la sesión actual, no el que trae el archivo. Exportada:
+ * también la usa migrateLocalUserToSupabase.ts para el mismo problema
+ * (reasignar filas de un userId viejo a uno nuevo), mismo cálculo de PK. */
+export function remapOwner(table: SyncedTable, row: Record<string, unknown>, newUserId: string): Record<string, unknown> {
   const out = deserializeRow(row)
   if (table === 'profile') return { ...out, id: newUserId }
   const withUser = { ...out, userId: newUserId }

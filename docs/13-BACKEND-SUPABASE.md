@@ -3,8 +3,12 @@
 Este documento describe lo que hay que hacer **a mano** en el dashboard de
 Supabase y en GitHub. El código de la app no puede hacer nada de esto por vos.
 
-> Estado: el esquema SQL está en `supabase/migrations/`. La app todavía no se
-> conecta — eso llega en los commits siguientes (cliente, auth, sync).
+> Estado: el esquema SQL está en `supabase/migrations/` (6 archivos — el 6º,
+> `calorie_entries`, se agregó después, ver §2) y la app ya se conecta:
+> `src/lib/supabaseAuth.ts` (auth real) y `src/lib/sync.ts` (push/pull). El
+> login usa un código de 6 dígitos vía Supabase Auth, no el link con
+> `{{ .TokenHash }}` que este doc planeaba originalmente — ver §3.3, cambió
+> de diseño una vez que se implementó de verdad.
 
 ---
 
@@ -29,13 +33,17 @@ Supabase y en GitHub. El código de la app no puede hacer nada de esto por vos.
 
 ## 2. Correr el SQL
 
-**SQL Editor → New query**, y ejecutá los cuatro archivos de
+**SQL Editor → New query**, y ejecutá los seis archivos de
 `supabase/migrations/` **en orden**:
 
 1. `0001_helpers.sql` — función de sellado + last-write-wins
 2. `0002_profiles.sql` — tabla de perfiles + trigger de alta automática
 3. `0003_domain_tables.sql` — rutinas, entrenos, series, PRs, medidas, fotos
 4. `0004_indexes_rls_storage.sql` — índices, RLS y el bucket de fotos
+5. `0005_push_subscriptions.sql` — suscripciones de Web Push (Fase 26)
+6. `0006_calorie_entries.sql` — registro de calorías (Dexie v10, Fase 21):
+   se agregó después de las primeras cuatro migraciones, nunca había tenido
+   tabla en Postgres hasta que se construyó el motor de sync de verdad.
 
 ### Verificación obligatoria
 
@@ -57,7 +65,10 @@ cualquiera que tenga la anon key — es decir, por cualquiera.
 |---|---|
 | Site URL | `https://santiagoritter.github.io/GYM-tracker` (sin barra final) |
 
-**Redirect URLs** — agregar las cuatro:
+**Redirect URLs** — agregar las cuatro (aunque el login de hoy no las use,
+ver §3.3: Supabase igual valida que el Site URL esté configurado, y las de
+`/auth/callback` quedan cargadas por si el día de mañana se agrega un flujo
+por link, ej. "Olvidé mi contraseña"):
 
 ```
 https://santiagoritter.github.io/GYM-tracker/auth/callback
@@ -98,33 +109,39 @@ contra el límite; el síntoma es *"no llega el mail"*, que parece otra cosa.
 
 ### 3.3 Plantillas de email
 
-**Authentication → Emails → Confirm signup**:
+**Authentication → Emails → Confirm signup**. Cambio de diseño respecto a lo
+que este doc planeaba originalmente (link con `{{ .TokenHash }}` + una
+pantalla `/auth/callback` que nunca se construyó): la app ya tenía una UI de
+6 cajas para tipear un código (del sistema viejo de EmailJS, que Supabase
+Auth reemplazó) y Supabase soporta mandar un **código numérico** en vez de
+(o además de) un link — así que se reusa esa UI en vez de agregar una
+pantalla nueva:
 
 ```html
 <h2>Confirmá tu cuenta</h2>
-<p>Hola {{ .Data.full_name }}, tocá el botón para activar tu GymTracker.</p>
-<p>
-  <a href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=signup">
-    Confirmar mi cuenta
-  </a>
-</p>
+<p>Tu código de verificación es:</p>
+<h1 style="letter-spacing: 4px;">{{ .Token }}</h1>
+<p>Ingresalo en la app para activar tu GymTracker.</p>
 ```
 
-**Por qué `{{ .TokenHash }}` y no el link por defecto** — dos problemas reales
-en celular, ambos frecuentes:
+**Por qué un código y no el link por defecto** — resuelve los mismos dos
+problemas que este doc ya había identificado, pero de raíz en vez de con un
+parche:
 
 - **PKCE entre dispositivos.** El link por defecto usa `?code=`, que se
   canjea con un `code_verifier` guardado en el localStorage del navegador
-  donde te registraste. Si abrís el mail en la app de Gmail (que usa su
-  propio navegador embebido) o en otro dispositivo, falla con *"code verifier
-  should be non-empty"*. `{{ .TokenHash }}` no depende del verifier.
-- **Prefetch de Gmail.** Gmail precarga los links de los mails. Los tokens de
-  Supabase son de un solo uso: el prefetch lo consume y cuando el usuario
-  toca, ya expiró. Por eso la pantalla `/auth/callback` tiene un **botón
-  explícito** en vez de verificar sola al cargar — los prefetchers no tocan
-  botones.
+  donde te registraste — si abrís el mail en otro dispositivo, falla. Un
+  código tipeado a mano no depende de en qué navegador se abre el mail,
+  el problema directamente no existe.
+- **Prefetch de Gmail.** Gmail precarga los links de los mails y los
+  tokens de un solo uso quedan consumidos antes de que el usuario toque
+  nada. Sin link, no hay nada que prefetchear.
 
-Aplicá lo mismo a la plantilla **Reset password** (con `type=recovery`).
+`src/lib/supabaseAuth.ts` consume esto con
+`supabase.auth.verifyOtp({ email, token, type: 'signup' })`.
+
+Aplicá el mismo criterio a la plantilla **Reset password** si el día de
+mañana se construye ese flujo (todavía no existe en la app).
 
 ### 3.4 Cerrar el registro anónimo
 
@@ -188,9 +205,12 @@ Después de registrarte por primera vez:
 | `VITE_SUPABASE_URL` | el Project URL del paso 1 |
 | `VITE_SUPABASE_ANON_KEY` | la anon key del paso 1 |
 
-El workflow los inyecta en el build. Hay un chequeo de *fail-fast* en
-`vite.config.ts` porque GitHub Actions reemplaza un secret inexistente por
-string vacío **sin fallar**, y publicaría un bundle roto en silencio.
+El workflow los inyecta en el build. `vite.config.ts` tiene un chequeo de
+*fail-fast*: si `VITE_BASE_PATH` está seteado (o sea, es el build de
+GitHub Actions, no uno local) y falta `VITE_SUPABASE_URL` o
+`VITE_SUPABASE_ANON_KEY`, el build tira error en vez de salir "bien" — sin
+esto, un secret mal cargado se resuelve a string vacío (GitHub Actions no
+omite la variable) y publicaría un bundle con auth/sync rotos en silencio.
 
 ---
 
@@ -241,12 +261,13 @@ algo que no puede andar.
 ## Checklist
 
 - [ ] Proyecto creado, URL y anon key anotadas
-- [ ] Los 5 SQL corridos en orden (incluye `0005_push_subscriptions.sql`)
+- [ ] Los 6 SQL corridos en orden (incluye `0005_push_subscriptions.sql` y
+      `0006_calorie_entries.sql`)
 - [ ] Advisors → Security sin warnings
 - [ ] Site URL y las 4 Redirect URLs
 - [ ] SMTP de Gmail configurado y probado
 - [ ] Rate limit de emails subido
-- [ ] Plantillas con `{{ .TokenHash }}`
+- [ ] Plantilla "Confirm signup" con `{{ .Token }}` (código, no link)
 - [ ] Anonymous sign-ins desactivado
 - [ ] Los 2 secrets de Supabase en GitHub (URL + anon key)
 - [ ] `{"role":"admin"}` puesto (después del primer registro)

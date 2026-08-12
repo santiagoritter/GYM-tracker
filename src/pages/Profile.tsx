@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { LogOut, Ruler, Settings, Shield } from 'lucide-react'
 import { db } from '@/db/schema'
 import { useAuthStore } from '@/stores/authStore'
+import { signOut } from '@/lib/supabaseAuth'
 import { Card, Row } from '@/components/ui/Card'
 import type { LocalProfile } from '@/types'
 import { cn } from '@/lib/utils'
@@ -21,19 +22,21 @@ const dailyMsg = getDailyMessage()
 
 export default function Profile() {
   const navigate = useNavigate()
-  const { userId, name, role, clearSession } = useAuthStore()
+  const { userId, name, email, role } = useAuthStore()
   const profile = useLiveQuery(
     () => (userId ? db.profile.get(userId) : undefined),
     [userId]
   )
-  const user = useLiveQuery(() => (userId ? db.users.get(userId) : undefined), [userId])
 
   const update = (patch: Partial<LocalProfile>) => {
     if (userId) db.profile.update(userId, patch)
   }
 
-  const handleLogout = () => {
-    clearSession()
+  const handleLogout = async () => {
+    // No alcanza con limpiar authStore: sin esto la sesión de Supabase
+    // (persistida en localStorage por supabase-js) se restaura sola al
+    // recargar, vía el listener de onAuthStateChange en main.tsx.
+    await signOut()
     navigate('/login', { replace: true })
   }
 
@@ -57,7 +60,7 @@ export default function Profile() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate font-semibold">{name}</p>
-            <p className="truncate text-sm text-ink-3">{user?.email}</p>
+            <p className="truncate text-sm text-ink-3">{email}</p>
           </div>
           {role === 'admin' && (
             <span className="shrink-0 rounded-xs bg-accent/15 px-2 py-1 text-xs font-bold text-accent">

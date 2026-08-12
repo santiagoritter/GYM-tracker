@@ -6,6 +6,9 @@ import ErrorBoundary from '@/components/ErrorBoundary'
 import { db, seedIfEmpty } from '@/db/schema'
 import { installSyncHooks, setSyncUser } from '@/db/syncHooks'
 import { useAuthStore } from '@/stores/authStore'
+import { supabase } from '@/lib/supabaseClient'
+import { runSync } from '@/lib/sync'
+import type { UserRole } from '@/types'
 import { initNativeShell } from '@/lib/native'
 import { initPwaUpdate } from '@/lib/pwaUpdate'
 import { applyTheme, useThemeStore } from '@/stores/themeStore'
@@ -38,6 +41,46 @@ installSyncHooks(db)
 // también fuera del árbol de React (stores, helpers de db).
 setSyncUser(useAuthStore.getState().userId)
 useAuthStore.subscribe((state) => setSyncUser(state.userId))
+
+// Fuente de verdad de la sesión: Supabase, no cada pantalla de login por
+// separado. Dispara también con la sesión restaurada al recargar la
+// página (evento inicial de onAuthStateChange), así que reemplaza
+// también lo que antes hacía persist() de authStore para ese caso.
+//
+// El mismo listener dispara el sync: al loguearse, al recuperar conexión,
+// al volver a foreground, y cada 5 minutos mientras haya sesión — todo
+// silencioso (runSync nunca tira, ver sync.ts). Sin esto los cambios
+// locales nunca suben solos, habría que forzarlo a mano.
+const SYNC_INTERVAL_MS = 5 * 60 * 1000
+let syncInterval: ReturnType<typeof setInterval> | undefined
+
+const triggerSync = () => {
+  const userId = useAuthStore.getState().userId
+  if (userId && !document.hidden && navigator.onLine) runSync(userId)
+}
+
+if (supabase) {
+  supabase.auth.onAuthStateChange((_event, session) => {
+    if (session?.user) {
+      const role = (session.user.app_metadata?.role as UserRole | undefined) ?? 'user'
+      const name = (session.user.user_metadata?.name as string | undefined) ?? ''
+      useAuthStore.getState().setSession(session.user.id, role, name, session.user.email ?? '')
+      triggerSync()
+      if (!syncInterval) syncInterval = setInterval(triggerSync, SYNC_INTERVAL_MS)
+    } else {
+      useAuthStore.getState().clearSession()
+      if (syncInterval) {
+        clearInterval(syncInterval)
+        syncInterval = undefined
+      }
+    }
+  })
+
+  window.addEventListener('online', triggerSync)
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) triggerSync()
+  })
+}
 
 seedIfEmpty()
 
