@@ -1,14 +1,13 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ChevronRight, Play, Flame } from 'lucide-react'
+import { ChevronRight, Play } from 'lucide-react'
 import { routinesFor, routineDaysOf, workoutsFor } from '@/db/scoped'
 import { nextRoutineDay, startWorkoutFromDay } from '@/db/routines'
 import { useWorkoutStore } from '@/stores/workoutStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { HOME_MESSAGES } from '@/lib/motivational'
-import { formatDuration } from '@/lib/utils'
 import CalendarHeatmap from '@/components/gym/CalendarHeatmap'
 import SpotifyNowPlaying from '@/components/gym/SpotifyNowPlaying'
 import RoutineDaysSheet from '@/components/gym/RoutineDaysSheet'
@@ -91,21 +90,11 @@ export default function Home() {
           junto al avatar) — visible desde cualquier pantalla, no solo acá. */}
       <SpotifyNowPlaying />
 
-      {activeWorkout ? (
-        <button
-          onClick={() => navigate(`/entreno/${activeWorkout.id}`)}
-          className="flex w-full items-center justify-between rounded-2xl border border-accent/40 bg-accent/10 p-5 text-left"
-        >
-          <div>
-            <p className="flex items-center gap-2 text-sm font-semibold text-accent">
-              <Flame size={16} /> Entreno en curso
-            </p>
-            <p className="mt-1 font-medium">{activeWorkout.name}</p>
-            <p className="text-sm text-ink-2">{formatDuration(activeWorkout.startedAt)}</p>
-          </div>
-          <ChevronRight className="text-accent" />
-        </button>
-      ) : (
+      {/* Si hay un entreno en curso, el aviso ya está en el header global
+          (Layout.tsx) — repetirlo acá abajo sería la misma tarjeta accent
+          dos veces en la misma pantalla. Solo se ofrece arrancar uno
+          nuevo cuando no hay ninguno activo. */}
+      {!activeWorkout && (
         <div className="space-y-2">
           <HoldButton
             onComplete={handleStart}

@@ -3,14 +3,17 @@ import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ArrowLeft, CalendarPlus, ListPlus, Trash2 } from 'lucide-react'
 import { db } from '@/db/schema'
+import { routinesFor, routineDaysOf } from '@/db/scoped'
 import { logPastWorkout, type PastWorkoutExerciseInput } from '@/db/pastWorkouts'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { ExercisePicker } from '@/components/gym/ExercisePicker'
+import LoadFromRoutineSheet from '@/components/gym/LoadFromRoutineSheet'
 import NumberStepper from '@/components/ui/NumberStepper'
 import { Card, EmptyState, SectionHeader } from '@/components/ui/Card'
-import type { Exercise } from '@/types'
+import type { Exercise, RoutineDay } from '@/types'
 import { dateInputToIso, displayToKg, formatWeight } from '@/lib/utils'
 import { WEIGHT_INCREMENT, isBodyweight } from '@/lib/loading'
+import { recommend } from '@/lib/recommendation'
 import { toast } from '@/stores/toastStore'
 
 interface DraftSet {
@@ -39,15 +42,66 @@ export default function LogPastWorkout() {
   const exerciseMap = new Map(exercises.map((e) => [e.id, e]))
   const units = profile?.units ?? 'kg'
 
+  const routines = useLiveQuery(
+    () => (userId ? routinesFor(userId).filter((r) => r.isArchived === 0).toArray() : []),
+    [userId]
+  ) ?? []
+  const daysByRoutine = useLiveQuery(async () => {
+    const map = new Map<string, RoutineDay[]>()
+    for (const routine of routines) {
+      map.set(routine.id, await routineDaysOf(routine.id).sortBy('dayOrder'))
+    }
+    return map
+  }, [routines]) ?? new Map<string, RoutineDay[]>()
+
   const [date, setDate] = useState(todayInputValue())
   const [name, setName] = useState('')
   const [draftExercises, setDraftExercises] = useState<DraftExercise[]>([])
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [routineSheetOpen, setRoutineSheetOpen] = useState(false)
   const [saving, setSaving] = useState(false)
 
   const handleSelectExercise = (exercise: Exercise) => {
     setDraftExercises((prev) => [...prev, { exerciseId: exercise.id, sets: [{ reps: 10, weightKg: 0 }] }])
     setPickerOpen(false)
+  }
+
+  // Carga en bloque desde un día de rutina en vez de ejercicio por
+  // ejercicio — usa el número de series/reps que pide la rutina para ese
+  // día, y el peso sugerido con el mismo criterio que arrancar un entreno
+  // en vivo desde una rutina (workoutStore.addExercise). Ejercicios que
+  // ya estaban en la lista no se tocan, para no pisar ediciones manuales.
+  const handleSelectDay = async (day: RoutineDay) => {
+    setRoutineSheetOpen(false)
+    if (!userId) return
+    const entries = await db.routineExercises.where('dayId').equals(day.id).sortBy('exerciseOrder')
+    const existingIds = new Set(draftExercises.map((e) => e.exerciseId))
+
+    const newDrafts: DraftExercise[] = []
+    for (const entry of entries) {
+      if (existingIds.has(entry.exerciseId)) continue
+      const exercise = exerciseMap.get(entry.exerciseId)
+      if (!exercise) continue
+      const history = await db.workoutSets
+        .where('exerciseId')
+        .equals(entry.exerciseId)
+        .filter((s) => s.userId === userId && s.completed === 1 && s.isWarmup === 0)
+        .toArray()
+      const rec = recommend(exercise, profile, history)
+      newDrafts.push({
+        exerciseId: entry.exerciseId,
+        sets: Array.from({ length: entry.setsTarget }, () => ({
+          reps: entry.repsMin,
+          weightKg: rec.weightKg,
+        })),
+      })
+    }
+    if (newDrafts.length === 0) {
+      toast.info('Nada nuevo para agregar', 'Esos ejercicios ya estaban en la lista.')
+      return
+    }
+    setDraftExercises((prev) => [...prev, ...newDrafts])
+    if (!name.trim()) setName(day.name)
   }
 
   const handleAddSet = (exerciseId: string) => {
@@ -149,7 +203,7 @@ export default function LogPastWorkout() {
             <EmptyState
               icon={<ListPlus size={28} />}
               title="Todavía no agregaste ninguno"
-              description="Sumá los ejercicios que hiciste ese día, con sus series."
+              description="Sumá los ejercicios que hiciste ese día, con sus series — o cargá todos juntos desde una rutina."
             />
           ) : (
             <div className="space-y-3">
@@ -229,12 +283,20 @@ export default function LogPastWorkout() {
             </div>
           )}
 
-          <button
-            onClick={() => setPickerOpen(true)}
-            className="mt-3 h-14 w-full rounded-md border border-dashed border-line-2 font-semibold text-ink-2 transition-colors active:bg-surface"
-          >
-            Agregar ejercicio
-          </button>
+          <div className="mt-3 flex gap-2">
+            <button
+              onClick={() => setRoutineSheetOpen(true)}
+              className="h-14 flex-1 rounded-md border border-dashed border-line-2 font-semibold text-ink-2 transition-colors active:bg-surface"
+            >
+              Cargar desde rutina
+            </button>
+            <button
+              onClick={() => setPickerOpen(true)}
+              className="h-14 flex-1 rounded-md border border-dashed border-line-2 font-semibold text-ink-2 transition-colors active:bg-surface"
+            >
+              Agregar ejercicio
+            </button>
+          </div>
         </section>
 
         <button
@@ -251,6 +313,15 @@ export default function LogPastWorkout() {
           onSelect={handleSelectExercise}
           onClose={() => setPickerOpen(false)}
           excludeIds={draftExercises.map((e) => e.exerciseId)}
+        />
+      )}
+
+      {routineSheetOpen && (
+        <LoadFromRoutineSheet
+          routines={routines}
+          daysByRoutine={daysByRoutine}
+          onSelectDay={handleSelectDay}
+          onClose={() => setRoutineSheetOpen(false)}
         />
       )}
     </div>
