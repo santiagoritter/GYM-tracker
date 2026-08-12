@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import { X, CalendarDays, Download } from 'lucide-react'
 import Portal from '@/components/ui/Portal'
+import { useSheetDrag } from '@/hooks/useSheetDrag'
 import { ROUTINE_TEMPLATES, type RoutineTemplate } from '@/data/routineTemplates'
 import { importPayload } from '@/lib/qr'
 import { toast } from '@/stores/toastStore'
@@ -30,6 +31,7 @@ export default function TemplatePicker({
 }) {
   const [busy, setBusy] = useState<string | null>(null)
   const reduced = useReducedMotion()
+  const { panelDragProps, handleDragProps } = useSheetDrag(onClose)
 
   const handleImport = async (template: RoutineTemplate) => {
     setBusy(template.id)
@@ -57,10 +59,11 @@ export default function TemplatePicker({
         initial="hidden"
         animate="visible"
         variants={reduced ? sheetPanelVariantsReduced : sheetPanelVariants}
+        {...panelDragProps}
         className="fixed bottom-0 left-1/2 z-50 flex max-h-[88vh] w-full max-w-lg flex-col rounded-t-3xl bg-surface shadow-float"
       >
         <motion.div variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}>
-          <div className="flex justify-center pt-3 pb-1">
+          <div className="flex justify-center pt-3 pb-1" {...handleDragProps}>
             <div className="h-1 w-10 rounded-full bg-line-2" />
           </div>
 
