@@ -13,8 +13,8 @@ export default function Login() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null)
-  const [code, setCode] = useState(['', '', '', '', '', ''])
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([])
+  const [code, setCode] = useState('')
+  const codeInputRef = useRef<HTMLInputElement>(null)
 
   // El listener de onAuthStateChange en main.tsx ya deja authStore al
   // día — acá solo hace falta el perfil local y, si esta cuenta ya
@@ -62,19 +62,13 @@ export default function Login() {
     }
   }
 
-  const handleCodeInput = (i: number, val: string) => {
-    if (!/^\d*$/.test(val)) return
-    const next = [...code]
-    next[i] = val.slice(-1)
-    setCode(next)
-    if (val && i < 5) inputRefs.current[i + 1]?.focus()
-    if (next.every(Boolean)) verifyCode(next.join(''))
-  }
-
-  const handleCodeKeyDown = (i: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !code[i] && i > 0) {
-      inputRefs.current[i - 1]?.focus()
-    }
+  // Un solo campo, no cajita-por-dígito: el código que manda Supabase no
+  // tiene un largo fijo confiable (8 dígitos en la práctica, no los 6 que
+  // se había asumido al principio) — un input de texto normal no depende
+  // de adivinar ese número, y de paso permite pegar el código completo.
+  const handleVerifySubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (code.trim()) verifyCode(code.trim())
   }
 
   const verifyCode = async (fullCode: string) => {
@@ -86,8 +80,8 @@ export default function Login() {
       await finishAuth(user)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Código inválido.')
-      setCode(['', '', '', '', '', ''])
-      inputRefs.current[0]?.focus()
+      setCode('')
+      codeInputRef.current?.focus()
     } finally {
       setLoading(false)
     }
@@ -102,29 +96,30 @@ export default function Login() {
           </div>
           <h1 className="text-2xl font-bold">Verificá tu email</h1>
           <p className="text-center text-sm text-ink-3">
-            Ingresá el código de 6 dígitos que te mandamos.
+            Ingresá el código que te mandamos.
           </p>
         </div>
 
-        <div className="w-full max-w-sm space-y-6">
-          {/* gap-2, no gap-3: 6 casillas de 48px + 5 gaps de 12px = 348px
-              desborda los ~345px disponibles en un iPhone 14 Pro (393px). */}
-          <div className="flex justify-center gap-2">
-            {code.map((digit, i) => (
-              <input
-                key={i}
-                ref={(el) => { inputRefs.current[i] = el }}
-                type="text"
-                inputMode="numeric"
-                maxLength={1}
-                value={digit}
-                onChange={(e) => handleCodeInput(i, e.target.value)}
-                onKeyDown={(e) => handleCodeKeyDown(i, e)}
-                className="h-14 w-12 rounded-sm bg-surface text-center text-xl font-bold tabular-nums outline-none ring-1 ring-line-2 transition focus:ring-accent"
-                autoFocus={i === 0}
-              />
-            ))}
-          </div>
+        <form onSubmit={handleVerifySubmit} className="w-full max-w-sm space-y-6">
+          <input
+            ref={codeInputRef}
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+            placeholder="Código del email"
+            autoFocus
+            className="h-14 w-full rounded-sm bg-surface text-center text-2xl font-bold tracking-[0.3em] tabular-nums outline-none ring-1 ring-line-2 transition focus:ring-accent"
+          />
+
+          <button
+            type="submit"
+            disabled={loading || !code.trim()}
+            className="h-14 w-full rounded-sm bg-accent font-bold text-bg transition active:opacity-80 disabled:opacity-50"
+          >
+            {loading ? 'Verificando…' : 'Verificar código'}
+          </button>
 
           {error && (
             <p className="rounded-sm bg-danger/10 px-4 py-2.5 text-center text-sm text-danger">
@@ -133,6 +128,7 @@ export default function Login() {
           )}
 
           <button
+            type="button"
             onClick={handleResendFromLogin}
             disabled={loading}
             className="h-12 w-full rounded-sm bg-surface text-sm text-ink-2 transition active:opacity-70 disabled:opacity-40"
@@ -141,12 +137,13 @@ export default function Login() {
           </button>
 
           <button
+            type="button"
             onClick={() => setUnverifiedEmail(null)}
             className="h-11 w-full text-center text-sm text-ink-3"
           >
             Volver
           </button>
-        </div>
+        </form>
       </div>
     )
   }
