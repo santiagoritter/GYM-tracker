@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { Music, Pause, Play, SkipBack, SkipForward } from 'lucide-react'
 import { useSpotifyStore } from '@/stores/spotifyStore'
 import {
+  fetchAvailableDevices,
   fetchPlaybackState,
   sendPlaybackCommand,
   type PlaybackResult,
   type PlaybackState,
+  type SpotifyDevice,
 } from '@/lib/spotifyPlayer'
 import { hapticTick } from '@/lib/native'
 import { toast } from '@/stores/toastStore'
@@ -35,24 +37,34 @@ export default function SpotifyNowPlaying() {
   const accessToken = useSpotifyStore((s) => s.accessToken)
   const [state, setState] = useState<PlaybackResult | 'loading'>('loading')
   const [controlsDisabled, setControlsDisabled] = useState(false)
+  // Dispositivo que sigue con Spotify abierto aunque la Web API ya no lo
+  // marque "activo" — permite ofrecer "reanudar acá" en vez de mandar al
+  // usuario a destrabarlo a mano desde la propia app de Spotify.
+  const [resumeDevice, setResumeDevice] = useState<SpotifyDevice | null>(null)
   const noDeviceStreak = useRef(0)
 
   // Solo cierra sobre refs y setState (ambos con identidad estable) —
   // useCallback con deps vacías la vuelve segura de meter en el efecto
   // de abajo sin que dispare un re-arranque del interval en cada render.
-  const applyResult = useCallback((result: PlaybackResult) => {
+  const applyResult = useCallback(async (result: PlaybackResult) => {
     if (result === 'error') return
     if (result !== 'no-device') {
       noDeviceStreak.current = 0
+      setResumeDevice(null)
       setState(result)
       return
     }
     noDeviceStreak.current += 1
-    setState((prev) =>
-      isPlaybackState(prev) && noDeviceStreak.current < NO_DEVICE_CONFIRM_THRESHOLD
-        ? prev
-        : 'no-device'
-    )
+    let justLostDevice = false
+    setState((prev) => {
+      if (isPlaybackState(prev) && noDeviceStreak.current < NO_DEVICE_CONFIRM_THRESHOLD) return prev
+      justLostDevice = true
+      return 'no-device'
+    })
+    if (justLostDevice) {
+      const devices = await fetchAvailableDevices()
+      setResumeDevice(devices?.find((d) => !d.isActive) ?? devices?.[0] ?? null)
+    }
   }, [])
 
   useEffect(() => {
@@ -74,6 +86,27 @@ export default function SpotifyNowPlaying() {
     }
   }, [accessToken, applyResult])
 
+  const handleResume = async (device: SpotifyDevice) => {
+    hapticTick()
+    const result = await sendPlaybackCommand('play', device.id)
+    if (result === 'premium-required') {
+      setControlsDisabled(true)
+      toast.error('Necesitás Spotify Premium', 'Los controles de reproducción no están disponibles en cuentas gratuitas.')
+      return
+    }
+    if (result === 'reauth-required') {
+      setState('reauth-required')
+      return
+    }
+    if (result !== 'ok') {
+      toast.error('No se pudo reanudar', 'Probá abrir Spotify manualmente.')
+      return
+    }
+    setTimeout(async () => {
+      await applyResult(await fetchPlaybackState())
+    }, 400)
+  }
+
   // 'error' nunca se guarda en el poll (ver arriba) — este chequeo es
   // solo para que TypeScript termine de angostar el tipo a PlaybackState.
   if (!accessToken || state === 'loading' || state === 'error') return null
@@ -92,6 +125,25 @@ export default function SpotifyNowPlaying() {
   }
 
   if (state === 'no-device') {
+    if (resumeDevice) {
+      return (
+        <Card>
+          <Row className="gap-3">
+            <Music size={18} className="shrink-0 text-ink-3" />
+            <span className="min-w-0 flex-1 truncate text-[14px] text-ink-2">
+              Pausado en {resumeDevice.name}
+            </span>
+            <button
+              onClick={() => handleResume(resumeDevice)}
+              aria-label="Reanudar"
+              className="flex h-11 w-11 shrink-0 items-center justify-center text-ink active:text-ink-2"
+            >
+              <Play size={20} fill="currentColor" />
+            </button>
+          </Row>
+        </Card>
+      )
+    }
     return (
       <Card>
         <Row>
