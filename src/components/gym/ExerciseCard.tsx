@@ -341,6 +341,8 @@ function SetRow({
             'flex h-11 w-full items-center justify-center rounded-lg border transition-colors',
             set.completed === 1
               ? 'animate-set-pop border-success bg-success text-bg'
+              : isActive
+              ? 'border-accent text-accent'
               : 'border-line-2 text-ink-3'
           )}
         >
