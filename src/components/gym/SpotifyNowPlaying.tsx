@@ -1,13 +1,28 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Music, Pause, Play, SkipBack, SkipForward } from 'lucide-react'
 import { useSpotifyStore } from '@/stores/spotifyStore'
-import { fetchPlaybackState, sendPlaybackCommand, type PlaybackResult } from '@/lib/spotifyPlayer'
+import {
+  fetchPlaybackState,
+  sendPlaybackCommand,
+  type PlaybackResult,
+  type PlaybackState,
+} from '@/lib/spotifyPlayer'
 import { hapticTick } from '@/lib/native'
 import { toast } from '@/stores/toastStore'
 import { Card, Row } from '@/components/ui/Card'
 
 const POLL_MS = 5000
+// Spotify reporta el dispositivo como inactivo (204) casi al instante
+// después de pausar, mucho antes de que realmente se haya "ido" —
+// un solo 204 no alcanza para dar la sesión por perdida, si no la
+// fila parpadeaba a "abrí Spotify" cada vez que alguien pausaba unos
+// segundos. Hacen falta dos confirmaciones seguidas.
+const NO_DEVICE_CONFIRM_THRESHOLD = 2
+
+function isPlaybackState(x: PlaybackResult | 'loading'): x is PlaybackState {
+  return typeof x === 'object' && x !== null
+}
 
 /**
  * Control remoto de lo que suena en Spotify — nunca reproduce audio
@@ -20,6 +35,25 @@ export default function SpotifyNowPlaying() {
   const accessToken = useSpotifyStore((s) => s.accessToken)
   const [state, setState] = useState<PlaybackResult | 'loading'>('loading')
   const [controlsDisabled, setControlsDisabled] = useState(false)
+  const noDeviceStreak = useRef(0)
+
+  // Solo cierra sobre refs y setState (ambos con identidad estable) —
+  // useCallback con deps vacías la vuelve segura de meter en el efecto
+  // de abajo sin que dispare un re-arranque del interval en cada render.
+  const applyResult = useCallback((result: PlaybackResult) => {
+    if (result === 'error') return
+    if (result !== 'no-device') {
+      noDeviceStreak.current = 0
+      setState(result)
+      return
+    }
+    noDeviceStreak.current += 1
+    setState((prev) =>
+      isPlaybackState(prev) && noDeviceStreak.current < NO_DEVICE_CONFIRM_THRESHOLD
+        ? prev
+        : 'no-device'
+    )
+  }, [])
 
   useEffect(() => {
     if (!accessToken) return
@@ -28,8 +62,8 @@ export default function SpotifyNowPlaying() {
     const poll = async () => {
       if (document.hidden) return
       const result = await fetchPlaybackState()
-      if (cancelled || result === 'error') return
-      setState(result)
+      if (cancelled) return
+      applyResult(result)
     }
 
     poll()
@@ -38,7 +72,7 @@ export default function SpotifyNowPlaying() {
       cancelled = true
       clearInterval(interval)
     }
-  }, [accessToken])
+  }, [accessToken, applyResult])
 
   // 'error' nunca se guarda en el poll (ver arriba) — este chequeo es
   // solo para que TypeScript termine de angostar el tipo a PlaybackState.
@@ -92,8 +126,7 @@ export default function SpotifyNowPlaying() {
       return
     }
     setTimeout(async () => {
-      const fresh = await fetchPlaybackState()
-      if (fresh !== 'error') setState(fresh)
+      applyResult(await fetchPlaybackState())
     }, 400)
   }
 
