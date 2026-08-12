@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { TrendingUp, Trophy } from 'lucide-react'
+import { ChevronDown, TrendingUp, Trophy } from 'lucide-react'
 import {
   Bar,
   BarChart,
@@ -27,6 +27,7 @@ import StreakWeekCard from '@/components/gym/StreakWeekCard'
 import RecentWorkouts from '@/components/gym/RecentWorkouts'
 import { EmptyState, SectionHeader } from '@/components/ui/Card'
 import AchievementsPanel from '@/components/gym/AchievementsPanel'
+import ExerciseSelectSheet from '@/components/gym/ExerciseSelectSheet'
 import { cn } from '@/lib/utils'
 
 type Tab = 'summary' | 'charts' | 'month' | 'levels' | 'achievements' | 'photos' | 'prs' | 'history'
@@ -107,6 +108,7 @@ function Charts() {
   )
   const exercises = useLiveQuery(() => db.exercises.toArray(), []) ?? []
   const [selectedExercise, setSelectedExercise] = useState<string>('')
+  const [pickerOpen, setPickerOpen] = useState(false)
 
   const workoutMap = useMemo(
     () => new Map((workouts ?? []).map((w) => [w.id, w])),
@@ -214,17 +216,26 @@ function Charts() {
     <div className="space-y-6">
       <section className="animate-fade-up">
         <SectionHeader title="Mejor peso por entreno" />
-        <select
-          value={effectiveExercise}
-          onChange={(e) => setSelectedExercise(e.target.value)}
-          className="mb-3 w-full rounded-lg bg-surface px-3 py-2.5 text-sm outline-none"
+        <button
+          onClick={() => setPickerOpen(true)}
+          className="mb-3 flex w-full items-center justify-between rounded-lg bg-surface px-3 py-2.5 text-left text-sm"
         >
-          {trainedExercises.map((e) => (
-            <option key={e.id} value={e.id}>
-              {e.name}
-            </option>
-          ))}
-        </select>
+          <span className="truncate font-medium">
+            {trainedExercises.find((e) => e.id === effectiveExercise)?.name ?? 'Elegir ejercicio'}
+          </span>
+          <ChevronDown size={16} className="shrink-0 text-ink-3" />
+        </button>
+        {pickerOpen && (
+          <ExerciseSelectSheet
+            exercises={trainedExercises}
+            selectedId={effectiveExercise}
+            onSelect={(id) => {
+              setSelectedExercise(id)
+              setPickerOpen(false)
+            }}
+            onClose={() => setPickerOpen(false)}
+          />
+        )}
         <div className="h-56 rounded-xl bg-surface p-3">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={exerciseData} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
