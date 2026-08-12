@@ -95,7 +95,7 @@ export default function Registro() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-bg px-6 py-10">
-      <div className="mb-8 flex flex-col items-center gap-3">
+      <div className="animate-fade-up mb-8 flex flex-col items-center gap-3">
         <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-accent">
           {step === 'verify'
             ? <Mail size={32} className="text-bg" strokeWidth={2.5} />
@@ -114,7 +114,7 @@ export default function Registro() {
       </div>
 
       {step === 'form' ? (
-        <form onSubmit={handleRegister} className="w-full max-w-sm space-y-4">
+        <form onSubmit={handleRegister} className="animate-fade-up w-full max-w-sm space-y-4">
           <div>
             <label className="mb-1.5 block text-sm font-medium text-ink-2">Nombre</label>
             <input
@@ -180,7 +180,7 @@ export default function Registro() {
           </div>
 
           {error && (
-            <p className="rounded-sm bg-danger/10 px-4 py-2.5 text-sm text-danger">{error}</p>
+            <p className="animate-fade-up rounded-sm bg-danger/10 px-4 py-2.5 text-sm text-danger">{error}</p>
           )}
 
           <button
@@ -199,7 +199,7 @@ export default function Registro() {
           </p>
         </form>
       ) : (
-        <form onSubmit={handleVerifySubmit} className="w-full max-w-sm space-y-6">
+        <form onSubmit={handleVerifySubmit} className="animate-fade-up w-full max-w-sm space-y-6">
           <input
             ref={codeInputRef}
             type="text"
@@ -221,7 +221,7 @@ export default function Registro() {
           </button>
 
           {error && (
-            <p className="rounded-sm bg-danger/10 px-4 py-2.5 text-sm text-danger text-center">
+            <p className="animate-fade-up rounded-sm bg-danger/10 px-4 py-2.5 text-sm text-danger text-center">
               {error}
             </p>
           )}
