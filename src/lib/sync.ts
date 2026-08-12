@@ -66,13 +66,28 @@ const LOCAL_ONLY_FIELDS: Partial<Record<SyncedTable, readonly string[]>> = {
   exercisePhotos: ['blob', 'uploaded'],
 }
 
+// Postgres NULL ↔ campo opcional local ausente: el modelo local representa
+// "sin valor" con la clave en `undefined` (así se crean acá, ver
+// `addExerciseToDay`/`toggleSupersetWithPrevious`), pero Postgres siempre
+// devuelve la columna, con `null` explícito — y para el cliente Supabase-JS
+// eso llega como `null`, no `undefined`. Sin esta conversión, un campo
+// como `supersetGroup` volvía de un pull como `null`, y como TODO el
+// código lo compara con `!== undefined` (nunca con `== null`), cualquier
+// ejercicio que hubiera sincronizado una sola vez pasaba ese chequeo como
+// si tuviera un grupo de superserie real — y como además `null === null`
+// para dos filas distintas, terminaba emparejando CUALQUIER ejercicio con
+// cualquier otro, bloqueando el descanso entre series (bug real, visto en
+// producción: "todas las series son superseries y no descansan"). El
+// upgrade de Dexie a v12 (schema.ts) limpia lo que ya había quedado mal
+// localmente por este bug; esto evita que se repita.
 function toRemoteRow(table: SyncedTable, row: Record<string, unknown>): Record<string, unknown> {
   const booleanFields = new Set(BOOLEAN_FIELDS[table] ?? [])
   const skip = new Set([...(LOCAL_ONLY_FIELDS[table] ?? []), 'dirty'])
   const out: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(row)) {
     if (skip.has(key)) continue
-    out[camelToSnake(key)] = booleanFields.has(key) ? value === 1 : value
+    const remoteValue = value === undefined ? null : value
+    out[camelToSnake(key)] = booleanFields.has(key) ? remoteValue === 1 : remoteValue
   }
   return out
 }
@@ -83,7 +98,8 @@ function toLocalRow(table: SyncedTable, row: Record<string, unknown>): Record<st
   for (const [key, value] of Object.entries(row)) {
     if (key === 'server_updated_at' || key === 'deleted_at') continue
     const camelKey = snakeToCamel(key)
-    out[camelKey] = booleanFields.has(camelKey) ? (value ? 1 : 0) : value
+    const localValue = value === null ? undefined : value
+    out[camelKey] = booleanFields.has(camelKey) ? (localValue ? 1 : 0) : localValue
   }
   return out
 }

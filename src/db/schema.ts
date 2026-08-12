@@ -235,6 +235,26 @@ export class GymTrackerDB extends Dexie {
     this.version(11).stores({}).upgrade(async () => {
       // no-op: campo opcional sin valor por defecto que backfillear
     })
+    // v12: fix — src/lib/sync.ts escribía `null` (el NULL de Postgres) en
+    // vez de `undefined` para supersetGroup cuando no había grupo. Como
+    // Workout.tsx compara con `!== undefined` (nunca `== null`), y
+    // `null === null` entre dos filas cualesquiera, cualquier ejercicio
+    // que hubiera sincronizado una sola vez terminaba "emparejado" con
+    // cualquier otro — bloqueaba el descanso entre series en toda la app.
+    // Ya se corrigió el mapeo en sync.ts; esto limpia lo que quedó mal
+    // en los dispositivos que ya sincronizaron con el bug.
+    this.version(12).stores({}).upgrade(async (tx) => {
+      await tx
+        .table('workoutSets')
+        .toCollection()
+        .filter((s) => (s as { supersetGroup?: number | null }).supersetGroup === null)
+        .modify({ supersetGroup: undefined })
+      await tx
+        .table('routineExercises')
+        .toCollection()
+        .filter((e) => (e as { supersetGroup?: number | null }).supersetGroup === null)
+        .modify({ supersetGroup: undefined })
+    })
   }
 }
 
