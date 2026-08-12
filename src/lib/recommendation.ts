@@ -209,8 +209,10 @@ export interface Recommendation {
   repsMax: number
   weightKg: number
   restSeconds: number
-  /** 'history' = calculado sobre tus propias series; 'estimate' = tabla. */
-  source: 'history' | 'estimate' | 'bodyweight'
+  /** 'history' = tus propias series en ESTE ejercicio; 'related' = tus
+   * series en otro ejercicio del mismo grupo (ej: banca informa press
+   * inclinado); 'estimate' = tabla de estándares, sin datos propios. */
+  source: 'history' | 'related' | 'estimate' | 'bodyweight'
   /** Explicación en una línea, para mostrar en la UI. */
   note: string
 }
@@ -237,8 +239,36 @@ function plausibleBodyWeight(profile?: LocalProfile): number {
   return kg
 }
 
-/** 1RM estimado a partir de las mejores series recientes del usuario. */
-export function estimate1RMFromHistory(sets: WorkoutSet[]): number {
+/**
+ * Peso corporal MAGRO (sin grasa) si el usuario cargó el % de grasa en el
+ * perfil (Fase 23) — si no, cae al peso corporal total de siempre.
+ *
+ * Por qué: los estándares de fuerza relativa de STANDARDS están pensados
+ * contra masa magra, no contra el peso total — la grasa no aporta fuerza.
+ * Usar el peso total sin ajustar sobreestima a cualquiera con más grasa
+ * corporal que el "atleta genérico" que asume la tabla, que es exactamente
+ * el motivo más común de que la sugerencia salga "demasiado alta".
+ */
+function leanBodyWeight(profile?: LocalProfile): number {
+  const bodyWeight = plausibleBodyWeight(profile)
+  const bf = profile?.bodyFatPct
+  if (!bf || bf <= 0 || bf >= 60) return bodyWeight
+  return bodyWeight * (1 - bf / 100)
+}
+
+// Ventana de "actividad reciente" para decidir qué serie del historial usar
+// como mejor marca. Sin esto, una sola serie pesada de hace mucho tiempo
+// (un pico aislado, una mala racha, hasta un error de carga) infla la
+// sugerencia para siempre, aunque el nivel real actual sea otro — la queja
+// concreta de "a veces recomienda demasiado".
+const RECENT_WINDOW_DAYS = 60
+
+function isRecent(updatedAt: string): boolean {
+  const ageDays = (Date.now() - new Date(updatedAt).getTime()) / 86_400_000
+  return ageDays >= 0 && ageDays <= RECENT_WINDOW_DAYS
+}
+
+function bestEpley1RM(sets: WorkoutSet[]): number {
   let best = 0
   for (const s of sets) {
     if (s.completed !== 1 || s.isWarmup === 1) continue
@@ -251,6 +281,54 @@ export function estimate1RMFromHistory(sets: WorkoutSet[]): number {
   return best
 }
 
+/**
+ * 1RM estimado a partir de las mejores series del usuario en ESTE
+ * ejercicio — prioriza los últimos `RECENT_WINDOW_DAYS` días; si no hay
+ * actividad reciente, cae a todo el historial (un dato viejo real sigue
+ * ganándole a una tabla genérica).
+ */
+export function estimate1RMFromHistory(sets: WorkoutSet[]): number {
+  const recent = sets.filter((s) => isRecent(s.updatedAt))
+  const recentBest = bestEpley1RM(recent)
+  return recentBest > 0 ? recentBest : bestEpley1RM(sets)
+}
+
+/**
+ * 1RM estimado a partir del historial de OTROS ejercicios que comparten el
+ * mismo lift de referencia (ej: nunca hiciste press inclinado con mancuernas
+ * pero sí tenés marcas de banca plana) — convierte cada marca al 1RM del
+ * lift de referencia con el factor del ejercicio de origen, y de ahí al
+ * ejercicio pedido con el factor propio. Mejor que una tabla genérica: sigue
+ * siendo un dato real de esta persona, solo que en un movimiento vecino.
+ */
+export function estimate1RMFromRelatedHistory(
+  exercise: Exercise,
+  otherHistory: WorkoutSet[]
+): number {
+  const coef = COEF[exercise.id]
+  if (!coef) return 0
+
+  const byRef = otherHistory.filter((s) => {
+    if (s.exerciseId === exercise.id) return false
+    const otherCoef = COEF[s.exerciseId]
+    return otherCoef?.ref === coef.ref
+  })
+
+  const recent = byRef.filter((s) => isRecent(s.updatedAt))
+  const pool = recent.length > 0 ? recent : byRef
+
+  let bestRef1RM = 0
+  for (const s of pool) {
+    if (s.completed !== 1 || s.isWarmup === 1 || s.weightKg <= 0 || s.reps <= 0) continue
+    const otherCoef = COEF[s.exerciseId]
+    if (!otherCoef || otherCoef.factor <= 0) continue
+    const reps = Math.min(s.reps, 12)
+    const ref1RM = calc1RM(s.weightKg, reps) / otherCoef.factor
+    bestRef1RM = Math.max(bestRef1RM, ref1RM)
+  }
+  return bestRef1RM > 0 ? bestRef1RM * coef.factor : 0
+}
+
 /** 1RM estimado desde los estándares de fuerza, sin historial. */
 export function estimate1RMFromProfile(exerciseId: string, profile?: LocalProfile): number {
   const coef = COEF[exerciseId]
@@ -259,7 +337,7 @@ export function estimate1RMFromProfile(exerciseId: string, profile?: LocalProfil
   const standard = STANDARDS[coef.ref]
   if (!standard) return 0
 
-  const bodyWeight = plausibleBodyWeight(profile)
+  const bodyWeight = leanBodyWeight(profile)
   const sex = profile?.sex === 'female' ? 'female' : 'male'
   const level = profile?.level ?? 'beginner'
   const ratio = standard[sex][level]
@@ -270,14 +348,23 @@ export function estimate1RMFromProfile(exerciseId: string, profile?: LocalProfil
 }
 
 /**
- * Recomendación completa para un ejercicio. `history` son las series
- * completadas de ESE ejercicio por ESE usuario (las más recientes primero no
- * hace falta: se toma la mejor).
+ * Recomendación completa para un ejercicio.
+ *
+ * `history`: series completadas de ESTE ejercicio por este usuario.
+ * `otherHistory`: series completadas de TODOS los demás ejercicios — se
+ * filtran acá adentro a los que comparten lift de referencia (ver
+ * `estimate1RMFromRelatedHistory`). Pasar el historial completo del
+ * usuario es más barato para el caller que armar el filtro afuera, y este
+ * único punto es el que sabe qué ejercicios están emparentados.
+ *
+ * Orden de prioridad: 1) tus marcas en este ejercicio, 2) tus marcas en un
+ * ejercicio emparentado, 3) la tabla de estándares por perfil.
  */
 export function recommend(
   exercise: Exercise,
   profile: LocalProfile | undefined,
-  history: WorkoutSet[] = []
+  history: WorkoutSet[] = [],
+  otherHistory: WorkoutSet[] = []
 ): Recommendation {
   const goal = profile?.goal ?? 'general'
   const rx = BY_GOAL[goal]
@@ -298,7 +385,9 @@ export function recommend(
   }
 
   const historic1RM = estimate1RMFromHistory(history)
-  const oneRm = historic1RM > 0 ? historic1RM : estimate1RMFromProfile(exercise.id, profile)
+  const related1RM = historic1RM <= 0 ? estimate1RMFromRelatedHistory(exercise, otherHistory) : 0
+  const oneRm =
+    historic1RM > 0 ? historic1RM : related1RM > 0 ? related1RM : estimate1RMFromProfile(exercise.id, profile)
 
   if (oneRm <= 0) {
     // Sin coeficiente y con un equipo que no tiene mínimo cargable: es un
@@ -322,6 +411,15 @@ export function recommend(
 
   const raw = oneRm * rx.percent1RM
   const weightKg = roundToLoadable(raw, exercise.equipment)
+  const source: Recommendation['source'] =
+    historic1RM > 0 ? 'history' : related1RM > 0 ? 'related' : 'estimate'
+
+  const notes: Record<Recommendation['source'], string> = {
+    history: `Según tus marcas: 1RM estimado ${Math.round(oneRm)} kg, al ${Math.round(rx.percent1RM * 100)}%.`,
+    related: `Según tus marcas en un ejercicio parecido: 1RM estimado ${Math.round(oneRm)} kg, al ${Math.round(rx.percent1RM * 100)}%.`,
+    estimate: `Estimado por tu perfil (${Math.round(oneRm)} kg de 1RM). Ajustalo en la primera serie.`,
+    bodyweight: '',
+  }
 
   return {
     sets: rx.sets,
@@ -329,11 +427,8 @@ export function recommend(
     repsMax: rx.repsMax,
     weightKg,
     restSeconds: rx.restSeconds,
-    source: historic1RM > 0 ? 'history' : 'estimate',
-    note:
-      historic1RM > 0
-        ? `Según tus marcas: 1RM estimado ${Math.round(oneRm)} kg, al ${Math.round(rx.percent1RM * 100)}%.`
-        : `Estimado por tu perfil (${Math.round(oneRm)} kg de 1RM). Ajustalo en la primera serie.`,
+    source,
+    note: notes[source],
   }
 }
 

@@ -6,7 +6,12 @@
  * sin una sola serie hecha.
  */
 import { EXERCISES_SEED } from '../src/data/exercises'
-import { recommend, estimate1RMFromProfile } from '../src/lib/recommendation'
+import {
+  recommend,
+  estimate1RMFromProfile,
+  estimate1RMFromHistory,
+  estimate1RMFromRelatedHistory,
+} from '../src/lib/recommendation'
 import { MIN_LOAD_KG, WEIGHT_INCREMENT, isBodyweight } from '../src/lib/loading'
 import { ROUTINE_TEMPLATES } from '../src/data/routineTemplates'
 import type { LocalProfile } from '../src/types'
@@ -107,6 +112,45 @@ const ignored = recommend(bench, profile(), [
   { ...set(300, 5), completed: 0 },
 ])
 check(ignored.source === 'estimate', 'calentamiento y series sin completar no deberían contar')
+
+// ── 5b. El historial reciente le gana a un outlier viejo ──────────────────
+const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString()
+const oldOutlier = { ...set(300, 5), updatedAt: daysAgo(400) }
+const recentReal = { ...set(80, 8), updatedAt: daysAgo(10) }
+const recencyRec = estimate1RMFromHistory([oldOutlier, recentReal])
+const recentOnlyRec = estimate1RMFromHistory([recentReal])
+check(
+  Math.abs(recencyRec - recentOnlyRec) < 0.5,
+  `un outlier viejo (300kg hace 400 días) no debería inflar el 1RM: con outlier ${recencyRec}, sin outlier ${recentOnlyRec}`
+)
+check(recencyRec < 300, `el outlier viejo no debería ganarle a lo reciente: dio ${recencyRec}`)
+
+// ── 5c. El % de grasa corporal baja la estimación ─────────────────────────
+const noBodyFat = estimate1RMFromProfile('bench-press', profile())
+const withBodyFat = estimate1RMFromProfile('bench-press', profile({ bodyFatPct: 25 }))
+check(
+  withBodyFat < noBodyFat,
+  `25% de grasa corporal debería bajar el 1RM estimado: sin dato ${noBodyFat}, con 25% ${withBodyFat}`
+)
+
+// ── 5d. Historial de un ejercicio emparentado informa uno sin marcas ──────
+const inclineBench = EXERCISES_SEED.find((e) => e.id === 'incline-bench-press')!
+const benchHistory = [{ ...set(100, 5), updatedAt: daysAgo(5) }]
+const relatedOnly1RM = estimate1RMFromRelatedHistory(inclineBench, benchHistory)
+check(
+  relatedOnly1RM > 0,
+  `estimate1RMFromRelatedHistory debería estimar un 1RM a partir de banca, dio ${relatedOnly1RM}`
+)
+const relatedRec = recommend(inclineBench, profile(), [], benchHistory)
+check(
+  relatedRec.source === 'related',
+  `sin marcas propias pero con historial de banca, la fuente debería ser "related", fue "${relatedRec.source}"`
+)
+const noHistoryRec = recommend(inclineBench, profile(), [], [])
+check(
+  relatedRec.weightKg !== noHistoryRec.weightKg || relatedRec.source !== noHistoryRec.source,
+  'el historial emparentado debería cambiar la sugerencia respecto de la estimación pura'
+)
 
 // ── 6. Peso corporal implausible se descarta vía IMC ──────────────────────
 // 750 kg con 178 cm es un dedo de más al tipear: IMC 236.
