@@ -249,7 +249,7 @@ export default function Registro() {
           </button>
 
           <p className="text-center text-xs text-ink-3">
-            El código expira en 15 minutos.
+            El código expira solo — si tarda, pedí uno nuevo.
           </p>
         </div>
       )}
