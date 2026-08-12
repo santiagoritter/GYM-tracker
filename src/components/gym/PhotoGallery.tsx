@@ -101,7 +101,7 @@ export function PhotoGallery() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="animate-fade-up space-y-4">
       <input
         ref={fileRef}
         type="file"

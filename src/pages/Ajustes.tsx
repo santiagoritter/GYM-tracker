@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Download,
   Flame,
+  Music,
   Moon,
   Settings,
   Sun,
@@ -17,6 +18,8 @@ import {
 import { db } from '@/db/schema'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useThemeStore } from '@/stores/themeStore'
+import { useSpotifyStore } from '@/stores/spotifyStore'
+import { isSpotifyConfigured, startSpotifyLogin } from '@/lib/spotifyAuth'
 import { Card, Row, SectionHeader } from '@/components/ui/Card'
 import type { LocalProfile } from '@/types'
 import { cn } from '@/lib/utils'
@@ -82,6 +85,26 @@ export default function Ajustes() {
     profile.calorieTrackingEnabled === 1
       ? `Activo, meta ${(profile.calorieGoalKcal ?? 2200).toLocaleString('es-AR')} kcal`
       : 'Desactivado'
+
+  const spotifyConfigured = isSpotifyConfigured()
+  const spotifyDisplayName = useSpotifyStore((s) => s.displayName)
+  const spotifyAccessToken = useSpotifyStore((s) => s.accessToken)
+  const spotifyDisconnect = useSpotifyStore((s) => s.disconnect)
+  const spotifyConnected = Boolean(spotifyAccessToken)
+  const spotifyStatus = !spotifyConfigured
+    ? 'Pendiente de configurar'
+    : spotifyConnected
+      ? `Conectado${spotifyDisplayName ? ` como ${spotifyDisplayName}` : ''}`
+      : 'Sin conectar'
+  const handleSpotifyRow = () => {
+    if (!spotifyConfigured) return
+    if (spotifyConnected) {
+      spotifyDisconnect()
+      toast.success('Spotify desconectado')
+    } else {
+      startSpotifyLogin()
+    }
+  }
 
   return (
     <div className="mx-auto min-h-screen max-w-lg pb-24">
@@ -214,6 +237,22 @@ export default function Ajustes() {
                 <p className="text-[13px] text-ink-3">{calorieStatus}</p>
               </div>
               <ChevronRight size={16} className="shrink-0 text-ink-4" />
+            </Row>
+          </Card>
+        </section>
+
+        <section>
+          <SectionHeader title="Conexiones" />
+          <Card>
+            <Row onClick={handleSpotifyRow} className={cn(!spotifyConfigured && 'opacity-50')}>
+              <Music size={18} className="shrink-0 text-ink-3" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[15px]">Spotify</p>
+                <p className="text-[13px] text-ink-3">{spotifyStatus}</p>
+              </div>
+              {spotifyConfigured && (
+                <ChevronRight size={16} className="shrink-0 text-ink-4" />
+              )}
             </Row>
           </Card>
         </section>

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Trophy } from 'lucide-react'
+import { TrendingUp, Trophy } from 'lucide-react'
 import {
   Bar,
   BarChart,
@@ -65,7 +65,7 @@ export default function Progress() {
       </div>
 
       {tab === 'summary' && (
-        <div className="space-y-4">
+        <div className="animate-fade-up space-y-4">
           {/* El anillo semanal se mudó desde Inicio (pedido explícito): es
               un resumen para revisar, no algo que compita con "qué entreno
               hoy". El heatmap de actividad se queda en Inicio. */}
@@ -82,7 +82,7 @@ export default function Progress() {
       {tab === 'charts' && <Charts />}
       {tab === 'month' && <MonthlyStats />}
       {tab === 'levels' && (
-        <div className="space-y-6">
+        <div className="animate-fade-up space-y-6">
           <StrengthLevels />
           <section>
             <SectionHeader title="Grupos musculares" />
@@ -203,6 +203,7 @@ function Charts() {
   if (trainedExercises.length === 0) {
     return (
       <EmptyState
+        icon={<TrendingUp size={28} />}
         title="Sin datos todavía"
         description="Los gráficos aparecen cuando completes tu primer entreno."
       />
@@ -358,6 +359,7 @@ function PRList() {
   if (sorted.length === 0) {
     return (
       <EmptyState
+        icon={<Trophy size={28} />}
         title="Sin récords todavía"
         description="Tus récords personales aparecen acá al terminar entrenos."
       />
@@ -365,7 +367,7 @@ function PRList() {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="animate-fade-up space-y-2">
       {sorted.map((pr) => (
         <div key={pr.id} className="flex items-center justify-between rounded-xl bg-surface p-4">
           <div>
