@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useReminderScheduler } from '@/lib/reminders'
 import { cn, formatDuration } from '@/lib/utils'
+import CalorieHeaderBadge from '@/components/gym/CalorieHeaderBadge'
 
 const TABS = [
   { to: '/', label: 'Hoy', icon: House },
@@ -118,7 +119,8 @@ export default function Layout() {
             </span>
           )}
         </button>
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-1.5">
+          <CalorieHeaderBadge />
           {role === 'admin' && (
             <button
               onClick={() => navigate('/admin')}

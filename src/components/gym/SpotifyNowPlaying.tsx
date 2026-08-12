@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Music, Pause, Play, SkipBack, SkipForward } from 'lucide-react'
 import { useSpotifyStore } from '@/stores/spotifyStore'
@@ -14,7 +14,10 @@ import { hapticTick } from '@/lib/native'
 import { toast } from '@/stores/toastStore'
 import { Card, Row } from '@/components/ui/Card'
 
+const SpotifyPlayerSheet = lazy(() => import('@/components/gym/SpotifyPlayerSheet'))
+
 const POLL_MS = 5000
+const LONG_PRESS_MS = 500
 // Spotify reporta el dispositivo como inactivo (204) casi al instante
 // después de pausar, mucho antes de que realmente se haya "ido" —
 // un solo 204 no alcanza para dar la sesión por perdida, si no la
@@ -30,7 +33,7 @@ function isPlaybackState(x: PlaybackResult | 'loading'): x is PlaybackState {
  * Control remoto de lo que suena en Spotify — nunca reproduce audio
  * acá adentro, solo lee/comanda un dispositivo que ya está sonando
  * (ver spotifyPlayer.ts). Fila opt-in, mismo criterio que
- * CalorieSummaryRow: si no hay sesión de Spotify, no ocupa lugar.
+ * CalorieHeaderBadge: si no hay sesión de Spotify, no ocupa lugar.
  */
 export default function SpotifyNowPlaying() {
   const navigate = useNavigate()
@@ -41,7 +44,31 @@ export default function SpotifyNowPlaying() {
   // marque "activo" — permite ofrecer "reanudar acá" en vez de mandar al
   // usuario a destrabarlo a mano desde la propia app de Spotify.
   const [resumeDevice, setResumeDevice] = useState<SpotifyDevice | null>(null)
+  const [playerSheetOpen, setPlayerSheetOpen] = useState(false)
   const noDeviceStreak = useRef(0)
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (pressTimer.current) clearTimeout(pressTimer.current)
+    }
+  }, [])
+
+  // Mantener presionada la info de la canción (no los botones de control,
+  // que ya tienen su propia acción de tap) abre el reproductor completo
+  // con la lista de playlists — ver SpotifyPlayerSheet.tsx.
+  const startPress = () => {
+    pressTimer.current = setTimeout(() => {
+      hapticTick()
+      setPlayerSheetOpen(true)
+    }, LONG_PRESS_MS)
+  }
+  const cancelPress = () => {
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current)
+      pressTimer.current = null
+    }
+  }
 
   // Solo cierra sobre refs y setState (ambos con identidad estable) —
   // useCallback con deps vacías la vuelve segura de meter en el efecto
@@ -185,16 +212,25 @@ export default function SpotifyNowPlaying() {
   return (
     <Card>
       <Row className="gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-sm bg-surface-2">
-          {playback.albumArtUrl ? (
-            <img src={playback.albumArtUrl} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <Music size={18} className="text-ink-3" />
-          )}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[14px] font-medium">{playback.trackName}</p>
-          <p className="truncate text-[13px] text-ink-3">{playback.artistName}</p>
+        <div
+          onPointerDown={startPress}
+          onPointerUp={cancelPress}
+          onPointerLeave={cancelPress}
+          onPointerCancel={cancelPress}
+          className="flex min-w-0 flex-1 items-center gap-3 select-none"
+          style={{ touchAction: 'manipulation' }}
+        >
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-sm bg-surface-2">
+            {playback.albumArtUrl ? (
+              <img src={playback.albumArtUrl} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <Music size={18} className="text-ink-3" />
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[14px] font-medium">{playback.trackName}</p>
+            <p className="truncate text-[13px] text-ink-3">{playback.artistName}</p>
+          </div>
         </div>
         {!controlsDisabled && (
           <div className="flex shrink-0 items-center">
@@ -226,6 +262,12 @@ export default function SpotifyNowPlaying() {
           </div>
         )}
       </Row>
+
+      <Suspense fallback={null}>
+        {playerSheetOpen && (
+          <SpotifyPlayerSheet playback={playback} onClose={() => setPlayerSheetOpen(false)} />
+        )}
+      </Suspense>
     </Card>
   )
 }

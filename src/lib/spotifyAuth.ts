@@ -18,8 +18,12 @@
 
 const SPOTIFY_CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID as string | undefined
 
+// playlist-read-private: hace falta para listar las playlists del usuario
+// en el sheet de reproductor (ver SpotifyPlayerSheet.tsx) — quien ya había
+// conectado Spotify antes de agregar este scope tiene que reconectar
+// (Ajustes → Conexiones) para que el token nuevo lo incluya.
 const SCOPES =
-  'user-read-email user-read-private user-read-playback-state user-modify-playback-state user-read-currently-playing'
+  'user-read-email user-read-private user-read-playback-state user-modify-playback-state user-read-currently-playing playlist-read-private'
 const VERIFIER_STORAGE_KEY = 'spotify_pkce_verifier'
 
 export function isSpotifyConfigured(): boolean {
