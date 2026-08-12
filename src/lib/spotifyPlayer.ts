@@ -156,17 +156,29 @@ export interface SpotifyPlaylist {
   trackCount: number
 }
 
+export type PlaylistsResult =
+  | { kind: 'ok'; playlists: SpotifyPlaylist[] }
+  // Token válido pero sin el scope playlist-read-private — pasa con
+  // cualquier conexión hecha ANTES de que este scope se agregara. Spotify
+  // devuelve 403 (no 401) en este caso: el token en sí sigue siendo
+  // válido, solo le falta permiso — por eso es un caso propio y no
+  // "reauth-required" a secas, que ya cubre el token vencido/inválido.
+  | { kind: 'missing-scope' }
+  | { kind: 'reauth-required' }
+  | { kind: 'error' }
+
 /** Playlists del usuario (propias + seguidas) — requiere el scope
- * `playlist-read-private`, ver spotifyAuth.ts. `null` si no hay token o
- * falla la request; el sheet lo trata igual que "sin playlists". */
-export async function fetchUserPlaylists(): Promise<SpotifyPlaylist[] | null> {
+ * `playlist-read-private`, ver spotifyAuth.ts. */
+export async function fetchUserPlaylists(): Promise<PlaylistsResult> {
   const token = await getValidAccessToken()
-  if (!token) return null
+  if (!token) return { kind: 'reauth-required' }
   try {
     const res = await fetch('https://api.spotify.com/v1/me/playlists?limit=50', {
       headers: { Authorization: `Bearer ${token}` },
     })
-    if (!res.ok) return null
+    if (res.status === 401) return { kind: 'reauth-required' }
+    if (res.status === 403) return { kind: 'missing-scope' }
+    if (!res.ok) return { kind: 'error' }
     const data = (await res.json()) as {
       items: {
         id: string
@@ -176,15 +188,18 @@ export async function fetchUserPlaylists(): Promise<SpotifyPlaylist[] | null> {
         tracks: { total: number }
       }[]
     }
-    return data.items.map((p) => ({
-      id: p.id,
-      uri: p.uri,
-      name: p.name,
-      imageUrl: p.images[0]?.url ?? null,
-      trackCount: p.tracks.total,
-    }))
+    return {
+      kind: 'ok',
+      playlists: data.items.map((p) => ({
+        id: p.id,
+        uri: p.uri,
+        name: p.name,
+        imageUrl: p.images[0]?.url ?? null,
+        trackCount: p.tracks.total,
+      })),
+    }
   } catch {
-    return null
+    return { kind: 'error' }
   }
 }
 
