@@ -35,6 +35,9 @@ export default function Ajustes() {
     () => (userId ? db.profile.get(userId) : undefined),
     [userId]
   )
+  const spotifyDisplayName = useSpotifyStore((s) => s.displayName)
+  const spotifyAccessToken = useSpotifyStore((s) => s.accessToken)
+  const spotifyDisconnect = useSpotifyStore((s) => s.disconnect)
 
   const update = (patch: Partial<LocalProfile>) => {
     if (userId) db.profile.update(userId, patch)
@@ -87,9 +90,6 @@ export default function Ajustes() {
       : 'Desactivado'
 
   const spotifyConfigured = isSpotifyConfigured()
-  const spotifyDisplayName = useSpotifyStore((s) => s.displayName)
-  const spotifyAccessToken = useSpotifyStore((s) => s.accessToken)
-  const spotifyDisconnect = useSpotifyStore((s) => s.disconnect)
   const spotifyConnected = Boolean(spotifyAccessToken)
   const spotifyStatus = !spotifyConfigured
     ? 'Pendiente de configurar'
