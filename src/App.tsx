@@ -10,6 +10,7 @@ import Routines from '@/pages/Routines'
 import RoutineEditor from '@/pages/RoutineEditor'
 import Login from '@/pages/Login'
 import Registro from '@/pages/Registro'
+import ForgotPassword from '@/pages/ForgotPassword'
 import Onboarding from '@/pages/Onboarding'
 import Reminders from '@/pages/Reminders'
 import Ajustes from '@/pages/Ajustes'
@@ -32,6 +33,7 @@ export default function App() {
       {/* Rutas públicas */}
       <Route path="/login" element={<Login />} />
       <Route path="/registro" element={<Registro />} />
+      <Route path="/olvide-contrasena" element={<ForgotPassword />} />
 
       {/* Onboarding: requiere auth pero no perfil completo */}
       <Route element={<ProtectedRoute />}>

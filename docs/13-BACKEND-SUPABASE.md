@@ -140,8 +140,22 @@ parche:
 `src/lib/supabaseAuth.ts` consume esto con
 `supabase.auth.verifyOtp({ email, token, type: 'signup' })`.
 
-Aplicá el mismo criterio a la plantilla **Reset password** si el día de
-mañana se construye ese flujo (todavía no existe en la app).
+Mismo criterio en **Authentication → Emails → Reset password** (flujo de
+"olvidé mi contraseña", `src/pages/ForgotPassword.tsx`):
+
+```html
+<h2>Recuperá tu contraseña</h2>
+<p>Tu código de verificación es:</p>
+<h1 style="letter-spacing: 4px;">{{ .Token }}</h1>
+<p>Ingresalo en la app para elegir una contraseña nueva. Si no lo pediste
+vos, ignorá este email.</p>
+```
+
+`src/lib/supabaseAuth.ts` consume esto con `supabase.auth.resetPasswordForEmail(email)`
+para pedir el código, y `supabase.auth.verifyOtp({ email, token, type: 'recovery' })`
++ `supabase.auth.updateUser({ password })` para canjearlo — `verifyOtp` con
+`type: 'recovery'` ya deja al usuario logueado, así que `updateUser` corre
+autenticado como esa cuenta sin pasos intermedios.
 
 ### 3.4 Cerrar el registro anónimo
 
@@ -285,6 +299,7 @@ esconde en vez de mostrar algo que no puede andar.
 - [ ] SMTP de Gmail configurado y probado
 - [ ] Rate limit de emails subido
 - [ ] Plantilla "Confirm signup" con `{{ .Token }}` (código, no link)
+- [ ] Plantilla "Reset password" con `{{ .Token }}` (código, no link)
 - [ ] Anonymous sign-ins desactivado
 - [ ] Los 2 secrets de Supabase en GitHub (URL + anon key)
 - [ ] `{"role":"admin"}` puesto (después del primer registro)
