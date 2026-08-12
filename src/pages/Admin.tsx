@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ExternalLink, Shield } from 'lucide-react'
+import { ChevronRight, ExternalLink, Shield, Users } from 'lucide-react'
 import { db } from '@/db/schema'
 import { Card, Row, SectionHeader } from '@/components/ui/Card'
 
@@ -15,6 +16,7 @@ import { Card, Row, SectionHeader } from '@/components/ui/Card'
  * andando igual) + un link a dónde gestionar roles de verdad.
  */
 export default function Admin() {
+  const navigate = useNavigate()
   const workouts = useLiveQuery(
     () => db.workouts.filter((w) => Boolean(w.finishedAt)).toArray(),
     []
@@ -43,6 +45,21 @@ export default function Admin() {
           <p className="text-xs text-ink-3">Solo visible para administradores</p>
         </div>
       </div>
+
+      <section>
+        <SectionHeader title="Todos los usuarios" />
+        <Card>
+          <Row onClick={() => navigate('/admin/usuarios')}>
+            <div className="min-w-0 flex-1">
+              <p className="flex items-center gap-2 text-[15px]">
+                <Users size={16} className="shrink-0 text-ink-3" /> Ver actividad de todos
+              </p>
+              <p className="text-[13px] text-ink-3">Entrenos, volumen y PRs de cada usuario, en vivo.</p>
+            </div>
+            <ChevronRight size={16} className="shrink-0 text-ink-4" />
+          </Row>
+        </Card>
+      </section>
 
       <section>
         <SectionHeader title="Estadísticas de este dispositivo" />

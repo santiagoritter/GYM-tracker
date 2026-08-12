@@ -3,11 +3,13 @@
 Este documento describe lo que hay que hacer **a mano** en el dashboard de
 Supabase y en GitHub. El código de la app no puede hacer nada de esto por vos.
 
-> Estado: el esquema SQL está en `supabase/migrations/` (7 archivos — el 6º,
-> `calorie_entries`, y el 7º, `shared_routines` — código corto para
+> Estado: el esquema SQL está en `supabase/migrations/` (8 archivos — el 6º,
+> `calorie_entries`, el 7º, `shared_routines` — código corto para
 > compartir rutinas por QR en vez de meter todo el payload adentro, ver
-> `docs/07-COMPARTIR-QR.md` — se agregaron después, ver §2) y la app ya se
-> conecta:
+> `docs/07-COMPARTIR-QR.md` —, y el 8º, `admin_rls_domain` — extiende a las
+> tablas de dominio el mismo patrón de lectura de admin que ya tenía
+> `profiles`, para el panel `/admin/usuarios` — se agregaron después, ver
+> §2) y la app ya se conecta:
 > `src/lib/supabaseAuth.ts` (auth real) y `src/lib/sync.ts` (push/pull). El
 > login usa un código de 6 dígitos vía Supabase Auth, no el link con
 > `{{ .TokenHash }}` que este doc planeaba originalmente — ver §3.3, cambió
@@ -36,7 +38,7 @@ Supabase y en GitHub. El código de la app no puede hacer nada de esto por vos.
 
 ## 2. Correr el SQL
 
-**SQL Editor → New query**, y ejecutá los siete archivos de
+**SQL Editor → New query**, y ejecutá los ocho archivos de
 `supabase/migrations/` **en orden**:
 
 1. `0001_helpers.sql` — función de sellado + last-write-wins
@@ -51,6 +53,12 @@ Supabase y en GitHub. El código de la app no puede hacer nada de esto por vos.
    (ver `docs/07-COMPARTIR-QR.md`): reemplaza meter la rutina entera
    comprimida adentro del QR, que para rutinas grandes generaba un código
    demasiado denso para escanear con cámara de celular.
+8. `0008_admin_rls_domain.sql` — policies `*_admin_read` en `routines`,
+   `routine_days`, `routine_exercises`, `workouts`, `workout_sets`,
+   `personal_records`, `body_measurements`, `achievements` y
+   `calorie_entries` (mismo patrón que `profiles_admin_read` de `0004`),
+   más el RPC `admin_list_users()` para listar cuentas sin exponer
+   `auth.users` entera. Lo usa `src/lib/adminQueries.ts` en `/admin/usuarios`.
 
 ### Verificación obligatoria
 
@@ -205,8 +213,10 @@ solo se puede escribir con la service role key o desde el dashboard, y viaja
 firmado dentro del JWT.
 
 Una columna `profiles.role` no serviría: el usuario puede actualizar su propio
-perfil, así que podría ascenderse solo. Hoy la app hace exactamente eso
-(`Admin.tsx` escribe el rol en el IndexedDB del propio usuario).
+perfil, así que podría ascenderse solo. `Admin.tsx` no escribe el rol —
+`toAuthUser()` en `src/lib/supabaseAuth.ts` solo lo LEE de
+`user.app_metadata.role`, y `Admin.tsx` linkea al dashboard para
+gestionarlo, nunca lo toca desde el cliente.
 
 Después de registrarte por primera vez:
 
@@ -214,6 +224,11 @@ Después de registrarte por primera vez:
 2. **Raw App Meta Data** → `{"role": "admin"}` → guardar.
 3. **Cerrá sesión y volvé a entrar.** El JWT solo refleja el rol nuevo
    después de un refresh de token.
+
+Con el rol puesto, `/admin/usuarios` muestra entrenos, volumen y PRs de
+TODOS los usuarios (protegido por las policies `*_admin_read` de
+`0008_admin_rls_domain.sql`, ver §2) — a diferencia del resto de la app,
+esa pantalla lee Supabase en vivo y requiere conexión, no funciona offline.
 
 ---
 

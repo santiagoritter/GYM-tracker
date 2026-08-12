@@ -24,6 +24,7 @@ import ToastContainer from '@/components/ui/Toast'
 // Lazy: Recharts pesa ~400KB min; solo se descarga al entrar a Progreso
 const Progress = lazy(() => import('@/pages/Progress'))
 const Admin = lazy(() => import('@/pages/Admin'))
+const AdminUsers = lazy(() => import('@/pages/AdminUsers'))
 const Measurements = lazy(() => import('@/pages/Measurements'))
 
 export default function App() {
@@ -69,6 +70,14 @@ export default function App() {
               element={
                 <Suspense fallback={<p className="py-12 text-center text-sm text-ink-3">Cargando…</p>}>
                   <Admin />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/admin/usuarios"
+              element={
+                <Suspense fallback={<p className="py-12 text-center text-sm text-ink-3">Cargando…</p>}>
+                  <AdminUsers />
                 </Suspense>
               }
             />
