@@ -33,7 +33,7 @@ export default function Admin() {
   )
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto content-width space-y-6">
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent/15">
           <Shield size={20} className="text-accent" />

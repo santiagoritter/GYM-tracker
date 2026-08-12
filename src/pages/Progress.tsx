@@ -36,7 +36,7 @@ export default function Progress() {
   const [tab, setTab] = useState<Tab>('summary')
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto content-width space-y-4">
       <h1 className="text-2xl font-bold">Progreso</h1>
 
       <div className="-mx-4 flex gap-1 overflow-x-auto px-4 [scrollbar-width:none]">

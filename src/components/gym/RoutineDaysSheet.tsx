@@ -1,13 +1,8 @@
 import { motion, useReducedMotion } from 'motion/react'
 import { Play, X } from 'lucide-react'
-import Portal from '@/components/ui/Portal'
+import ResponsiveSheet from '@/components/ui/ResponsiveSheet'
 import { useSheetDrag } from '@/hooks/useSheetDrag'
-import {
-  sheetItemVariants,
-  sheetItemVariantsReduced,
-  sheetPanelVariants,
-  sheetPanelVariantsReduced,
-} from '@/lib/motionVariants'
+import { sheetItemVariants, sheetItemVariantsReduced } from '@/lib/motionVariants'
 import { cn } from '@/lib/utils'
 import type { Routine, RoutineDay } from '@/types'
 
@@ -32,17 +27,8 @@ export default function RoutineDaysSheet({
   const { panelDragProps, handleDragProps } = useSheetDrag(onClose)
 
   return (
-    <Portal>
-      <div className="fixed inset-0 z-50 bg-bg/80 backdrop-blur-sm animate-glass-in" onClick={onClose} />
-
-      <motion.div
-        initial="hidden"
-        animate="visible"
-        variants={reduced ? sheetPanelVariantsReduced : sheetPanelVariants}
-        {...panelDragProps}
-        className="fixed bottom-0 left-1/2 z-50 w-full max-w-lg rounded-t-3xl bg-surface shadow-float"
-      >
-        <motion.div variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}>
+    <ResponsiveSheet onClose={onClose} dragProps={panelDragProps}>
+      <motion.div variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}>
           <div className="flex justify-center pt-3 pb-1" {...handleDragProps}>
             <div className="h-1 w-10 rounded-full bg-line-2" />
           </div>
@@ -95,7 +81,6 @@ export default function RoutineDaysSheet({
             </div>
           ))}
         </motion.div>
-      </motion.div>
-    </Portal>
+    </ResponsiveSheet>
   )
 }

@@ -182,6 +182,20 @@ de iOS. En cualquier otro lado es decoración.
 Sombras: solo neutras y solo para elevación real (sheets, overlays).
 Prohibidas las de color y las de negro puro.
 
+### Ancho de contenido
+
+```
+mobile   32rem (512px)   columna centrada, es el max-w-lg de siempre
+desktop  sin tope fijo   en Inicio, Progreso y el panel de usuarios del
+                         admin, que pasan a grid multi-columna a partir
+                         de 1024px (`lg:`)
+```
+
+El resto de las pantallas (listas lineales, flujos, detalle) mantiene la
+columna centrada también en desktop — forzar columnas ahí es la
+abstracción que no hace falta. El breakpoint único es 1024px: por debajo,
+la app es idéntica a hoy: un solo diseño mobile, sin ramas.
+
 ---
 
 ## 4. Movimiento

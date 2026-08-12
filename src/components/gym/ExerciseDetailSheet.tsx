@@ -12,17 +12,12 @@ import { exercisePhotoFor } from '@/db/scoped'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { compressImage } from '@/lib/photos'
 import { DIFFICULTY_COLOR, DIFFICULTY_LABELS } from '@/lib/difficulty'
-import {
-  sheetItemVariants,
-  sheetItemVariantsReduced,
-  sheetPanelVariants,
-  sheetPanelVariantsReduced,
-} from '@/lib/motionVariants'
+import { sheetItemVariants, sheetItemVariantsReduced } from '@/lib/motionVariants'
 import { nowIso } from '@/lib/utils'
 import MuscleBodySVG from './MuscleBodySVG'
 import EquipmentIcon from './EquipmentIcon'
 import AddToRoutineSheet from './AddToRoutineSheet'
-import Portal from '@/components/ui/Portal'
+import ResponsiveSheet from '@/components/ui/ResponsiveSheet'
 import { useSheetDrag } from '@/hooks/useSheetDrag'
 import { cn } from '@/lib/utils'
 
@@ -207,37 +202,21 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
   if (!exercise) return null
 
   return (
-    <Portal>
-      {/* Overlay oscuro, sin backdrop-blur ni su animación (misma razón
-          que AddToRoutineSheet.tsx, ver ese comentario): este sheet se
-          abre sobre Exercises.tsx, cuya lista virtualizada ya renderiza
-          varias insignias con backdrop-blur-xs propio detrás — es el
-          sheet de toda la app con más blur acumulado atrás, y encima el
-          único que puede tener OTRO sheet (AddToRoutineSheet) abierto
-          arriba. Reportado: pantalla negra en Android al abrir "Agregar
-          a rutina" desde acá — sigue sin poder confirmarse la causa
-          exacta sin debug remoto real, pero sacar este blur reduce la
-          carga de composición en el escenario más pesado de la app. */}
-      <div
-        className="fixed inset-0 z-50 bg-black/70"
-        onClick={onClose}
-      />
-
-      {/* Sheet — spring de entrada + stagger del contenido interno (Fase
-          28, "Smooth Drawer" de kokonutui adaptado a nuestro Portal, sin el
-          Drawer de shadcn que no está instalado). El centrado horizontal
-          vive en los keyframes de sheetPanelVariants, no en una clase
-          -translate-x-1/2 aparte — una animación reemplaza el transform
-          completo del elemento. */}
-      <motion.div
-        initial="hidden"
-        animate="visible"
-        variants={reduced ? sheetPanelVariantsReduced : sheetPanelVariants}
-        {...panelDragProps}
-        className="fixed bottom-0 left-1/2 z-50 w-full max-w-lg rounded-t-3xl bg-surface shadow-float overflow-hidden"
-      >
-        {/* Drag handle + header + badges: primer grupo del stagger */}
-        <motion.div variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}>
+    // `nested`: este sheet se abre sobre Exercises.tsx, cuya lista
+    // virtualizada ya renderiza varias insignias con backdrop-blur-xs
+    // propio detrás — es el sheet con más blur acumulado atrás, y encima
+    // el único que puede tener OTRO sheet (AddToRoutineSheet) abierto
+    // arriba. Reportado: pantalla negra en Android al abrir "Agregar a
+    // rutina" desde acá; sacar este blur reduce la carga de composición
+    // en el escenario más pesado de la app. Ver ResponsiveSheet.tsx.
+    <ResponsiveSheet
+      onClose={onClose}
+      dragProps={panelDragProps}
+      nested
+      panelClassName="overflow-hidden"
+    >
+      {/* Drag handle + header + badges: primer grupo del stagger */}
+      <motion.div variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}>
           <div className="flex justify-center pt-3 pb-1" {...handleDragProps}>
             <div className="h-1 w-10 rounded-full bg-line-2" />
           </div>
@@ -393,11 +372,10 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
             </p>
           )}
         </motion.div>
-      </motion.div>
 
       {addingToRoutine && (
         <AddToRoutineSheet exercise={exercise} onClose={() => setAddingToRoutine(false)} />
       )}
-    </Portal>
+    </ResponsiveSheet>
   )
 }

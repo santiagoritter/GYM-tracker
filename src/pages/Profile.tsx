@@ -43,7 +43,7 @@ export default function Profile() {
   if (!profile) return null
 
   return (
-    <div className="space-y-5">
+    <div className="mx-auto content-width space-y-5">
       <h1 className="text-2xl font-bold">Perfil</h1>
 
       {/* Cita motivacional */}

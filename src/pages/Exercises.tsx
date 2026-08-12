@@ -67,7 +67,7 @@ export default function Exercises() {
 
   return (
     <>
-      <div className="space-y-4">
+      <div className="mx-auto content-width space-y-4">
         {/* Header */}
         <h1 className="text-2xl font-bold">Ejercicios</h1>
 

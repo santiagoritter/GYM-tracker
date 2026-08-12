@@ -1,17 +1,12 @@
 import { useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import { Plus, X } from 'lucide-react'
-import Portal from '@/components/ui/Portal'
+import ResponsiveSheet from '@/components/ui/ResponsiveSheet'
 import { useSheetDrag } from '@/hooks/useSheetDrag'
 import { db } from '@/db/schema'
 import { nowIso, uid } from '@/lib/utils'
 import { toast } from '@/stores/toastStore'
-import {
-  sheetItemVariants,
-  sheetItemVariantsReduced,
-  sheetPanelVariants,
-  sheetPanelVariantsReduced,
-} from '@/lib/motionVariants'
+import { sheetItemVariants, sheetItemVariantsReduced } from '@/lib/motionVariants'
 
 /**
  * Fase 36 — "Smooth Drawer" (kokonutui) adaptado al patrón de sheet ya
@@ -52,63 +47,53 @@ export default function CalorieAddSheet({
   }
 
   return (
-    <Portal>
-      <div className="fixed inset-0 z-50 bg-bg/80 backdrop-blur-sm animate-glass-in" onClick={onClose} />
+    <ResponsiveSheet onClose={onClose} dragProps={panelDragProps}>
+      <motion.div variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}>
+        <div className="flex justify-center pt-3 pb-1" {...handleDragProps}>
+          <div className="h-1 w-10 rounded-full bg-line-2" />
+        </div>
+
+        <div className="flex items-start justify-between px-5 pt-1 pb-3">
+          <h2 className="text-xl font-bold leading-tight">Agregar calorías</h2>
+          <button
+            onClick={onClose}
+            aria-label="Cerrar"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-fill text-ink-2 active:bg-fill-2"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      </motion.div>
 
       <motion.div
-        initial="hidden"
-        animate="visible"
-        variants={reduced ? sheetPanelVariantsReduced : sheetPanelVariants}
-        {...panelDragProps}
-        className="fixed bottom-0 left-1/2 z-50 w-full max-w-lg rounded-t-3xl bg-surface shadow-float"
+        variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}
+        className="space-y-3 px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
       >
-        <motion.div variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}>
-          <div className="flex justify-center pt-3 pb-1" {...handleDragProps}>
-            <div className="h-1 w-10 rounded-full bg-line-2" />
-          </div>
-
-          <div className="flex items-start justify-between px-5 pt-1 pb-3">
-            <h2 className="text-xl font-bold leading-tight">Agregar calorías</h2>
-            <button
-              onClick={onClose}
-              aria-label="Cerrar"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-fill text-ink-2 active:bg-fill-2"
-            >
-              <X size={16} />
-            </button>
-          </div>
-        </motion.div>
-
-        <motion.div
-          variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}
-          className="space-y-3 px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
+        <div className="flex gap-2">
+          <input
+            type="number"
+            inputMode="numeric"
+            autoFocus
+            value={kcalInput}
+            onChange={(e) => setKcalInput(e.target.value)}
+            placeholder="kcal"
+            className="h-11 w-24 rounded-xs bg-surface-2 px-3 text-center font-mono tabular-nums outline-none focus:ring-1 focus:ring-accent"
+          />
+          <input
+            type="text"
+            value={labelInput}
+            onChange={(e) => setLabelInput(e.target.value)}
+            placeholder="Almuerzo (opcional)"
+            className="h-11 min-w-0 flex-1 rounded-xs bg-surface-2 px-3 text-[15px] outline-none focus:ring-1 focus:ring-accent"
+          />
+        </div>
+        <button
+          onClick={handleAdd}
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-xs bg-accent font-bold text-bg active:bg-accent-dim"
         >
-          <div className="flex gap-2">
-            <input
-              type="number"
-              inputMode="numeric"
-              autoFocus
-              value={kcalInput}
-              onChange={(e) => setKcalInput(e.target.value)}
-              placeholder="kcal"
-              className="h-11 w-24 rounded-xs bg-surface-2 px-3 text-center font-mono tabular-nums outline-none focus:ring-1 focus:ring-accent"
-            />
-            <input
-              type="text"
-              value={labelInput}
-              onChange={(e) => setLabelInput(e.target.value)}
-              placeholder="Almuerzo (opcional)"
-              className="h-11 min-w-0 flex-1 rounded-xs bg-surface-2 px-3 text-[15px] outline-none focus:ring-1 focus:ring-accent"
-            />
-          </div>
-          <button
-            onClick={handleAdd}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-xs bg-accent font-bold text-bg active:bg-accent-dim"
-          >
-            <Plus size={18} /> Agregar
-          </button>
-        </motion.div>
+          <Plus size={18} /> Agregar
+        </button>
       </motion.div>
-    </Portal>
+    </ResponsiveSheet>
   )
 }

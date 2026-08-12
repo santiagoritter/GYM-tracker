@@ -99,7 +99,7 @@ export default function Routines() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto content-width space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Rutinas</h1>
         <div className="flex items-center gap-2">

@@ -201,7 +201,7 @@ export default function Workout() {
   if (screen.kind === 'results') {
     const celebrate = screen.prs.length > 0 || screen.achievements.length > 0
     return (
-      <div className="mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center gap-6 px-6 py-10 text-center">
+      <div className="mx-auto flex min-h-screen content-width flex-col items-center justify-center gap-6 px-6 py-10 text-center">
         {celebrate && <Confetti />}
         <h1 className="text-3xl font-bold">Entreno terminado</h1>
 
@@ -263,7 +263,7 @@ export default function Workout() {
   if (screen.kind === 'preview') {
     const noWorkingSets = workingSetsOf(sets ?? []).length === 0
     return (
-      <div className="mx-auto flex min-h-screen max-w-lg flex-col gap-6 px-6 py-10">
+      <div className="mx-auto flex min-h-screen content-width flex-col gap-6 px-6 py-10">
         <h1 className="text-center text-3xl font-bold">Revisá tu entreno</h1>
 
         <div className="grid grid-cols-2 gap-3">
@@ -325,7 +325,7 @@ export default function Workout() {
   }
 
   return (
-    <div className="mx-auto min-h-screen max-w-lg pb-40">
+    <div className="mx-auto min-h-screen content-width pb-40">
       <header className="glass sticky top-0 z-30 flex items-center justify-between border-b border-line px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
         <button onClick={() => navigate('/')} className="p-2 text-ink-2">
           <ArrowLeft size={22} />

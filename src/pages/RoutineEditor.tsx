@@ -49,7 +49,7 @@ export default function RoutineEditor() {
   }
 
   return (
-    <div className="mx-auto min-h-screen max-w-lg pb-16">
+    <div className="mx-auto min-h-screen content-width pb-16">
       <header className="glass sticky top-0 z-30 flex items-center gap-3 border-b border-line px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
         <button
           onClick={() => navigate('/rutinas')}

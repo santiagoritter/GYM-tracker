@@ -74,7 +74,7 @@ export default function Home() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto content-width space-y-6">
       <header>
         <h1 className="text-2xl font-bold">
           ¡Hola, {name?.split(' ')[0] ?? 'campeón'}!
