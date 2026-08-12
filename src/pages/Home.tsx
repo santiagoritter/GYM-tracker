@@ -8,7 +8,7 @@ import { useWorkoutStore } from '@/stores/workoutStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { HOME_MESSAGES } from '@/lib/motivational'
-import { formatDuration } from '@/lib/utils'
+import { useElapsedDuration } from '@/hooks/useElapsedDuration'
 import CalendarHeatmap from '@/components/gym/CalendarHeatmap'
 import SpotifyNowPlaying from '@/components/gym/SpotifyNowPlaying'
 import RoutineDaysSheet from '@/components/gym/RoutineDaysSheet'
@@ -26,6 +26,7 @@ export default function Home() {
     () => (userId ? workoutsFor(userId).filter((w) => !w.finishedAt).first() : undefined),
     [userId]
   )
+  const activeElapsed = useElapsedDuration(activeWorkout?.startedAt)
   const activeRoutine = useLiveQuery(
     () =>
       userId
@@ -104,7 +105,7 @@ export default function Home() {
               <Flame size={16} /> Entreno en curso
             </p>
             <p className="mt-1 font-medium">{activeWorkout.name}</p>
-            <p className="text-sm text-ink-2">{formatDuration(activeWorkout.startedAt)}</p>
+            <p className="text-sm text-ink-2">{activeElapsed}</p>
           </div>
           <ChevronRight className="text-accent" />
         </button>
