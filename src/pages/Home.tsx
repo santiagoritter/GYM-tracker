@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
+import { motion } from 'motion/react'
 import { Activity, ChevronRight, Images, Play, Flame } from 'lucide-react'
 import { routinesFor, routineDaysOf, workoutsFor } from '@/db/scoped'
 import { nextRoutineDay, startWorkoutFromDay } from '@/db/routines'
@@ -12,6 +13,7 @@ import { useElapsedDuration } from '@/hooks/useElapsedDuration'
 import CalendarHeatmap from '@/components/gym/CalendarHeatmap'
 import SpotifyNowPlaying from '@/components/gym/SpotifyNowPlaying'
 import RoutineDaysSheet from '@/components/gym/RoutineDaysSheet'
+import CardioSetupSheet from '@/components/gym/CardioSetupSheet'
 import HoldButton from '@/components/ui/HoldButton'
 
 export default function Home() {
@@ -21,6 +23,7 @@ export default function Home() {
   const userId = useCurrentUserId()
   const quote = useMemo(() => HOME_MESSAGES[Math.floor(Math.random() * HOME_MESSAGES.length)], [])
   const [daysSheetOpen, setDaysSheetOpen] = useState(false)
+  const [cardioSheetOpen, setCardioSheetOpen] = useState(false)
 
   const activeWorkout = useLiveQuery(
     () => (userId ? workoutsFor(userId).filter((w) => !w.finishedAt).first() : undefined),
@@ -175,21 +178,29 @@ export default function Home() {
 
       {/* Accesos rápidos, mitad y mitad — cuadrados del mismo tamaño. */}
       <div className="grid grid-cols-2 gap-3">
-        <button
+        <motion.button
+          whileTap={{ scale: 0.96 }}
           onClick={() => navigate('/progreso?tab=photos')}
-          className="flex aspect-square flex-col items-center justify-center gap-2 rounded-2xl bg-surface"
+          className="flex aspect-square flex-col items-center justify-center gap-2.5 rounded-2xl bg-surface"
         >
-          <Images size={28} className="text-ink-2" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-fill">
+            <Images size={22} className="text-ink-2" />
+          </div>
           <span className="text-[13px] font-semibold text-ink-2">Tus fotos</span>
-        </button>
-        <button
-          onClick={() => navigate('/cardio')}
-          className="flex aspect-square flex-col items-center justify-center gap-2 rounded-2xl bg-surface"
+        </motion.button>
+        <motion.button
+          whileTap={{ scale: 0.96 }}
+          onClick={() => setCardioSheetOpen(true)}
+          className="flex aspect-square flex-col items-center justify-center gap-2.5 rounded-2xl bg-surface"
         >
-          <Activity size={28} className="text-accent" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent/15">
+            <Activity size={22} className="text-accent" />
+          </div>
           <span className="text-[13px] font-semibold text-ink-2">Modo cardio</span>
-        </button>
+        </motion.button>
       </div>
+
+      {cardioSheetOpen && <CardioSetupSheet onClose={() => setCardioSheetOpen(false)} />}
     </div>
   )
 }
