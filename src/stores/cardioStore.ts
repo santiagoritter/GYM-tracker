@@ -1,10 +1,12 @@
 import { create } from 'zustand'
 import type { CardioMachineId } from '@/lib/cardio'
 import { currentDistanceKm } from '@/lib/cardio'
+import { nowIso } from '@/lib/utils'
 
 interface CardioSession {
   workoutId: string
   machineId: CardioMachineId
+  startedAt: string
   speedKmh: number
   inclinePct: number
   /** Distancia acumulada hasta el último cambio de velocidad — junto con
@@ -37,6 +39,7 @@ export const useCardioStore = create<CardioStore>()((set, get) => ({
       session: {
         workoutId,
         machineId,
+        startedAt: nowIso(),
         speedKmh,
         inclinePct,
         distanceAtCheckpointKm: 0,
