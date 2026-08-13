@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ChevronRight, Play, Flame } from 'lucide-react'
+import { Activity, ChevronRight, Images, Play, Flame } from 'lucide-react'
 import { routinesFor, routineDaysOf, workoutsFor } from '@/db/scoped'
 import { nextRoutineDay, startWorkoutFromDay } from '@/db/routines'
 import { useWorkoutStore } from '@/stores/workoutStore'
@@ -173,6 +173,23 @@ export default function Home() {
         {quote.author && <footer className="mt-1 text-[13px]">— {quote.author}</footer>}
       </blockquote>
 
+      {/* Accesos rápidos, mitad y mitad — cuadrados del mismo tamaño. */}
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          onClick={() => navigate('/progreso?tab=photos')}
+          className="flex aspect-square flex-col items-center justify-center gap-2 rounded-2xl bg-surface"
+        >
+          <Images size={28} className="text-ink-2" />
+          <span className="text-[13px] font-semibold text-ink-2">Tus fotos</span>
+        </button>
+        <button
+          onClick={() => navigate('/cardio')}
+          className="flex aspect-square flex-col items-center justify-center gap-2 rounded-2xl bg-surface"
+        >
+          <Activity size={28} className="text-accent" />
+          <span className="text-[13px] font-semibold text-ink-2">Modo cardio</span>
+        </button>
+      </div>
     </div>
   )
 }
