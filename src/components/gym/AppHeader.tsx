@@ -4,9 +4,11 @@ import { Flame, Shield, Timer } from 'lucide-react'
 import { workoutsFor } from '@/db/scoped'
 import { useAuthStore } from '@/stores/authStore'
 import { useWorkoutStore } from '@/stores/workoutStore'
+import { useCardioStore } from '@/stores/cardioStore'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useElapsedDuration } from '@/hooks/useElapsedDuration'
 import { useCountdown } from '@/hooks/useCountdown'
+import { activeWorkoutRoute } from '@/lib/cardio'
 import CalorieHeaderBadge from '@/components/gym/CalorieHeaderBadge'
 
 /**
@@ -30,6 +32,7 @@ export default function AppHeader() {
   // que dispara haptics/notificación/auto-skip, esto es solo lectura.
   const restEndsAt = useWorkoutStore((s) => s.restTimer.endsAt)
   const restRemaining = useCountdown(restEndsAt)
+  const cardioWorkoutId = useCardioStore((s) => s.session?.workoutId)
 
   const initials = (name ?? 'U')
     .split(' ')
@@ -57,7 +60,7 @@ export default function AppHeader() {
       <div className="flex items-center gap-1.5">
         {activeWorkout && (
           <button
-            onClick={() => navigate(`/entreno/${activeWorkout.id}`)}
+            onClick={() => navigate(activeWorkoutRoute(activeWorkout.id, cardioWorkoutId))}
             aria-label="Entreno en curso"
             className="flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-accent px-2.5 text-[12px] font-bold text-bg"
           >
@@ -67,7 +70,7 @@ export default function AppHeader() {
         )}
         {activeWorkout && restEndsAt && (
           <button
-            onClick={() => navigate(`/entreno/${activeWorkout.id}`)}
+            onClick={() => navigate(activeWorkoutRoute(activeWorkout.id, cardioWorkoutId))}
             aria-label="Descanso restante"
             className="flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-fill px-2.5 text-[12px] font-semibold text-ink-2"
           >

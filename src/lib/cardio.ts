@@ -20,6 +20,14 @@ export function cardioMachine(id: CardioMachineId): CardioMachine {
   return CARDIO_MACHINES.find((m) => m.id === id) ?? CARDIO_MACHINES[0]
 }
 
+/** A qué ruta lleva "volver al entreno en curso" — un Workout de cardio no
+ * tiene WorkoutSets, así que mandarlo a /entreno/:id (la pantalla de
+ * pesas) lo mostraba vacío. Si el workout activo coincide con la sesión
+ * de cardio en curso, vuelve a /cardio en cambio. */
+export function activeWorkoutRoute(workoutId: string, cardioWorkoutId: string | undefined): string {
+  return workoutId === cardioWorkoutId ? '/cardio' : `/entreno/${workoutId}`
+}
+
 /** Distancia recorrida hasta ahora, calculada desde el último "checkpoint"
  * (momento en que cambió la velocidad) — no acumulada tick a tick. Un
  * `setInterval` puede saltear ticks (pestaña en segundo plano, pantalla
