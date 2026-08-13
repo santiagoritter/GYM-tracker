@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ChevronDown, TrendingUp, Trophy } from 'lucide-react'
 import {
@@ -32,8 +33,19 @@ import { cn } from '@/lib/utils'
 
 type Tab = 'summary' | 'charts' | 'month' | 'levels' | 'achievements' | 'photos' | 'prs' | 'history'
 
+const TABS: readonly Tab[] = [
+  'summary', 'charts', 'month', 'levels', 'achievements', 'photos', 'prs', 'history',
+]
+
 export default function Progress() {
-  const [tab, setTab] = useState<Tab>('summary')
+  // `?tab=photos` para el acceso directo a fotos desde Inicio — el resto
+  // de la navegación entre pestañas sigue siendo local, no hace falta
+  // reflejar cada cambio en la URL.
+  const [searchParams] = useSearchParams()
+  const initialTab = searchParams.get('tab')
+  const [tab, setTab] = useState<Tab>(
+    TABS.includes(initialTab as Tab) ? (initialTab as Tab) : 'summary'
+  )
 
   return (
     <div className="mx-auto content-width space-y-4">

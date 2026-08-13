@@ -68,7 +68,13 @@ export default function CalendarHeatmap() {
     const volByDay = new Map<string, number>()
     for (const w of workouts ?? []) {
       const k = localDayKey(w.startedAt)
-      volByDay.set(k, (volByDay.get(k) ?? 0) + (w.totalVolumeKg ?? 0))
+      // Cardio no tiene volumen en kg (no hay WorkoutSets) — sin este
+      // piso, un día que fue solo cardio sumaba 0 y el heatmap lo pintaba
+      // igual que un día sin entrenar. `1` alcanza para cruzar el umbral
+      // de level() y marcarlo como actividad mínima, sin inflar el color
+      // si además hubo entreno de pesas ese mismo día.
+      const contribution = w.totalVolumeKg && w.totalVolumeKg > 0 ? w.totalVolumeKg : 1
+      volByDay.set(k, (volByDay.get(k) ?? 0) + contribution)
     }
 
     // Arrancar en el lunes de hace WEEKS-1 semanas
