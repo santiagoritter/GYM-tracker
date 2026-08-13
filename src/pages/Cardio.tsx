@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { Music, Pause, Play, SkipBack, SkipForward, Square, X } from 'lucide-react'
+import { Menu, Music, Pause, Play, SkipBack, SkipForward, Square, X } from 'lucide-react'
 import { useElapsedDuration } from '@/hooks/useElapsedDuration'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useWorkoutStore } from '@/stores/workoutStore'
@@ -12,6 +12,7 @@ import { cardioMachine, currentDistanceKm, formatCardioNotes } from '@/lib/cardi
 import { fetchPlaybackState, sendPlaybackCommand, type PlaybackResult } from '@/lib/spotifyPlayer'
 import { hapticTick } from '@/lib/native'
 import { cn } from '@/lib/utils'
+import ResponsiveSheet from '@/components/ui/ResponsiveSheet'
 import NumberStepper from '@/components/ui/NumberStepper'
 import HoldButton from '@/components/ui/HoldButton'
 
@@ -39,6 +40,7 @@ export default function Cardio() {
   const setSpeed = useCardioStore((s) => s.setSpeed)
   const setIncline = useCardioStore((s) => s.setIncline)
   const endSession = useCardioStore((s) => s.endSession)
+  const [adjustOpen, setAdjustOpen] = useState(false)
 
   useEffect(() => {
     if (!session) navigate('/', { replace: true })
@@ -69,6 +71,7 @@ export default function Cardio() {
   if (!session) return null
 
   const distanceKm = currentDistanceKm(session.distanceAtCheckpointKm, session.speedKmh, session.checkpointAt)
+  const canAdjust = machine.hasSpeed || machine.hasIncline
 
   const handleFinish = async () => {
     if (!userId) return
@@ -94,7 +97,11 @@ export default function Cardio() {
 
   const counter = (
     <div className="flex flex-col items-center gap-1">
-      <p className="text-sm font-medium text-ink-3">{machine.label}</p>
+      <p className="text-sm font-medium text-ink-3">
+        {machine.label}
+        {machine.hasSpeed && ` · ${session.speedKmh.toFixed(1)} km/h`}
+        {machine.hasIncline && session.inclinePct > 0 && ` · ${session.inclinePct.toFixed(1)}%`}
+      </p>
       <AnimatePresence mode="popLayout">
         <motion.span
           key={elapsed}
@@ -118,37 +125,6 @@ export default function Cardio() {
 
   const controls = (
     <div className="flex w-full flex-col gap-5">
-      {(machine.hasSpeed || machine.hasIncline) && (
-        <div className="flex gap-3">
-          {machine.hasSpeed && (
-            <div className="flex-1">
-              <NumberStepper
-                label="km/h"
-                value={session.speedKmh}
-                step={0.5}
-                min={0}
-                max={30}
-                decimals={1}
-                onChange={setSpeed}
-              />
-            </div>
-          )}
-          {machine.hasIncline && (
-            <div className="flex-1">
-              <NumberStepper
-                label="Inclinación %"
-                value={session.inclinePct}
-                step={0.5}
-                min={0}
-                max={15}
-                decimals={1}
-                onChange={setIncline}
-              />
-            </div>
-          )}
-        </div>
-      )}
-
       {spotifyConnected ? (
         isPlaybackState(playback) && (
           <div className="flex flex-col items-center gap-3">
@@ -216,16 +192,29 @@ export default function Cardio() {
         isLandscape && 'flex-row items-center gap-8 px-10'
       )}
     >
-      <button
-        onClick={handleCancel}
-        aria-label="Cancelar sesión"
+      <div
         className={cn(
-          'flex h-11 w-11 items-center justify-center text-ink-3',
-          isLandscape ? 'absolute left-4 top-4' : 'self-start'
+          'flex items-center justify-between',
+          isLandscape ? 'absolute left-4 right-4 top-4' : 'w-full'
         )}
       >
-        <X size={24} />
-      </button>
+        <button
+          onClick={handleCancel}
+          aria-label="Cancelar sesión"
+          className="flex h-11 w-11 items-center justify-center text-ink-3"
+        >
+          <X size={24} />
+        </button>
+        {canAdjust && (
+          <button
+            onClick={() => setAdjustOpen(true)}
+            aria-label="Ajustar velocidad e inclinación"
+            className="flex h-11 w-11 items-center justify-center text-ink-3"
+          >
+            <Menu size={22} />
+          </button>
+        )}
+      </div>
 
       {isLandscape ? (
         <>
@@ -237,6 +226,49 @@ export default function Cardio() {
           <div className="flex flex-1 flex-col items-center justify-center">{counter}</div>
           <div className="mt-6">{controls}</div>
         </>
+      )}
+
+      {adjustOpen && (
+        <ResponsiveSheet onClose={() => setAdjustOpen(false)}>
+          <div className="flex items-center justify-between px-5 pt-4 pb-2">
+            <h2 className="text-lg font-bold">Ajustar</h2>
+            <button
+              onClick={() => setAdjustOpen(false)}
+              aria-label="Cerrar"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-fill text-ink-2 active:bg-fill-2"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <div className="flex gap-3 px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-2">
+            {machine.hasSpeed && (
+              <div className="flex-1">
+                <NumberStepper
+                  label="km/h"
+                  value={session.speedKmh}
+                  step={0.5}
+                  min={0}
+                  max={30}
+                  decimals={1}
+                  onChange={setSpeed}
+                />
+              </div>
+            )}
+            {machine.hasIncline && (
+              <div className="flex-1">
+                <NumberStepper
+                  label="Inclinación %"
+                  value={session.inclinePct}
+                  step={0.5}
+                  min={0}
+                  max={15}
+                  decimals={1}
+                  onChange={setIncline}
+                />
+              </div>
+            )}
+          </div>
+        </ResponsiveSheet>
       )}
     </div>
   )

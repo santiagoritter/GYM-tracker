@@ -7,8 +7,10 @@ import { routinesFor, routineDaysOf, workoutsFor } from '@/db/scoped'
 import { nextRoutineDay, startWorkoutFromDay } from '@/db/routines'
 import { useWorkoutStore } from '@/stores/workoutStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useCardioStore } from '@/stores/cardioStore'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { HOME_MESSAGES } from '@/lib/motivational'
+import { activeWorkoutRoute } from '@/lib/cardio'
 import { useElapsedDuration } from '@/hooks/useElapsedDuration'
 import CalendarHeatmap from '@/components/gym/CalendarHeatmap'
 import SpotifyNowPlaying from '@/components/gym/SpotifyNowPlaying'
@@ -30,6 +32,7 @@ export default function Home() {
     [userId]
   )
   const activeElapsed = useElapsedDuration(activeWorkout?.startedAt)
+  const cardioWorkoutId = useCardioStore((s) => s.session?.workoutId)
   const activeRoutine = useLiveQuery(
     () =>
       userId
@@ -100,7 +103,7 @@ export default function Home() {
           grande es el CTA principal de Inicio específicamente. */}
       {activeWorkout ? (
         <button
-          onClick={() => navigate(`/entreno/${activeWorkout.id}`)}
+          onClick={() => navigate(activeWorkoutRoute(activeWorkout.id, cardioWorkoutId))}
           className="flex w-full items-center justify-between rounded-2xl border border-accent/40 bg-accent/10 p-5 text-left"
         >
           <div>
