@@ -434,3 +434,26 @@ junto con B1. Acá se cierra:
 
 ### Verificación
 `npm test` (19/19), `npm run build` verde.
+
+---
+
+## 2026-09-02 — Tanda de expansión, Bloque 5: cardio con duración objetivo
+
+Faltaban datos en el modo cardio: la velocidad ya estaba, pero no había forma de decir
+cuánto tiempo se planeaba estar, y los aparatos sin velocidad (elíptica/otra) no tenían
+ningún objetivo.
+
+- **`CardioSetupSheet.tsx`**: nuevo paso "¿Cuánto tiempo vas a estar?" (`NumberStepper`
+  5–120 min, default 20) para **todos** los aparatos. Para los que tienen velocidad,
+  muestra la distancia proyectada ("a ese ritmo, 20 min son 2.00 km").
+- **`cardioStore.ts`**: `CardioSession.targetDurationMin` nuevo; `startSession` lo recibe.
+- **`Cardio.tsx`**: ticker de segundos en vivo, barra de progreso hacia el objetivo
+  (`scaleX`, lineal — sin spring por tick), "Faltan mm:ss para los N min" / "Objetivo
+  cumplido · +overtime", `hapticSuccess()` una vez al cruzar el objetivo, distancia
+  mostrada como `actual / proyectada km`.
+- **`lib/cardio.ts`**: `paceMinPerKm`, `projectedDistanceKm`, `formatHms` exportado;
+  `formatCardioNotes` suma "· obj. N min" al resumen del historial.
+
+### Verificación
+`npx tsc -b`, `npm test`, `npm run build`, `test:style` verde. Pendiente: prueba visual a
+393px y en landscape (sin navegador en el entorno).

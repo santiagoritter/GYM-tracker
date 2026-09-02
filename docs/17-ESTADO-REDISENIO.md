@@ -340,6 +340,18 @@ Inter). Fuera de alcance de esta tanda reescribirlos; queda el registro.
 - Verificación: build/test/style verde; contraste WCAG verificado. **Pendiente**:
   verificación visual (sin navegador en el entorno).
 
+**B4 — Frases filosóficas por hora (hecho):** `src/lib/quotes.ts` (40 frases con autor,
+por daypart, `getQuoteForNow()` pura y estable por día) creado en B1 y cableado en Home +
+recordatorios web/nativos. Se cerró con el edge function `send-push-reminders` (frases por
+daypart, elegidas con la hora local de cada suscripción — **requiere redeploy**) y
+`scripts/test-quotes.mts`.
+
+**B5 — Cardio con duración objetivo (hecho):** `CardioSetupSheet` pide "¿cuánto tiempo?"
+para todos los aparatos (+ distancia proyectada si hay velocidad). `Cardio.tsx` muestra
+barra de progreso hacia el objetivo (`scaleX` lineal), "faltan X" / overtime, háptico al
+cruzar. `cardioStore.CardioSession.targetDurationMin`. `formatCardioNotes` incluye el
+objetivo en el resumen del historial.
+
 ## Pendiente
 
 ### Bloqueado
