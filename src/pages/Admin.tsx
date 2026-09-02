@@ -47,14 +47,17 @@ export default function Admin() {
       </div>
 
       <section>
-        <SectionHeader title="Todos los usuarios" />
+        <SectionHeader title="Gestión de usuarios" />
         <Card>
           <Row onClick={() => navigate('/admin/usuarios')}>
             <div className="min-w-0 flex-1">
               <p className="flex items-center gap-2 text-[15px]">
-                <Users size={16} className="shrink-0 text-ink-3" /> Ver actividad de todos
+                <Users size={16} className="shrink-0 text-ink-3" /> Usuarios y cuentas
               </p>
-              <p className="text-[13px] text-ink-3">Entrenos, volumen y PRs de cada usuario, en vivo.</p>
+              <p className="text-[13px] text-ink-3">
+                Actividad en vivo + crear cuentas, cambiar rol/email, resetear contraseña,
+                deshabilitar. Todo con registro de acciones.
+              </p>
             </div>
             <ChevronRight size={16} className="shrink-0 text-ink-4" />
           </Row>
@@ -74,7 +77,7 @@ export default function Admin() {
       </section>
 
       <section>
-        <SectionHeader title="Gestión de usuarios" />
+        <SectionHeader title="Dashboard de Supabase" />
         <Card>
           <Row
             onClick={() =>
@@ -82,10 +85,9 @@ export default function Admin() {
             }
           >
             <div className="min-w-0 flex-1">
-              <p className="text-[15px]">Ver usuarios y roles en Supabase</p>
+              <p className="text-[15px]">Abrir el panel de Supabase</p>
               <p className="text-[13px] text-ink-3">
-                Promover/degradar admin se hace ahí — el rol viaja firmado en el
-                JWT, ni un admin logueado puede escribirlo desde acá.
+                Para lo que no está acá: logs, Advisors de seguridad, SQL.
               </p>
             </div>
             <ExternalLink size={16} className="shrink-0 text-ink-4" />
