@@ -32,7 +32,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21 # Capacitor 8 compila las libs Android con source 21
 
       - run: npm ci
 
