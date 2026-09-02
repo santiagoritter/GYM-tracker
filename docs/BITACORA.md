@@ -415,3 +415,22 @@ El modo claro anterior era ilegible (el usuario lo reportó). Se rehízo entero.
 `npx tsc -b`, `npm test` (18/18), `npm run build` verde. `test:style` sin auras nuevas.
 Contraste verificado con WCAG 2.1. **Pendiente**: verificación visual en pantalla real —
 no hay navegador conectado en el entorno (extensión no disponible).
+
+---
+
+## 2026-09-02 — Tanda de expansión, Bloque 4: frases filosóficas por hora del día
+
+El grueso (`src/lib/quotes.ts` + cableado en Home y recordatorios web/nativos) se hizo
+junto con B1. Acá se cierra:
+
+- **`supabase/functions/send-push-reminders/index.ts`**: el `MESSAGES` de 4 strings
+  genéricos pasa a `QUOTES` por daypart (subset de `quotes.ts`, en sync a mano). El cuerpo
+  se elige con la **hora local de cada suscripción** (`quoteForHour`), dentro del loop, no
+  una sola vez por invocación. **Requiere redeploy de la función** (`supabase functions
+  deploy send-push-reminders --no-verify-jwt`) para que aplique; la versión desplegada
+  vieja sigue andando mientras tanto.
+- **`scripts/test-quotes.mts`** nuevo + `test:quotes` en `npm test` (19 checks ahora):
+  daypart correcto en las 24 horas, estable por día, sin emojis. 40 frases.
+
+### Verificación
+`npm test` (19/19), `npm run build` verde.
