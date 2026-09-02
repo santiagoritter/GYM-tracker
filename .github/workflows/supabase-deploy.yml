@@ -1,0 +1,69 @@
+name: Deploy Supabase (migraciones + funciones)
+
+# Manual: Actions → "Deploy Supabase" → Run workflow.
+#
+# Aplica las migraciones nuevas (0009–0013) y despliega las Edge Functions.
+# Se puede correr las veces que haga falta: las migraciones usan
+# `if not exists` / `on conflict` donde se puede, y los errores de "ya
+# existe" (ej. una policy que ya se creó a mano) NO frenan el resto
+# (`ON_ERROR_STOP=0`). Revisá el log para ver qué se aplicó y qué se saltó.
+#
+# Secrets necesarios (Settings → Secrets and variables → Actions):
+#   SUPABASE_ACCESS_TOKEN  — supabase.com → Account → Access Tokens → Generate new token
+#   SUPABASE_PROJECT_REF   — el subdominio de tu Project URL
+#                            (https://<ESTO>.supabase.co, mismo valor de VITE_SUPABASE_URL)
+#   SUPABASE_DB_URL        — Dashboard → Project Settings → Database → Connection string →
+#                            pestaña "URI" (la del pooler / "Shared pooler"), reemplazando
+#                            [YOUR-PASSWORD] por la contraseña de la base.
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_migrations:
+        description: Aplicar migraciones 0009–0013
+        type: boolean
+        default: true
+      deploy_functions:
+        description: Desplegar las Edge Functions
+        type: boolean
+        default: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Aplicar migraciones nuevas (0009–0013)
+        if: ${{ inputs.run_migrations }}
+        run: |
+          if [ -z "${{ secrets.SUPABASE_DB_URL }}" ]; then
+            echo "::error::Falta el secret SUPABASE_DB_URL"; exit 1
+          fi
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+          for f in \
+            supabase/migrations/0009_harden_functions.sql \
+            supabase/migrations/0010_legal_acceptance.sql \
+            supabase/migrations/0011_admin_audit.sql \
+            supabase/migrations/0012_coach.sql \
+            supabase/migrations/0013_coach_phase2.sql
+          do
+            echo ""
+            echo "═══ $f ═══"
+            psql "${{ secrets.SUPABASE_DB_URL }}" -v ON_ERROR_STOP=0 -f "$f"
+          done
+
+      - name: Desplegar Edge Functions
+        if: ${{ inputs.deploy_functions }}
+        run: |
+          REF="${{ secrets.SUPABASE_PROJECT_REF }}"
+          if [ -z "$REF" ]; then echo "::error::Falta el secret SUPABASE_PROJECT_REF"; exit 1; fi
+          supabase functions deploy become-coach --project-ref "$REF"
+          supabase functions deploy admin-users --project-ref "$REF"
+          supabase functions deploy send-push-reminders --project-ref "$REF" --no-verify-jwt
