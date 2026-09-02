@@ -7,7 +7,12 @@ import { useSheetDrag } from '@/hooks/useSheetDrag'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useWorkoutStore } from '@/stores/workoutStore'
 import { useCardioStore } from '@/stores/cardioStore'
-import { CARDIO_MACHINES, cardioMachine, type CardioMachineId } from '@/lib/cardio'
+import {
+  CARDIO_MACHINES,
+  cardioMachine,
+  projectedDistanceKm,
+  type CardioMachineId,
+} from '@/lib/cardio'
 import { sheetItemVariants, sheetItemVariantsReduced } from '@/lib/motionVariants'
 import { cn } from '@/lib/utils'
 import HoldButton from '@/components/ui/HoldButton'
@@ -31,13 +36,14 @@ export default function CardioSetupSheet({ onClose }: { onClose: () => void }) {
   const [machineId, setMachineId] = useState<CardioMachineId>('treadmill')
   const [speed, setSpeedValue] = useState(6)
   const [incline, setInclineValue] = useState(1)
+  const [targetMin, setTargetMin] = useState(20)
 
   const machine = cardioMachine(machineId)
 
   const handleStart = async () => {
     if (!userId) return
     const workoutId = await startWorkout(userId, `Cardio · ${machine.label}`)
-    startSession(workoutId, machineId, machine.hasSpeed ? speed : 0, incline)
+    startSession(workoutId, machineId, machine.hasSpeed ? speed : 0, incline, targetMin)
     onClose()
     navigate('/cardio')
   }
@@ -86,30 +92,47 @@ export default function CardioSetupSheet({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        {machine.hasSpeed ? (
-          <div className="space-y-4 rounded-xl bg-surface-2 p-4">
-            <div>
-              <p className="mb-0.5 text-[14px] font-semibold">¿A qué velocidad vas a ir?</p>
-              <p className="mb-2 text-[12px] text-ink-3">
-                Con esto se calcula la distancia recorrida durante la sesión.
-              </p>
-              <NumberStepper value={speed} step={0.5} min={0.5} max={30} decimals={1} onChange={setSpeedValue} />
-            </div>
-
-            {machine.hasIncline && (
-              <div>
-                <p className="mb-0.5 text-[14px] font-semibold">¿Con qué inclinación?</p>
-                <p className="mb-2 text-[12px] text-ink-3">0% es plano, sin pendiente.</p>
-                <NumberStepper value={incline} step={0.5} min={0} max={15} decimals={1} onChange={setInclineValue} />
-              </div>
-            )}
+        <div className="space-y-4 rounded-xl bg-surface-2 p-4">
+          <div>
+            <p className="mb-0.5 text-[14px] font-semibold">¿Cuánto tiempo vas a estar?</p>
+            <p className="mb-2 text-[12px] text-ink-3">
+              Para el anillo de progreso. Si te pasás, sigue contando.
+            </p>
+            <NumberStepper value={targetMin} step={5} min={5} max={120} onChange={setTargetMin} />
           </div>
-        ) : (
-          <p className="rounded-xl bg-surface-2 p-4 text-[13px] leading-relaxed text-ink-2">
-            Este aparato no tiene velocidad en km/h, así que el modo cardio va a cronometrar la
-            sesión sin calcular distancia.
-          </p>
-        )}
+
+          {machine.hasSpeed ? (
+            <>
+              <div>
+                <p className="mb-0.5 text-[14px] font-semibold">¿A qué velocidad vas a ir?</p>
+                <p className="mb-2 text-[12px] text-ink-3">
+                  Con esto se calcula la distancia recorrida durante la sesión.
+                </p>
+                <NumberStepper value={speed} step={0.5} min={0.5} max={30} decimals={1} onChange={setSpeedValue} />
+                <p className="mt-1.5 text-[12px] text-ink-3">
+                  A ese ritmo, {targetMin} min son{' '}
+                  <span className="font-mono tabular-nums text-ink-2">
+                    {projectedDistanceKm(speed, targetMin).toFixed(2)} km
+                  </span>
+                  .
+                </p>
+              </div>
+
+              {machine.hasIncline && (
+                <div>
+                  <p className="mb-0.5 text-[14px] font-semibold">¿Con qué inclinación?</p>
+                  <p className="mb-2 text-[12px] text-ink-3">0% es plano, sin pendiente.</p>
+                  <NumberStepper value={incline} step={0.5} min={0} max={15} decimals={1} onChange={setInclineValue} />
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="text-[13px] leading-relaxed text-ink-2">
+              Este aparato no tiene velocidad en km/h: el modo cardio cronometra la sesión
+              contra el objetivo, sin calcular distancia.
+            </p>
+          )}
+        </div>
       </motion.div>
 
       <motion.div

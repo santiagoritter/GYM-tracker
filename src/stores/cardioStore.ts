@@ -7,6 +7,10 @@ interface CardioSession {
   workoutId: string
   machineId: CardioMachineId
   startedAt: string
+  /** Minutos que el usuario planea estar. Se usa para el anillo de progreso
+   * y la proyección de distancia en la pantalla activa. Contar por encima
+   * del objetivo no se corta: sigue en "overtime". */
+  targetDurationMin: number
   speedKmh: number
   inclinePct: number
   /** Distancia acumulada hasta el último cambio de velocidad — junto con
@@ -19,7 +23,13 @@ interface CardioSession {
 
 interface CardioStore {
   session: CardioSession | null
-  startSession: (workoutId: string, machineId: CardioMachineId, speedKmh: number, inclinePct: number) => void
+  startSession: (
+    workoutId: string,
+    machineId: CardioMachineId,
+    speedKmh: number,
+    inclinePct: number,
+    targetDurationMin: number
+  ) => void
   setSpeed: (kmh: number) => void
   setIncline: (pct: number) => void
   endSession: () => { distanceKm: number }
@@ -34,12 +44,13 @@ interface CardioStore {
 export const useCardioStore = create<CardioStore>()((set, get) => ({
   session: null,
 
-  startSession: (workoutId, machineId, speedKmh, inclinePct) =>
+  startSession: (workoutId, machineId, speedKmh, inclinePct, targetDurationMin) =>
     set({
       session: {
         workoutId,
         machineId,
         startedAt: nowIso(),
+        targetDurationMin,
         speedKmh,
         inclinePct,
         distanceAtCheckpointKm: 0,

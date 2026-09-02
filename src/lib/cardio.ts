@@ -44,12 +44,29 @@ export function currentDistanceKm(
   return distanceAtCheckpointKm + speedKmh * hoursSinceCheckpoint
 }
 
-function formatHms(totalSec: number): string {
+export function formatHms(totalSec: number): string {
   const h = Math.floor(totalSec / 3600)
   const m = Math.floor((totalSec % 3600) / 60)
   const s = Math.floor(totalSec % 60)
   if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
   return `${m}:${String(s).padStart(2, '0')}`
+}
+
+/** Ritmo en min/km a partir de velocidad en km/h. `0` (o menos) → null:
+ * no tiene sentido un "ritmo" sin avanzar. */
+export function paceMinPerKm(speedKmh: number): string | null {
+  if (speedKmh <= 0) return null
+  const secPerKm = 3600 / speedKmh
+  const m = Math.floor(secPerKm / 60)
+  const s = Math.round(secPerKm % 60)
+  return `${m}:${String(s).padStart(2, '0')}`
+}
+
+/** Distancia que se recorrería si se mantiene `speedKmh` durante
+ * `targetDurationMin` — la proyección que se muestra en el setup y en la
+ * pantalla activa (aparatos con velocidad). */
+export function projectedDistanceKm(speedKmh: number, targetDurationMin: number): number {
+  return speedKmh * (targetDurationMin / 60)
 }
 
 /** Resumen de la sesión para guardar en `Workout.notes` — sin migrar el
@@ -60,9 +77,12 @@ function formatHms(totalSec: number): string {
 export function formatCardioNotes(
   machine: CardioMachine,
   distanceKm: number,
-  durationSec: number
+  durationSec: number,
+  targetDurationMin?: number
 ): string {
-  if (!machine.hasSpeed) return `${machine.label} · ${formatHms(durationSec)}`
+  const target =
+    targetDurationMin && targetDurationMin > 0 ? ` · obj. ${targetDurationMin} min` : ''
+  if (!machine.hasSpeed) return `${machine.label} · ${formatHms(durationSec)}${target}`
   const avgSpeed = durationSec > 0 ? distanceKm / (durationSec / 3600) : 0
-  return `${machine.label} · ${distanceKm.toFixed(2)} km en ${formatHms(durationSec)} (${avgSpeed.toFixed(1)} km/h prom.)`
+  return `${machine.label} · ${distanceKm.toFixed(2)} km en ${formatHms(durationSec)} (${avgSpeed.toFixed(1)} km/h prom.)${target}`
 }

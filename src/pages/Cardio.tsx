@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { Menu, Music, Pause, Play, SkipBack, SkipForward, Square, X } from 'lucide-react'
@@ -8,9 +8,15 @@ import { useWorkoutStore } from '@/stores/workoutStore'
 import { useCardioStore } from '@/stores/cardioStore'
 import { useSpotifyStore } from '@/stores/spotifyStore'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
-import { cardioMachine, currentDistanceKm, formatCardioNotes } from '@/lib/cardio'
+import {
+  cardioMachine,
+  currentDistanceKm,
+  formatCardioNotes,
+  formatHms,
+  projectedDistanceKm,
+} from '@/lib/cardio'
 import { fetchPlaybackState, sendPlaybackCommand, type PlaybackResult } from '@/lib/spotifyPlayer'
-import { hapticTick } from '@/lib/native'
+import { hapticSuccess, hapticTick } from '@/lib/native'
 import { cn } from '@/lib/utils'
 import ResponsiveSheet from '@/components/ui/ResponsiveSheet'
 import NumberStepper from '@/components/ui/NumberStepper'
@@ -49,6 +55,30 @@ export default function Cardio() {
   const machine = cardioMachine(session?.machineId ?? 'treadmill')
   const elapsed = useElapsedDuration(session?.startedAt)
 
+  // Segundos transcurridos, en vivo — `useElapsedDuration` solo da el string.
+  const [elapsedSec, setElapsedSec] = useState(0)
+  useEffect(() => {
+    if (!session?.startedAt) return
+    const start = new Date(session.startedAt).getTime()
+    const tick = () => setElapsedSec((Date.now() - start) / 1000)
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [session?.startedAt])
+
+  const targetSec = (session?.targetDurationMin ?? 0) * 60
+  const targetProgress = targetSec > 0 ? Math.min(1, elapsedSec / targetSec) : 0
+  const targetReached = targetSec > 0 && elapsedSec >= targetSec
+
+  // Háptico una sola vez al cruzar el objetivo.
+  const reachedFired = useRef(false)
+  useEffect(() => {
+    if (targetReached && !reachedFired.current) {
+      reachedFired.current = true
+      hapticSuccess()
+    }
+  }, [targetReached])
+
   const spotifyConnected = useSpotifyStore((s) => Boolean(s.accessToken))
   const [playback, setPlayback] = useState<PlaybackResult | 'loading'>('loading')
 
@@ -77,7 +107,11 @@ export default function Cardio() {
     if (!userId) return
     const { distanceKm: finalKm } = endSession()
     const durationSec = (Date.now() - new Date(session.startedAt).getTime()) / 1000
-    await finishWorkout(userId, session.workoutId, formatCardioNotes(machine, finalKm, durationSec))
+    await finishWorkout(
+      userId,
+      session.workoutId,
+      formatCardioNotes(machine, finalKm, durationSec, session.targetDurationMin)
+    )
     navigate('/')
   }
 
@@ -117,8 +151,27 @@ export default function Cardio() {
       </AnimatePresence>
       {machine.hasSpeed && (
         <p className="mt-1 font-mono text-2xl font-semibold tabular-nums text-accent">
-          {distanceKm.toFixed(2)} km
+          {distanceKm.toFixed(2)}
+          <span className="text-base text-ink-3"> / {projectedDistanceKm(session.speedKmh, session.targetDurationMin).toFixed(2)} km</span>
         </p>
+      )}
+
+      {targetSec > 0 && (
+        <div className="mt-3 w-full max-w-[280px]">
+          <div className="h-1 overflow-hidden rounded-full bg-fill">
+            {/* Solo transform (DESIGN.md §4). Lineal, no spring: se actualiza
+                cada segundo y un overshoot por tick se vería nervioso. */}
+            <div
+              className="h-full origin-left rounded-full bg-accent"
+              style={{ transform: `scaleX(${targetProgress})`, transition: 'transform 1s linear' }}
+            />
+          </div>
+          <p className="mt-1.5 text-center text-[13px] text-ink-3">
+            {targetReached
+              ? `Objetivo cumplido · +${formatHms(elapsedSec - targetSec)}`
+              : `Faltan ${formatHms(targetSec - elapsedSec)} para los ${session.targetDurationMin} min`}
+          </p>
+        </div>
       )}
     </div>
   )
