@@ -138,7 +138,7 @@ export type FitnessGoal = 'strength' | 'mass' | 'endurance' | 'health' | 'genera
 // dejaba inalcanzables los otros 3 escalones de STANDARDS desde el
 // recomendador cuando no hay historial.
 export type ExperienceLevel = 'novice' | 'beginner' | 'intermediate' | 'advanced' | 'elite' | 'champion'
-export type UserRole = 'admin' | 'user'
+export type UserRole = 'admin' | 'coach' | 'user'
 
 export interface User {
   id: string

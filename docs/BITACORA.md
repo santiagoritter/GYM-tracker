@@ -585,3 +585,31 @@ que la CSP no rompe login/sync/Spotify/mapa.
 ### Verificación
 `npx tsc -b`, `npm test` (16 ✅), `npm run build`, `test:style` verde.
 **Pendiente (dashboard)**: correr `0010_legal_acceptance.sql`.
+
+---
+
+## 2026-09-02 — Tanda de expansión, Bloque 10: panel de admin (gestión de cuentas)
+
+`UserRole` pasa a `'admin' | 'coach' | 'user'` (lo usan B10 y B11).
+
+- **`supabase/functions/admin-users/index.ts`** (nueva): único camino para
+  ESCRIBIR sobre cuentas. Verifica server-side que el JWT del que llama tenga
+  `app_metadata.role === 'admin'` y recién ahí usa la service_role. Acciones:
+  `list`, `setRole`, `updateEmail`, `sendPasswordReset`, `setBanned`, `createUser`.
+  Cada mutación → fila en `admin_audit`.
+- **`supabase/migrations/0011_admin_audit.sql`**: tabla `admin_audit`
+  (actor/acción/target/detalle), RLS solo-lectura para admins, sin INSERT
+  desde cliente.
+- **`src/lib/adminMutations.ts`** (nuevo): invoca la función + `fetchAuditLog`.
+- **`src/pages/AdminUsers.tsx`** reescrito: usa `listUsersDetailed` (rol,
+  último acceso, deshabilitada), stats (usuarios / activos 30d / coaches),
+  por fila: selector de rol + reset + deshabilitar/reactivar, form "Crear
+  usuario", registro de acciones. Charts existentes se mantienen.
+- **`src/pages/Admin.tsx`**: copy actualizado (ahora la gestión SÍ se hace
+  desde la app; el link a Supabase queda para logs/Advisors/SQL).
+- **`docs/20-ADMIN.md`** nuevo con los pasos de despliegue.
+
+### Verificación
+`npx tsc -b`, `npm run build`, `test:style` verde. **Pendiente (usuario)**: correr
+`0011`, `supabase functions deploy admin-users`, probar el flujo como admin y como
+no-admin (403).
