@@ -11,6 +11,7 @@ import {
   Download,
   FileText,
   Flame,
+  GraduationCap,
   HelpCircle,
   ListMusic,
   Music,
@@ -20,9 +21,12 @@ import {
   Smartphone,
   Sun,
   Upload,
+  Users,
 } from 'lucide-react'
+import { useAuthStore } from '@/stores/authStore'
 
 const SpotifyPlayerSheet = lazy(() => import('@/components/gym/SpotifyPlayerSheet'))
+const CoachSignupSheet = lazy(() => import('@/components/gym/CoachSignupSheet'))
 import { db } from '@/db/schema'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useThemeStore } from '@/stores/themeStore'
@@ -66,6 +70,9 @@ export default function Ajustes() {
   const canInstall = useCanInstallPwa()
   const showAppSection = !isNative && !isStandalone()
   const [playerOpen, setPlayerOpen] = useState(false)
+  const [coachSheetOpen, setCoachSheetOpen] = useState(false)
+  const role = useAuthStore((s) => s.role)
+  const isCoach = role === 'coach' || role === 'admin'
 
   const handleInstall = async () => {
     const ok = await promptInstall()
@@ -420,6 +427,33 @@ export default function Ajustes() {
           />
         </section>
 
+        {supabaseConfigured && (
+          <section>
+            <SectionHeader title="Entrenador" />
+            <Card>
+              {isCoach ? (
+                <Row onClick={() => navigate('/coach')}>
+                  <Users size={18} className="shrink-0 text-ink-3" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[15px]">Mis alumnos</p>
+                    <p className="text-[13px] text-ink-3">Ver progreso, asignar rutinas y metas</p>
+                  </div>
+                  <ChevronRight size={16} className="shrink-0 text-ink-4" />
+                </Row>
+              ) : (
+                <Row onClick={() => setCoachSheetOpen(true)}>
+                  <GraduationCap size={18} className="shrink-0 text-ink-3" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[15px]">Convertirme en coach</p>
+                    <p className="text-[13px] text-ink-3">Tomá alumnos y seguí su progreso</p>
+                  </div>
+                  <ChevronRight size={16} className="shrink-0 text-ink-4" />
+                </Row>
+              )}
+            </Card>
+          </section>
+        )}
+
         <section>
           <SectionHeader title="Ayuda" />
           <Card>
@@ -449,6 +483,11 @@ export default function Ajustes() {
       {playerOpen && (
         <Suspense fallback={null}>
           <SpotifyPlayerSheet onClose={() => setPlayerOpen(false)} />
+        </Suspense>
+      )}
+      {coachSheetOpen && (
+        <Suspense fallback={null}>
+          <CoachSignupSheet onClose={() => setCoachSheetOpen(false)} />
         </Suspense>
       )}
     </div>

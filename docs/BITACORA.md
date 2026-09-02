@@ -676,3 +676,25 @@ end-to-end del flujo coach (ver `docs/21`).
 `npx tsc -b`, `npm test` (16 ✅), `npm run build`, `test:style` verde. **Pendiente
 (usuario)**: correr `0013_coach_phase2.sql`, Realtime habilitado, prueba de humo de fase 2
 (ver `docs/21` §5). Pago real (Mercado Pago) = fase futura.
+
+---
+
+## 2026-09-02 — Alta self-serve de coach desde Ajustes
+
+Pedido del usuario: poder hacerse coach desde la app sin depender del admin.
+
+- **`supabase/functions/become-coach/index.ts`** (nueva): el usuario logueado se convierte
+  en coach. Valida el DNI (único), setea `role: 'coach'` con la service_role **sin degradar
+  a un `admin`**, crea `coaches` + `coach_identity`, deja fila en `admin_audit`
+  (`self_become_coach`). El verificado sigue siendo admin-only.
+- **`src/lib/coachSelfSignup.ts`**: invoca la función + `supabase.auth.refreshSession()`
+  para que el JWT nuevo traiga el rol (el listener de `onAuthStateChange` actualiza
+  `authStore`).
+- **`src/components/gym/CoachSignupSheet.tsx`**: formulario (nombre, DNI, experiencia, bio).
+- **`src/pages/Ajustes.tsx`**: sección "Entrenador" — "Convertirme en coach" (si no lo es)
+  o "Mis alumnos" (si ya lo es). Solo con Supabase configurado.
+- `docs/21-COACH.md` §"Rol" y pasos de despliegue actualizados (deploy de `become-coach`).
+
+### Verificación
+`npx tsc -b`, `npm test` (16 ✅), `npm run build`, `test:style` verde. **Pendiente
+(usuario)**: `supabase functions deploy become-coach`.

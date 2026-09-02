@@ -10,10 +10,21 @@ unicidad por DNI + verificación, método de pago (maqueta y real).
 
 ## Rol
 
-`coach` en `app_metadata` (lo pone el admin vía la Edge Function
-`admin-users`, B10). `CoachRoute` (`src/components/ProtectedRoute.tsx`)
-gatea el área con el mismo `sessionChecked` que `AdminRoute`. Un `admin`
-también entra.
+`coach` en `app_metadata`. Se obtiene de dos formas:
+
+- **Self-serve** (lo normal): Ajustes → "Convertirme en coach" → carga nombre,
+  DNI, experiencia y bio → Edge Function **`become-coach`** valida el DNI
+  (único), setea `role: 'coach'` con la service_role (sin degradar a un
+  `admin`), crea `coaches` + `coach_identity`, y el cliente hace
+  `supabase.auth.refreshSession()` para que el JWT nuevo traiga el rol.
+  `src/lib/coachSelfSignup.ts` + `src/components/gym/CoachSignupSheet.tsx`.
+- **Admin**: `/admin/usuarios` → selector de rol → `coach` (Edge Function
+  `admin-users`, B10). Útil para degradar o para casos especiales.
+
+`CoachRoute` (`src/components/ProtectedRoute.tsx`) gatea el área con el mismo
+`sessionChecked` que `AdminRoute`. Un `admin` también entra. El **verificado
+amarillo** NO se otorga en ningún flujo self-serve — siempre lo pone un
+admin tras cotejar el DNI (trigger `coaches_guard_verified` en 0013).
 
 ## Datos — `supabase/migrations/0012_coach.sql`
 
@@ -97,12 +108,15 @@ punto a tocar cuando se integre.
 ## Pasos de despliegue (el usuario)
 
 1. Correr `supabase/migrations/0012_coach.sql` **y** `0013_coach_phase2.sql` en el SQL Editor.
-2. **Advisors → Security**: confirmar que sigue en cero (las policies nuevas
+2. Desplegar las Edge Functions (con verificación de JWT):
+   `supabase functions deploy admin-users` y `supabase functions deploy become-coach`.
+3. **Advisors → Security**: confirmar que sigue en cero (las policies nuevas
    son todas `to authenticated` con `is_coach_of`/`has_bonded_with`/`auth.uid()`).
-3. Confirmar que Realtime está habilitado en el proyecto (default sí) — el chat lo usa.
-4. Prueba de humo:
-   - Admin promueve la cuenta B a `coach` (`/admin/usuarios`).
-   - B entra, ve "Mis alumnos" en Perfil, completa su ficha, genera una
+4. Confirmar que Realtime está habilitado en el proyecto (default sí) — el chat lo usa.
+5. Prueba de humo:
+   - La cuenta B va a Ajustes → "Convertirme en coach", carga sus datos → queda coach
+     (o el admin la promueve desde `/admin/usuarios`).
+   - B entra a "Mis alumnos" (Ajustes o Perfil), completa/edita su ficha, genera una
      invitación.
    - Cuenta A abre `/unirse/:code`, ve a B, acepta.
    - B ve a A en `/coach`, abre su detalle, le asigna una plantilla y una
@@ -111,7 +125,7 @@ punto a tocar cuando se integre.
      coach".
    - A toca "Finalizar vínculo": B deja de ver los datos de A (RLS).
    - Una cuenta C cualquiera NO puede leer datos de A ni de B.
-5. Fase 2:
+6. Fase 2:
    - B intenta guardar la ficha sin DNI → bloqueado. Carga un DNI → guarda. El mismo DNI
      en otra cuenta de coach → error de duplicado.
    - A abre "Mensajes" desde "Tu coach", le escribe a B con un ejercicio adjunto → B lo
