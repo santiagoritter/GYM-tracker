@@ -457,3 +457,31 @@ ningún objetivo.
 ### Verificación
 `npx tsc -b`, `npm test`, `npm run build`, `test:style` verde. Pendiente: prueba visual a
 393px y en landscape (sin navegador en el entorno).
+
+---
+
+## 2026-09-02 — Tanda de expansión, Bloque 3: Spotify, playlists que no se veían
+
+Diagnóstico: `SpotifyPlayerSheet` (que muestra las playlists) solo se abría manteniendo
+presionada la fila "sonando ahora" de `SpotifyNowPlaying`, y esa fila solo se renderiza si
+YA hay algo sonando en un dispositivo activo. Sin reproducción activa no había forma de
+llegar a las playlists. Segundo factor posible: token viejo sin el scope
+`playlist-read-private` (403 `missing-scope`).
+
+- **`SpotifyPlayerSheet.tsx`**: `playback` pasa a opcional. Con estado, muestra el
+  reproductor grande; sin estado, "nada sonando, elegí una playlist" + la lista igual.
+  Los caminos `missing-scope`/`reauth-required` ahora llaman `startSpotifyLogin()` directo
+  (antes navegaban a Ajustes y ya).
+- **`Ajustes.tsx`**: Conexiones → nueva fila "Elegir qué suena" (cuando Spotify está
+  conectado) que abre el sheet sin depender de que haya reproducción. Chunk lazy.
+- **`spotifyPlayer.ts` `fetchUserPlaylists`**: **pagina** siguiendo `next` (Spotify tope 50
+  por página, hasta 200) — antes truncaba en silencio a las primeras 50. Tolera `null`s en
+  `items`. Si falla a mitad de la paginación, devuelve lo que juntó.
+
+### Pendiente (runtime, no se puede desde el entorno)
+Confirmar con una cuenta real cuál era la causa exacta del 403 si aparece: token viejo
+(reconectar lo arregla) vs. app de Spotify en "development mode" sin el usuario en la
+allowlist (eso rompe todo, no solo playlists — se ve en el dashboard de Spotify).
+
+### Verificación
+`npx tsc -b`, `npm test`, `npm run build`, `test:style` verde.

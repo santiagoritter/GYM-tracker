@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { Suspense, lazy, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import {
@@ -10,6 +10,7 @@ import {
   CloudOff,
   Download,
   Flame,
+  ListMusic,
   Music,
   Moon,
   RefreshCw,
@@ -18,6 +19,8 @@ import {
   Sun,
   Upload,
 } from 'lucide-react'
+
+const SpotifyPlayerSheet = lazy(() => import('@/components/gym/SpotifyPlayerSheet'))
 import { db } from '@/db/schema'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useThemeStore } from '@/stores/themeStore'
@@ -60,6 +63,7 @@ export default function Ajustes() {
   const { status: syncStatus, lastSyncedAt } = useSyncStore()
   const canInstall = useCanInstallPwa()
   const showAppSection = !isNative && !isStandalone()
+  const [playerOpen, setPlayerOpen] = useState(false)
 
   const handleInstall = async () => {
     const ok = await promptInstall()
@@ -321,6 +325,16 @@ export default function Ajustes() {
                 <ChevronRight size={16} className="shrink-0 text-ink-4" />
               )}
             </Row>
+            {spotifyConnected && (
+              <Row onClick={() => setPlayerOpen(true)}>
+                <ListMusic size={18} className="shrink-0 text-ink-3" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[15px]">Elegir qué suena</p>
+                  <p className="text-[13px] text-ink-3">Tus playlists, sin salir de la app</p>
+                </div>
+                <ChevronRight size={16} className="shrink-0 text-ink-4" />
+              </Row>
+            )}
           </Card>
         </section>
 
@@ -395,6 +409,12 @@ export default function Ajustes() {
           GymTracker v0.1 · Modo local
         </p>
       </div>
+
+      {playerOpen && (
+        <Suspense fallback={null}>
+          <SpotifyPlayerSheet onClose={() => setPlayerOpen(false)} />
+        </Suspense>
+      )}
     </div>
   )
 }
