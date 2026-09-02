@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { UserCheck } from 'lucide-react'
+import { Star, UserCheck } from 'lucide-react'
 import { fetchInvitePreview, type CoachPublic } from '@/lib/coachQueries'
+import { fetchCoachReviews } from '@/lib/coachReviews'
 import { acceptInvite } from '@/lib/coachMutations'
 import { toast } from '@/stores/toastStore'
 import VerifiedBadge from '@/components/gym/VerifiedBadge'
@@ -17,11 +18,18 @@ export default function JoinCoach() {
   const [state, setState] = useState<
     { s: 'loading' } | { s: 'invalid' } | { s: 'ok'; coach: CoachPublic }
   >({ s: 'loading' })
+  const [rating, setRating] = useState<{ average: number | null; count: number }>({ average: null, count: 0 })
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     fetchInvitePreview(code)
-      .then((coach) => setState(coach ? { s: 'ok', coach } : { s: 'invalid' }))
+      .then((coach) => {
+        if (!coach) return setState({ s: 'invalid' })
+        setState({ s: 'ok', coach })
+        fetchCoachReviews(coach.coachId)
+          .then((r) => setRating({ average: r.average, count: r.count }))
+          .catch(() => {})
+      })
       .catch(() => setState({ s: 'invalid' }))
   }, [code])
 
@@ -60,9 +68,17 @@ export default function JoinCoach() {
               {state.coach.displayName || 'Un coach'}
               {state.coach.verified && <VerifiedBadge size={20} />}
             </h1>
-            {state.coach.experienceYears != null && (
-              <p className="text-[14px] text-ink-3">{state.coach.experienceYears} años de experiencia</p>
-            )}
+            <div className="flex flex-wrap items-center gap-x-3 text-[14px] text-ink-3">
+              {state.coach.experienceYears != null && (
+                <span>{state.coach.experienceYears} años de experiencia</span>
+              )}
+              {rating.average != null && (
+                <span className="flex items-center gap-1">
+                  <Star size={14} className="text-warning" fill="currentColor" />
+                  {rating.average.toFixed(1)} ({rating.count})
+                </span>
+              )}
+            </div>
           </div>
           {state.coach.bio && (
             <p className="text-[15px] leading-relaxed text-ink-2">{state.coach.bio}</p>

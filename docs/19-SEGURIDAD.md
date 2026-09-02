@@ -74,9 +74,9 @@ que el archivo vaya a salir del dispositivo.
 ## CSP
 
 `index.html` trae un `<meta http-equiv="Content-Security-Policy">` que acota
-red e imágenes a lo que la app usa (Supabase, API/login de Spotify,
-carátulas de Spotify, tiles de OSM) y bloquea `object`, `base-uri` y
-`form-action` fuera de `self`. `script-src`/`style-src` llevan
+red e imágenes a lo que la app usa (Supabase por HTTPS **y `wss://`** para el
+Realtime del chat de coach, API/login de Spotify, carátulas de Spotify, tiles
+de OSM) y bloquea `object`, `base-uri` y `form-action` fuera de `self`. `script-src`/`style-src` llevan
 `'unsafe-inline'` (bootstrap de tema; estilos inline de React/Tailwind/
 Leaflet). **Follow-up**: pasar `script-src` a hashes en vez de
 `'unsafe-inline'` — necesita verificación en navegador. GitHub Pages no deja

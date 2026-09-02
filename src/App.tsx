@@ -34,6 +34,13 @@ const CoachHome = lazy(() => import('@/pages/coach/CoachHome'))
 const CoachClientDetail = lazy(() => import('@/pages/coach/CoachClientDetail'))
 const CoachInvite = lazy(() => import('@/pages/coach/CoachInvite'))
 const CoachProfile = lazy(() => import('@/pages/coach/CoachProfile'))
+const CoachPlan = lazy(() => import('@/pages/coach/CoachPlan'))
+const CoachChatWithClient = lazy(() =>
+  import('@/pages/coach/ChatPages').then((m) => ({ default: m.CoachChatWithClient }))
+)
+const MyCoachChat = lazy(() =>
+  import('@/pages/coach/ChatPages').then((m) => ({ default: m.MyCoachChat }))
+)
 const JoinCoach = lazy(() => import('@/pages/JoinCoach'))
 
 const lazyFallback = <p className="py-12 text-center text-sm text-ink-3">Cargando…</p>
@@ -106,12 +113,17 @@ export default function App() {
           element={<Suspense fallback={lazyFallback}><JoinCoach /></Suspense>}
         />
 
+        {/* Chat del lado del alumno (no requiere rol coach). */}
+        <Route path="/mi-coach/chat" element={<Suspense fallback={lazyFallback}><MyCoachChat /></Suspense>} />
+
         {/* Área de coach: rol `coach` (o admin). Pantalla completa, header propio. */}
         <Route element={<CoachRoute />}>
           <Route path="/coach" element={<Suspense fallback={lazyFallback}><CoachHome /></Suspense>} />
           <Route path="/coach/alumno/:id" element={<Suspense fallback={lazyFallback}><CoachClientDetail /></Suspense>} />
+          <Route path="/coach/alumno/:id/chat" element={<Suspense fallback={lazyFallback}><CoachChatWithClient /></Suspense>} />
           <Route path="/coach/invitar" element={<Suspense fallback={lazyFallback}><CoachInvite /></Suspense>} />
           <Route path="/coach/perfil" element={<Suspense fallback={lazyFallback}><CoachProfile /></Suspense>} />
+          <Route path="/coach/plan" element={<Suspense fallback={lazyFallback}><CoachPlan /></Suspense>} />
         </Route>
         <Route path="/rutina/:routineId" element={<RoutineEditor />} />
         <Route path="/spotify/callback" element={<SpotifyCallback />} />

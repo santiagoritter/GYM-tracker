@@ -65,12 +65,42 @@ leer `auth.users` ni `profiles` ajenos — este RPC le devuelve solo lo suyo
   sección nueva de Progreso.
 - Sin `used_count`/`max_uses` enforcement en las invitaciones.
 
+## Fase 2 — chat, reseñas, DNI, maqueta de pago
+
+Migración `supabase/migrations/0013_coach_phase2.sql`.
+
+| Tabla / función | Para qué | RLS |
+|---|---|---|
+| `coach_identity` (`coach_id pk`, `dni`) | DNI **único** por cuenta de coach — impide cuentas duplicadas y habilita el cotejo de verificación (que sigue haciendo el admin). Tabla **aparte** de `coaches` porque `coaches` es `public_read` y RLS es por fila, no por columna: acá el DNI solo lo ven el dueño y el admin. | `coach_id = auth.uid()` o admin |
+| `coach_reviews` (`rating 1..5`, `comment`) | una reseña por alumno por coach (`unique(coach_id, client_id)`) | lectura pública; escribe el alumno si `has_bonded_with(coach)` (cualquier estado — un ex-alumno puede reseñar) |
+| `coach_messages` (`sender_id`, `body`, `attachment_kind`, `attachment_ref`, `read_at`) | chat del hilo `(coach_id, client_id)` | lo ven las dos partes; se **inserta solo con vínculo `active`** (si termina, el historial se lee pero nadie escribe más); el que recibe marca `read_at` |
+| `has_bonded_with(coach)` | helper `stable` | — |
+| `alter publication supabase_realtime add table coach_messages` | entrega en tiempo real (respeta la RLS de SELECT) | — |
+
+**Cliente**: `src/lib/coachChat.ts` (Realtime con fallback a polling de 4 s si el
+websocket no engancha en 3 s), `coachReviews.ts`, `coachIdentity.ts`,
+`coachSubscription.ts` (maqueta — `isCoachBillingEnabled()` = `VITE_COACH_BILLING === 'on'`,
+hoy off).
+
+**UI**: `src/components/gym/ChatThread.tsx` (hilo compartido; adjuntar un ejercicio del
+catálogo o una plantilla de rutina; el alumno importa la rutina desde el mensaje con
+`importPayload`). Rutas `/coach/alumno/:id/chat` y `/mi-coach/chat` (`src/pages/coach/ChatPages.tsx`).
+`CoachProfile.tsx` suma el campo **DNI** (obligatorio) + sección de reseñas + link a
+`/coach/plan` (`CoachPlan.tsx`, maqueta). `MyCoachCard.tsx` suma "Mensajes" y "Dejar una
+reseña" (estrellas + comentario). `JoinCoach.tsx` muestra `★ promedio (n)` en el preview.
+
+**CSP**: `index.html` suma `wss://*.supabase.co` a `connect-src` para Realtime.
+
+**Pago real**: queda para más adelante (Mercado Pago). `coachSubscription.ts` es el único
+punto a tocar cuando se integre.
+
 ## Pasos de despliegue (el usuario)
 
-1. Correr `supabase/migrations/0012_coach.sql` en el SQL Editor.
+1. Correr `supabase/migrations/0012_coach.sql` **y** `0013_coach_phase2.sql` en el SQL Editor.
 2. **Advisors → Security**: confirmar que sigue en cero (las policies nuevas
-   son todas `to authenticated` con `is_coach_of`/`auth.uid()`).
-3. Prueba de humo:
+   son todas `to authenticated` con `is_coach_of`/`has_bonded_with`/`auth.uid()`).
+3. Confirmar que Realtime está habilitado en el proyecto (default sí) — el chat lo usa.
+4. Prueba de humo:
    - Admin promueve la cuenta B a `coach` (`/admin/usuarios`).
    - B entra, ve "Mis alumnos" en Perfil, completa su ficha, genera una
      invitación.
@@ -81,3 +111,12 @@ leer `auth.users` ni `profiles` ajenos — este RPC le devuelve solo lo suyo
      coach".
    - A toca "Finalizar vínculo": B deja de ver los datos de A (RLS).
    - Una cuenta C cualquiera NO puede leer datos de A ni de B.
+5. Fase 2:
+   - B intenta guardar la ficha sin DNI → bloqueado. Carga un DNI → guarda. El mismo DNI
+     en otra cuenta de coach → error de duplicado.
+   - A abre "Mensajes" desde "Tu coach", le escribe a B con un ejercicio adjunto → B lo
+     recibe **en vivo** en `/coach/alumno/:id/chat`.
+   - B adjunta una plantilla de rutina → A la importa desde el mensaje.
+   - A deja una reseña 5★ → aparece en `CoachProfile` de B y en el preview de `/unirse/:code`.
+   - Con el vínculo `ended`: el hilo se lee pero el envío se rechaza (RLS).
+   - Cuenta C sin vínculo: no lee el hilo ni puede reseñar a B.
