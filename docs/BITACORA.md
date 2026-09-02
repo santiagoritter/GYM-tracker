@@ -522,3 +522,35 @@ con pantalla apagada — foreground service en Android).
 `npx tsc -b`, `npm test` (test:run + test-runs-migration verdes), `npm run build`,
 `test:style` verde. **Pendiente en dispositivo real**: no hay Android ni GPS en el entorno
 — recorrido con pantalla apagada, auto-lap, tiles OSM, permiso denegado, offline.
+
+---
+
+## 2026-09-02 — Tanda de expansión, Bloque 7: reforzar seguridad
+
+Sin teatro: auditoría documentada + endurecimientos concretos.
+
+- **`docs/19-SEGURIDAD.md`** nuevo: estado real (auth Supabase/bcrypt, cobertura RLS
+  `_own` + `_admin_read`, rol en JWT, qué vive en localStorage y por qué es aceptable, el
+  `.eq('user_id')` de sync.ts como filtro y no compuerta) + checklist manual del dashboard.
+- **`ProtectedRoute.tsx` / `authStore.ts` / `main.tsx`**: `sessionChecked` nuevo (no
+  persistido). `AdminRoute` no renderiza hasta que `onAuthStateChange` confirmó el rol de
+  la sesión viva — un `role: admin` viejo/manipulado en localStorage ya no pinta nav de
+  admin antes de tiempo (el acceso a datos siempre lo bloqueó RLS). `authStore` con
+  `partialize` para no persistir `sessionChecked`.
+- **Backup cifrado**: `src/lib/crypto.ts` nuevo (AES-GCM 256 + PBKDF2-SHA256 210k, WebCrypto,
+  sin deps). `exportBackup(userId, passphrase?)` / `importBackup(userId, json, passphrase?)`
+  + `backupNeedsPassphrase`. UI en Ajustes (prompt de frase en export/import).
+  `scripts/test-crypto.mts` + `test:crypto`.
+- **`supabase/migrations/0009_harden_functions.sql`**: `sync_stamp()` con
+  `set search_path = ''` (el Advisor marcaba search_path mutable). `handle_new_user` y
+  `admin_list_users` ya venían con `= public`, que el Advisor acepta.
+- **CSP**: `<meta http-equiv="Content-Security-Policy">` en `index.html` acotando
+  connect/img a Supabase + Spotify + OSM, `object-src 'none'`, `base-uri`/`form-action`
+  self. `'unsafe-inline'` en script/style (bootstrap de tema + estilos inline). Follow-up:
+  hashes en `script-src` (necesita navegador para verificar).
+
+### Verificación
+`npx tsc -b`, `npm test` (test:crypto verde), `npm run build`, `test:style` verde.
+**Pendiente (dashboard, el usuario)**: Advisors → Security en cero tras correr `0009`;
+leaked-password protection ON; anonymous sign-ins OFF. **Pendiente (navegador)**: confirmar
+que la CSP no rompe login/sync/Spotify/mapa.

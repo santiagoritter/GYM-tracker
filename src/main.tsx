@@ -89,6 +89,10 @@ if (supabase) {
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) triggerSync()
   })
+} else {
+  // Sin Supabase (modo 100% local): no hay sesión viva que esperar, la
+  // persistida es la única fuente. AdminRoute puede decidir ya.
+  useAuthStore.getState().markSessionChecked()
 }
 
 seedIfEmpty()
