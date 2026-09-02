@@ -9,7 +9,9 @@ import {
   ChevronRight,
   CloudOff,
   Download,
+  FileText,
   Flame,
+  HelpCircle,
   ListMusic,
   Music,
   Moon,
@@ -416,6 +418,27 @@ export default function Ajustes() {
               e.target.value = ''
             }}
           />
+        </section>
+
+        <section>
+          <SectionHeader title="Ayuda" />
+          <Card>
+            <Row onClick={() => navigate('/faq')}>
+              <HelpCircle size={18} className="shrink-0 text-ink-3" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[15px]">Preguntas frecuentes</p>
+                <p className="text-[13px] text-ink-3">Y cómo dejarnos una consulta o una idea</p>
+              </div>
+              <ChevronRight size={16} className="shrink-0 text-ink-4" />
+            </Row>
+            <Row onClick={() => navigate('/legal')}>
+              <FileText size={18} className="shrink-0 text-ink-3" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[15px]">Términos y privacidad</p>
+              </div>
+              <ChevronRight size={16} className="shrink-0 text-ink-4" />
+            </Row>
+          </Card>
         </section>
 
         <p className="px-1 text-center text-xs text-ink-3">

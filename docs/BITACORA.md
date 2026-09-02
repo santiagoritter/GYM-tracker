@@ -554,3 +554,34 @@ Sin teatro: auditoría documentada + endurecimientos concretos.
 **Pendiente (dashboard, el usuario)**: Advisors → Security en cero tras correr `0009`;
 leaked-password protection ON; anonymous sign-ins OFF. **Pendiente (navegador)**: confirmar
 que la CSP no rompe login/sync/Spotify/mapa.
+
+---
+
+## 2026-09-02 — Tanda de expansión, Bloques 8 y 9: legal en el registro + FAQ
+
+### B8 — Políticas / legal
+- **`src/pages/Legal.tsx`** (`/legal`, `/legal/privacidad`, `/legal/terminos`): textos que
+  reflejan lo que la app hace de verdad (local-first, Supabase para auth+respaldo, Storage
+  privado, Spotify/OSM opcionales, sin tracking, exportar/borrar). Rutas **públicas**
+  (linkeadas desde el registro). Fuente en `docs/legal/*.md`.
+- **`src/pages/Registro.tsx`**: checkbox obligatorio con links a los textos; bloquea el
+  submit. Al verificar el código, `db.profile.update` sella `legalAcceptedAt` +
+  `legalVersion` (= `LEGAL_VERSION` de `src/lib/legal.ts`, hoy 1).
+- **Dexie v14** (no-op): campos `legalAcceptedAt`/`legalVersion` no indexados en el perfil.
+  **`supabase/migrations/0010_legal_acceptance.sql`**: columnas `legal_accepted_at` /
+  `legal_version` en `profiles` (sync camel↔snake automático, no son booleanas).
+- Perfiles existentes quedan sin aceptación registrada: no se fuerza retroactivamente en
+  esta versión.
+
+### B9 — FAQ + contacto
+- **`src/pages/FAQ.tsx`** (`/faq`): acordeón con `<details>` nativo. 8 preguntas
+  (offline, pasar datos, notificaciones con app cerrada, Spotify/playlists, GPS, modo
+  coach, confiabilidad de los números, borrar cuenta). Sección de contacto con `mailto:` y
+  asunto prellenado ("consulta" / "proponer una idea"). Sin backend de feedback.
+- **`src/pages/Ajustes.tsx`**: sección "Ayuda" nueva (Preguntas frecuentes + Términos y
+  privacidad).
+- `src/lib/legal.ts`: `LEGAL_VERSION` + `SUPPORT_EMAIL`.
+
+### Verificación
+`npx tsc -b`, `npm test` (16 ✅), `npm run build`, `test:style` verde.
+**Pendiente (dashboard)**: correr `0010_legal_acceptance.sql`.

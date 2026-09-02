@@ -266,6 +266,14 @@ export class GymTrackerDB extends Dexie {
     }).upgrade(async () => {
       // no-op: tabla nueva
     })
+    // v14: aceptación de términos/privacidad en el perfil (B8). Campos no
+    // indexados (`legalAcceptedAt`, `legalVersion`) — no toca .stores(). El
+    // perfil preexistente queda sin aceptación registrada; a nadie se lo
+    // fuerza retroactivamente en esta versión (la aceptación se pide en el
+    // registro de cuentas nuevas).
+    this.version(14).stores({}).upgrade(async () => {
+      // no-op
+    })
   }
 }
 

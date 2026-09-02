@@ -21,6 +21,8 @@ import SpotifyCallback from '@/pages/SpotifyCallback'
 import ImportRoutine from '@/pages/ImportRoutine'
 import Cardio from '@/pages/Cardio'
 import Run from '@/pages/Run'
+import Legal from '@/pages/Legal'
+import FAQ from '@/pages/FAQ'
 import ToastContainer from '@/components/ui/Toast'
 
 // Lazy: Recharts pesa ~400KB min; solo se descarga al entrar a Progreso
@@ -38,6 +40,9 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/registro" element={<Registro />} />
       <Route path="/olvide-contrasena" element={<ForgotPassword />} />
+      {/* Legal: accesible también antes de loguearse (linkeado desde el registro) */}
+      <Route path="/legal" element={<Legal />} />
+      <Route path="/legal/:doc" element={<Legal />} />
 
       {/* Onboarding: requiere auth pero no perfil completo */}
       <Route element={<ProtectedRoute />}>
@@ -64,6 +69,7 @@ export default function App() {
           <Route path="/calculadora" element={<Calculator />} />
           <Route path="/entrenos-pasados" element={<LogPastWorkout />} />
           <Route path="/recordatorios" element={<Reminders />} />
+          <Route path="/faq" element={<FAQ />} />
 
           {/* Panel admin: solo admins */}
           <Route element={<AdminRoute />}>

@@ -376,6 +376,14 @@ AES-GCM + PBKDF2, `test:crypto`). `0009_harden_functions.sql` (`sync_stamp` con
 `search_path` fijo). CSP `<meta>` en `index.html`. **Pendiente**: checklist del dashboard
 (Advisors en cero, leaked-password ON) y verificar la CSP en navegador.
 
+**B8 — Legal en el registro (hecho):** `src/pages/Legal.tsx` (`/legal/*`, público),
+checkbox obligatorio en `Registro.tsx`, `profile.legalAcceptedAt`/`legalVersion` (Dexie
+**v14** no-op + `0010_legal_acceptance.sql`). `src/lib/legal.ts` (`LEGAL_VERSION`,
+`SUPPORT_EMAIL`). Fuente en `docs/legal/*.md`. **Pendiente**: correr `0010`.
+
+**B9 — FAQ + contacto (hecho):** `src/pages/FAQ.tsx` (`/faq`), acordeón `<details>` con 8
+preguntas + contacto por `mailto:`. Sección "Ayuda" en Ajustes. Sin backend de feedback.
+
 ## Pendiente
 
 ### Bloqueado

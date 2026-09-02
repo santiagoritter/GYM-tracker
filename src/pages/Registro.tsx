@@ -2,8 +2,10 @@ import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Dumbbell, Eye, EyeOff, Mail, RefreshCw } from 'lucide-react'
 import { signUp, verifySignupCode, resendSignupCode } from '@/lib/supabaseAuth'
-import { ensureProfile } from '@/db/schema'
+import { db, ensureProfile } from '@/db/schema'
 import { migrateLocalUserToSupabase } from '@/db/migrateLocalUserToSupabase'
+import { LEGAL_VERSION } from '@/lib/legal'
+import { nowIso } from '@/lib/utils'
 
 type Step = 'form' | 'verify'
 
@@ -18,6 +20,7 @@ export default function Registro() {
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [showPw, setShowPw] = useState(false)
+  const [acceptedLegal, setAcceptedLegal] = useState(false)
 
   // Verificación
   const [code, setCode] = useState('')
@@ -33,6 +36,7 @@ export default function Registro() {
     setError('')
     if (password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres.'); return }
     if (password !== confirm) { setError('Las contraseñas no coinciden.'); return }
+    if (!acceptedLegal) { setError('Tenés que aceptar los términos y la política de privacidad.'); return }
     setLoading(true)
     try {
       await signUp(email, password, name.trim())
@@ -65,6 +69,11 @@ export default function Registro() {
       // viejo, ver migrateLocalUserToSupabase.ts).
       await migrateLocalUserToSupabase(user.id, user.email)
       await ensureProfile(user.id)
+      // Sella la aceptación de términos/privacidad hecha en el paso 1.
+      await db.profile.update(user.id, {
+        legalAcceptedAt: nowIso(),
+        legalVersion: LEGAL_VERSION,
+      })
       navigate('/onboarding', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Código inválido.')
@@ -179,13 +188,28 @@ export default function Registro() {
             />
           </div>
 
+          <label className="flex items-start gap-2.5 text-[13px] leading-relaxed text-ink-2">
+            <input
+              type="checkbox"
+              checked={acceptedLegal}
+              onChange={(e) => setAcceptedLegal(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 accent-accent"
+            />
+            <span>
+              Acepto los{' '}
+              <Link to="/legal/terminos" className="font-semibold text-accent">términos de uso</Link>{' '}
+              y la{' '}
+              <Link to="/legal/privacidad" className="font-semibold text-accent">política de privacidad</Link>.
+            </span>
+          </label>
+
           {error && (
             <p className="animate-fade-up rounded-sm bg-danger/10 px-4 py-2.5 text-sm text-danger">{error}</p>
           )}
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !acceptedLegal}
             className="h-14 w-full rounded-sm bg-accent font-bold text-bg transition active:opacity-80 disabled:opacity-50"
           >
             {loading ? 'Enviando…' : 'Crear cuenta'}
