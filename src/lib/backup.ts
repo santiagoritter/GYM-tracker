@@ -1,6 +1,7 @@
 import { db, SYNC_ORDER } from '@/db/schema'
 import type { SyncedTable } from '@/types'
 import { nowIso } from '@/lib/utils'
+import { decryptString, encryptString, isEncryptedBlob } from '@/lib/crypto'
 
 /**
  * Backup manual para cambiar de dispositivo. No hay sync a Supabase todavía
@@ -56,7 +57,13 @@ function deserializeRow(row: Record<string, unknown>): Record<string, unknown> {
   return { ...rest, [BLOB_FIELD]: base64ToBlob(blobBase64, typeof blobType === 'string' ? blobType : '') }
 }
 
-export async function exportBackup(userId: string): Promise<Blob> {
+/**
+ * Exporta el backup. Con `passphrase` el JSON se cifra (AES-GCM, ver
+ * crypto.ts) — recomendado si el archivo va a salir del dispositivo, porque
+ * en texto plano tiene nombre, peso corporal, fechas y notas. Sin frase,
+ * mismo formato de antes.
+ */
+export async function exportBackup(userId: string, passphrase?: string): Promise<Blob> {
   const tables: BackupFile['tables'] = {}
   for (const name of SYNC_ORDER) {
     const rows =
@@ -66,7 +73,9 @@ export async function exportBackup(userId: string): Promise<Blob> {
     tables[name] = await Promise.all(rows.map(serializeRow))
   }
   const payload: BackupFile = { v: 1, exportedAt: nowIso(), tables }
-  return new Blob([JSON.stringify(payload)], { type: 'application/json' })
+  const json = JSON.stringify(payload)
+  const out = passphrase ? JSON.stringify(await encryptString(json, passphrase)) : json
+  return new Blob([out], { type: 'application/json' })
 }
 
 /** `personalRecords` y `exercisePhotos` tienen un id compuesto que embebe
@@ -84,13 +93,31 @@ export function remapOwner(table: SyncedTable, row: Record<string, unknown>, new
   return withUser
 }
 
-export async function importBackup(userId: string, json: string): Promise<void> {
-  let payload: BackupFile
+/** Indica si el archivo está cifrado (necesita frase para importar). */
+export function backupNeedsPassphrase(json: string): boolean {
   try {
-    payload = JSON.parse(json)
+    return isEncryptedBlob(JSON.parse(json))
+  } catch {
+    return false
+  }
+}
+
+export async function importBackup(userId: string, json: string, passphrase?: string): Promise<void> {
+  let raw: unknown
+  try {
+    raw = JSON.parse(json)
   } catch {
     throw new Error('El archivo no es un JSON válido.')
   }
+
+  let payload: BackupFile
+  if (isEncryptedBlob(raw)) {
+    if (!passphrase) throw new Error('El backup está cifrado: hace falta la frase.')
+    payload = JSON.parse(await decryptString(raw, passphrase))
+  } else {
+    payload = raw as BackupFile
+  }
+
   if (payload.v !== 1 || !payload.tables || typeof payload.tables !== 'object') {
     throw new Error('No es un archivo de backup de GymTracker.')
   }

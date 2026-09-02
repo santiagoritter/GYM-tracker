@@ -369,6 +369,13 @@ tap. **Pendiente runtime**: confirmar con cuenta real si el 403 es token viejo o
 **Pendiente**: prueba en Android real (no hay GPS en el entorno); iOS necesita generar el
 proyecto en una Mac.
 
+**B7 — Reforzar seguridad (hecho):** `docs/19-SEGURIDAD.md` nuevo (auditoría + checklist).
+`sessionChecked` en `authStore` → `AdminRoute` no pinta hasta confirmar el rol de la
+sesión viva (RLS ya bloqueaba el acceso a datos). Backup cifrado opcional (`src/lib/crypto.ts`,
+AES-GCM + PBKDF2, `test:crypto`). `0009_harden_functions.sql` (`sync_stamp` con
+`search_path` fijo). CSP `<meta>` en `index.html`. **Pendiente**: checklist del dashboard
+(Advisors en cero, leaked-password ON) y verificar la CSP en navegador.
+
 ## Pendiente
 
 ### Bloqueado

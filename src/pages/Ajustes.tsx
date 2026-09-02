@@ -32,7 +32,7 @@ import { useSyncStore } from '@/stores/syncStore'
 import { Card, Row, SectionHeader } from '@/components/ui/Card'
 import type { LocalProfile } from '@/types'
 import { cn } from '@/lib/utils'
-import { exportBackup, importBackup } from '@/lib/backup'
+import { backupNeedsPassphrase, exportBackup, importBackup } from '@/lib/backup'
 import { useCanInstallPwa, promptInstall, isStandalone } from '@/lib/pwaInstall'
 import { isNative } from '@/lib/native'
 import { toast } from '@/stores/toastStore'
@@ -76,7 +76,12 @@ export default function Ajustes() {
 
   const handleExport = async () => {
     if (!userId) return
-    const blob = await exportBackup(userId)
+    const passphrase =
+      prompt(
+        'Frase para cifrar el backup (recomendado si el archivo va a salir del teléfono). ' +
+          'Dejala vacía para exportar sin cifrar.'
+      ) ?? ''
+    const blob = await exportBackup(userId, passphrase.trim() || undefined)
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -85,7 +90,10 @@ export default function Ajustes() {
     a.click()
     a.remove()
     URL.revokeObjectURL(url)
-    toast.success('Backup exportado', 'Guardalo en un lugar seguro para restaurarlo en otro dispositivo.')
+    toast.success(
+      passphrase.trim() ? 'Backup cifrado exportado' : 'Backup exportado',
+      'Guardalo en un lugar seguro para restaurarlo en otro dispositivo.'
+    )
   }
 
   const handleImportClick = () => {
@@ -102,7 +110,12 @@ export default function Ajustes() {
     if (!userId) return
     try {
       const text = await file.text()
-      await importBackup(userId, text)
+      let passphrase: string | undefined
+      if (backupNeedsPassphrase(text)) {
+        passphrase = prompt('El backup está cifrado. Ingresá la frase con la que lo exportaste.') ?? undefined
+        if (!passphrase) return
+      }
+      await importBackup(userId, text, passphrase)
       toast.success('Datos importados', 'Volvé a entrar a cada pantalla para verlos actualizados.')
     } catch (err) {
       toast.error('No se pudo importar', err instanceof Error ? err.message : 'Revisá que sea un backup válido.')

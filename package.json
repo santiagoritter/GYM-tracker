@@ -21,7 +21,8 @@
     "test:past": "esbuild scripts/test-past-workouts.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/past.mjs --log-level=error && node node_modules/.tmp/past.mjs",
     "test:quotes": "esbuild scripts/test-quotes.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/quotes.mjs --log-level=error && node node_modules/.tmp/quotes.mjs",
     "test:run": "esbuild scripts/test-run.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/run.mjs --log-level=error && node node_modules/.tmp/run.mjs",
-    "test": "npm run test:style && npm run test:db && npm run test:rec && npm run test:levels && npm run test:backup && npm run test:user-id-remap && npm run test:workout && npm run test:past && npm run test:quotes && npm run test:run"
+    "test:crypto": "esbuild scripts/test-crypto.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/crypto.mjs --log-level=error && node node_modules/.tmp/crypto.mjs",
+    "test": "npm run test:style && npm run test:db && npm run test:rec && npm run test:levels && npm run test:backup && npm run test:user-id-remap && npm run test:workout && npm run test:past && npm run test:quotes && npm run test:run && npm run test:crypto"
   },
   "dependencies": {
     "@capacitor-community/background-geolocation": "^1.2.26",
