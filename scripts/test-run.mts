@@ -60,7 +60,7 @@ check(cleaned.length === 2, `cleanPoints debería descartar el punto de acc 80: 
 
 // ── Parado: sin distancia, sin ritmo ─────────────────────────────────────
 const still: RunPoint[] = Array.from({ length: 20 }, (_, i) => ({
-  lat: START_LAT + (Math.random() - 0.5) * 0.00001, // < MIN_STEP_M de jitter
+  lat: START_LAT + (Math.random() - 0.5) * 0.00001, // ~±0.5 m de jitter
   lng: -58.4,
   t: i * 1000,
   acc: 6,
@@ -68,6 +68,25 @@ const still: RunPoint[] = Array.from({ length: 20 }, (_, i) => ({
 const stillSummary = summarizeRun(still)
 check(stillSummary.distanceM < 5, `parado: distancia debería ser ~0, fue ${stillSummary.distanceM.toFixed(1)}`)
 check(currentPaceSecPerKm(still) === null, 'ritmo instantáneo parado debería ser null')
+
+// ── Parado con DRIFT REALISTA de GPS de navegador (el bug reportado) ──────
+// 40 fixes en 200 s, saltando hasta ~12 m en cualquier dirección, con
+// precisión reportada de 10-15 m. Sin el gate escalado por precisión, esto
+// acumulaba cientos de metros ("me fui a caminar a la otra cuadra").
+const M_PER_DEG = 111_195
+const drift: RunPoint[] = Array.from({ length: 40 }, (_, i) => ({
+  lat: START_LAT + ((i * 2654435761) % 1000 - 500) / 1000 * (12 / M_PER_DEG),
+  lng: -58.4 + ((i * 40503) % 1000 - 500) / 1000 * (12 / M_PER_DEG),
+  t: i * 5000,
+  acc: 10 + (i % 6),
+}))
+const driftSummary = summarizeRun(drift)
+check(
+  driftSummary.distanceM < 25,
+  `drift parado: la distancia debería quedar ~0, fue ${driftSummary.distanceM.toFixed(0)} m`
+)
+check(driftSummary.splits.length === 0, `drift parado: no debería haber splits, hubo ${driftSummary.splits.length}`)
+check(currentPaceSecPerKm(drift) === null, 'drift parado: ritmo instantáneo debería ser null')
 
 // ── Desnivel ─────────────────────────────────────────────────────────────
 const hilly: RunPoint[] = [
