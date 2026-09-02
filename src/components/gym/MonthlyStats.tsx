@@ -9,11 +9,12 @@ import { useChartColors } from '@/hooks/useChartColors'
 import type { MuscleGroup } from '@/types'
 import { MUSCLE_LABELS } from '@/components/gym/MuscleChip'
 import { EmptyState, SectionHeader } from '@/components/ui/Card'
-import { MUSCLE_HEX } from '@/lib/muscleColors'
+import { useMuscleColors } from '@/lib/muscleColors'
 
 export function MonthlyStats() {
   const userId = useCurrentUserId()
   const chartColors = useChartColors()
+  const muscleColors = useMuscleColors()
   const [monthOffset, setMonthOffset] = useState(0)
 
   const workouts = useLiveQuery(
@@ -170,7 +171,7 @@ export function MonthlyStats() {
                     stroke="none"
                   >
                     {stats.distribution.map((entry) => (
-                      <Cell key={entry.muscle} fill={MUSCLE_HEX[entry.muscle]} />
+                      <Cell key={entry.muscle} fill={muscleColors[entry.muscle]} />
                     ))}
                   </Pie>
                   <Tooltip
@@ -190,7 +191,7 @@ export function MonthlyStats() {
                 <span key={entry.muscle} className="flex items-center gap-1.5 text-xs text-ink-2">
                   <span
                     className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: MUSCLE_HEX[entry.muscle] }}
+                    style={{ backgroundColor: muscleColors[entry.muscle] }}
                   />
                   {entry.name}
                 </span>

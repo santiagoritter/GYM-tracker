@@ -325,6 +325,21 @@ Inter). Fuera de alcance de esta tanda reescribirlos; queda el registro.
 - Verificación: `npx tsc -b`, `npm test`, `npm run build` verde. Falta prueba en Android
   real (recordatorio con pantalla apagada) y `beforeinstallprompt` en Chrome.
 
+**B2 — Modo claro rediseñado (hecho):**
+- `src/index.css` `[data-theme=light]`: paleta nueva calculada con WCAG 2.1 real. `ink-2`/
+  `ink-3` a 0.75/0.62 (~6.9:1 / ~4.5:1). Acento `#3F6E0C` (verde profundo — el lima
+  brillante no es legible como texto sobre blanco). `surface-2` distinguible del fondo.
+  Overrides de `card-shine` y `.skeleton` para claro.
+- Grupo muscular theme-aware: `--muscle-*` en ambos temas, `tailwind.config.ts` usa las
+  vars, variantes claras propias, hook `useMuscleColors()` nuevo en `muscleColors.ts`
+  (patrón de `useChartColors`).
+- `MuscleBodySVG.tsx` y `SetupIllustration.tsx` eligen paleta por `useThemeStore` (antes
+  `#E8FF47` literal, invisible sobre blanco).
+- `themeStore.ts`/`index.html`: `color-scheme` en `<html>`.
+- `DESIGN.md §1` subsección "Modo claro" con valores + ratios.
+- Verificación: build/test/style verde; contraste WCAG verificado. **Pendiente**:
+  verificación visual (sin navegador en el entorno).
+
 ## Pendiente
 
 ### Bloqueado

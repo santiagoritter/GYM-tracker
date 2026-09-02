@@ -387,3 +387,31 @@ al día con el estado real.
 ### Verificación
 `npx tsc -b`, `npm test` (18/18), `npm run build` verde. Pendiente de dispositivo real:
 recordatorio nativo con pantalla apagada, `beforeinstallprompt` en Chrome.
+
+---
+
+## 2026-09-02 — Tanda de expansión, Bloque 2: modo claro rediseñado
+
+El modo claro anterior era ilegible (el usuario lo reportó). Se rehízo entero.
+
+- **`src/index.css`**: paleta `[data-theme=light]` nueva, calculada con WCAG 2.1 real
+  (script en scratchpad). `ink-2`/`ink-3` a 0.75/0.62 de alpha (~6.9:1 / ~4.5:1). Acento
+  `#3F6E0C` (verde-lima profundo, ~6.1:1 sobre blanco — el lima brillante no puede ser
+  legible como texto sobre blanco). Semánticos más oscuros que iOS. `surface-2`
+  distinguible del fondo. Overrides de `card-shine` y del sweep de `.skeleton` (el brillo
+  blanco no se ve sobre blanco).
+- **Grupo muscular theme-aware**: `--muscle-*` como custom properties en ambos temas
+  (`index.css`), `tailwind.config.ts` pasa `muscle.*` a `rgb(var(--muscle-*))`. Variantes
+  claras propias (ratios 4.9–6.0 sobre blanco). `src/lib/muscleColors.ts`: nuevo hook
+  `useMuscleColors()` (resuelve del tema, patrón de `useChartColors`); `MonthlyStats.tsx`
+  lo usa en vez de `MUSCLE_HEX`.
+- **SVGs con acento hardcodeado**: `MuscleBodySVG.tsx` y `SetupIllustration.tsx` usaban
+  `#E8FF47` literal (invisible sobre blanco). Ahora eligen paleta por `useThemeStore`.
+- **`themeStore.ts` / `index.html`**: `applyTheme` setea `color-scheme` en `<html>`
+  (inputs nativos, scrollbars, autofill siguen el tema). `theme-color` meta actualizado.
+- **`DESIGN.md §1`**: subsección "Modo claro" nueva con los valores y ratios.
+
+### Verificación
+`npx tsc -b`, `npm test` (18/18), `npm run build` verde. `test:style` sin auras nuevas.
+Contraste verificado con WCAG 2.1. **Pendiente**: verificación visual en pantalla real —
+no hay navegador conectado en el entorno (extensión no disponible).

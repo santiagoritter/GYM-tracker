@@ -1,3 +1,4 @@
+import { useThemeStore } from '@/stores/themeStore'
 import type { MuscleGroup } from '@/types'
 
 interface Props {
@@ -8,14 +9,30 @@ interface Props {
   size?: number
 }
 
-const COLOR_PRIMARY = '#E8FF47'
-const COLOR_SECONDARY = 'rgba(232,255,71,0.34)'
-const COLOR_INACTIVE = 'rgba(255,255,255,0.10)'
-// COLOR_BODY no puede coincidir con el fondo de la tarjeta contenedora
-// (bg-surface-2, #2C2C2E) o la silueta desaparece y los músculos quedan
-// flotando sueltos, que es lo que pasaba antes.
-const COLOR_BODY = '#3A3A3D'
-const COLOR_OUTLINE = '#5A5A60'
+interface BodyColors {
+  primary: string
+  secondary: string
+  inactive: string
+  // `body` no puede coincidir con el fondo de la tarjeta contenedora o la
+  // silueta desaparece y los músculos quedan flotando sueltos.
+  body: string
+  outline: string
+}
+
+const DARK_COLORS: BodyColors = {
+  primary: '#E8FF47',
+  secondary: 'rgba(232,255,71,0.34)',
+  inactive: 'rgba(255,255,255,0.10)',
+  body: '#3A3A3D',
+  outline: '#5A5A60',
+}
+const LIGHT_COLORS: BodyColors = {
+  primary: '#3F6E0C',
+  secondary: 'rgba(63,110,12,0.28)',
+  inactive: 'rgba(0,0,0,0.07)',
+  body: '#D5D5DB',
+  outline: '#A8A8AF',
+}
 
 /**
  * Silueta anatómica con los músculos trabajados resaltados.
@@ -35,13 +52,15 @@ const COLOR_OUTLINE = '#5A5A60'
  *    tiene tratamiento propio (cuerpo entero tenue + pulso).
  */
 export default function MuscleBodySVG({ primary, secondary = [], view = 'both', size = 120 }: Props) {
+  const theme = useThemeStore((s) => s.theme)
+  const c = theme === 'light' ? LIGHT_COLORS : DARK_COLORS
   const isCardio = primary.includes('cardio') || secondary.includes('cardio')
 
   const fill = (...groups: MuscleGroup[]): string => {
-    if (isCardio) return COLOR_SECONDARY
-    if (groups.some((g) => primary.includes(g))) return COLOR_PRIMARY
-    if (groups.some((g) => secondary.includes(g))) return COLOR_SECONDARY
-    return COLOR_INACTIVE
+    if (isCardio) return c.secondary
+    if (groups.some((g) => primary.includes(g))) return c.primary
+    if (groups.some((g) => secondary.includes(g))) return c.secondary
+    return c.inactive
   }
 
   return (
@@ -49,7 +68,7 @@ export default function MuscleBodySVG({ primary, secondary = [], view = 'both', 
       {(view === 'front' || view === 'both') && (
         <figure className="min-w-0 flex-1" style={{ maxWidth: size }}>
           <BodySvg>
-            <FrontBody fill={fill} cardio={isCardio} />
+            <FrontBody fill={fill} cardio={isCardio} c={c} />
           </BodySvg>
           <figcaption className="mt-1 text-center text-[12px] font-medium text-ink-3">
             Frente
@@ -59,7 +78,7 @@ export default function MuscleBodySVG({ primary, secondary = [], view = 'both', 
       {(view === 'back' || view === 'both') && (
         <figure className="min-w-0 flex-1" style={{ maxWidth: size }}>
           <BodySvg>
-            <BackBody fill={fill} cardio={isCardio} />
+            <BackBody fill={fill} cardio={isCardio} c={c} />
           </BodySvg>
           <figcaption className="mt-1 text-center text-[12px] font-medium text-ink-3">
             Espalda
@@ -118,12 +137,12 @@ const SILHOUETTE = `
   C33 46 29 38 21 35 C15 32.5 -15 32.5 -21 35 Z
 `
 
-function Silhouette() {
+function Silhouette({ c }: { c: BodyColors }) {
   return (
     <path
       d={SILHOUETTE}
-      fill={COLOR_BODY}
-      stroke={COLOR_OUTLINE}
+      fill={c.body}
+      stroke={c.outline}
       strokeWidth="1.3"
       strokeLinejoin="round"
     />
@@ -131,13 +150,13 @@ function Silhouette() {
 }
 
 /** Latido: los ejercicios de cardio no tienen un músculo diana que marcar. */
-function CardioPulse() {
+function CardioPulse({ c }: { c: BodyColors }) {
   return (
     <g>
       <path
         d="M-17 68 h8 l4 -10 l6 20 l5 -12 h11"
         fill="none"
-        stroke={COLOR_PRIMARY}
+        stroke={c.primary}
         strokeWidth="2.6"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -148,10 +167,10 @@ function CardioPulse() {
 
 // ── Frente ─────────────────────────────────────────────────────────────────
 
-function FrontBody({ fill, cardio }: { fill: FillFn; cardio: boolean }) {
+function FrontBody({ fill, cardio, c }: { fill: FillFn; cardio: boolean; c: BodyColors }) {
   return (
     <g>
-      <Silhouette />
+      <Silhouette c={c} />
 
       {/* Deltoides anterior */}
       <Pair d="M19 35 C27 37 31.5 44 32.5 53 C28.5 56.5 23.5 55 20.5 51 C18.5 45 18 39 19 35 Z" color={fill('shoulders')} />
@@ -166,7 +185,7 @@ function FrontBody({ fill, cardio }: { fill: FillFn; cardio: boolean }) {
 
       {/* Recto abdominal: un bloque segmentado, no seis rectángulos sueltos */}
       <Center d="M-9 59 h18 v45 c0 6 -4 10.5 -9 10.5 s-9 -4.5 -9 -10.5 Z" color={fill('core')} />
-      <g stroke={COLOR_BODY} strokeWidth="1.5" opacity="0.9" fill="none">
+      <g stroke={c.body} strokeWidth="1.5" opacity="0.9" fill="none">
         <path d="M0 60 v50" />
         <path d="M-9 72 h18M-9 84 h18M-9 96 h18" />
       </g>
@@ -180,17 +199,17 @@ function FrontBody({ fill, cardio }: { fill: FillFn; cardio: boolean }) {
       {/* Gemelo visto de frente */}
       <Pair d="M6.5 150 C13.5 154 16.5 165 15.5 179 C12.5 183 9.5 181 8.5 173 C7.5 165 6.5 156 6.5 150 Z" color={fill('calves')} />
 
-      {cardio && <CardioPulse />}
+      {cardio && <CardioPulse c={c} />}
     </g>
   )
 }
 
 // ── Espalda ────────────────────────────────────────────────────────────────
 
-function BackBody({ fill, cardio }: { fill: FillFn; cardio: boolean }) {
+function BackBody({ fill, cardio, c }: { fill: FillFn; cardio: boolean; c: BodyColors }) {
   return (
     <g>
-      <Silhouette />
+      <Silhouette c={c} />
 
       {/* Trapecio superior: es lo que trabaja un encogimiento */}
       <Center d="M-8 33 C-3 31.5 3 31.5 8 33 L5 48 L0 51 L-5 48 Z" color={fill('back')} />
@@ -221,7 +240,7 @@ function BackBody({ fill, cardio }: { fill: FillFn; cardio: boolean }) {
       {/* Gemelos */}
       <Pair d="M5.5 155 C13.5 158 17 168 16 181 C13 185 9.5 183 8 175 C7 167 5.5 159 5.5 155 Z" color={fill('calves')} />
 
-      {cardio && <CardioPulse />}
+      {cardio && <CardioPulse c={c} />}
     </g>
   )
 }

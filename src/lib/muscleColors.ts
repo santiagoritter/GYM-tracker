@@ -1,18 +1,39 @@
+import { useEffect, useState } from 'react'
+import { useThemeStore } from '@/stores/themeStore'
 import type { MuscleGroup } from '@/types'
 
 /**
- * Misma paleta que `tailwind.config.ts` (`colors.muscle`) — se duplica acá
- * como valores literales porque Recharts (MonthlyStats.tsx) necesita
- * strings de color en JS, no clases de Tailwind, y esos colores no viven
- * como custom property en `index.css` (a diferencia de `--color-accent` y
- * el resto, que sí resuelve `useChartColors.ts`) — son literales
- * hardcodeados directo en la config de Tailwind. Si se tocan los valores
- * en `tailwind.config.ts`, hay que actualizar esto también (Fase 7,
- * auditoría de diseño: antes de esto, MonthlyStats.tsx tenía su propia
- * paleta inventada, con colores distintos para el mismo músculo según la
- * pantalla).
+ * Color de cada grupo muscular para contextos que necesitan un string de
+ * color en JS (Recharts en MonthlyStats.tsx) en vez de una clase de
+ * Tailwind. Desde B2 (modo claro) los valores viven como custom properties
+ * `--muscle-*` en `src/index.css`, con un juego por tema — igual que el
+ * resto de la paleta. `MUSCLE_HEX` de abajo es solo el fallback de modo
+ * oscuro para el render inicial; lo vivo es `useMuscleColors()`.
+ *
+ * Los 12 `MuscleGroup` granulares se mapean a 8 "baldes" visuales
+ * (bíceps/tríceps/antebrazos → "arms", cuádriceps/isquios/gemelos →
+ * "legs"), mismo agrupamiento que `MUSCLE_STYLES` en MuscleChip.tsx.
  */
-const MUSCLE_GROUP_HEX: Record<'chest' | 'back' | 'shoulders' | 'arms' | 'legs' | 'core' | 'glutes' | 'cardio', string> = {
+
+type Bucket = 'chest' | 'back' | 'shoulders' | 'arms' | 'legs' | 'core' | 'glutes' | 'cardio'
+
+const BUCKET_OF: Record<MuscleGroup, Bucket> = {
+  chest: 'chest',
+  back: 'back',
+  shoulders: 'shoulders',
+  biceps: 'arms',
+  triceps: 'arms',
+  forearms: 'arms',
+  quads: 'legs',
+  hamstrings: 'legs',
+  calves: 'legs',
+  core: 'core',
+  glutes: 'glutes',
+  cardio: 'cardio',
+}
+
+/** Fallback de modo oscuro (mismos valores que `:root` en index.css). */
+const DARK_BUCKET_HEX: Record<Bucket, string> = {
   chest: '#FF6B35',
   back: '#0A84FF',
   shoulders: '#BF5AF2',
@@ -23,21 +44,34 @@ const MUSCLE_GROUP_HEX: Record<'chest' | 'back' | 'shoulders' | 'arms' | 'legs' 
   cardio: '#32ADE6',
 }
 
-/** Mapea los 12 `MuscleGroup` granulares al color de su "balde" visual —
- * mismo agrupamiento que ya usa `MUSCLE_STYLES` en MuscleChip.tsx
- * (bíceps/tríceps/antebrazos comparten "arms", cuádriceps/isquios/
- * gemelos comparten "legs"). */
-export const MUSCLE_HEX: Record<MuscleGroup, string> = {
-  chest: MUSCLE_GROUP_HEX.chest,
-  back: MUSCLE_GROUP_HEX.back,
-  shoulders: MUSCLE_GROUP_HEX.shoulders,
-  biceps: MUSCLE_GROUP_HEX.arms,
-  triceps: MUSCLE_GROUP_HEX.arms,
-  forearms: MUSCLE_GROUP_HEX.arms,
-  quads: MUSCLE_GROUP_HEX.legs,
-  hamstrings: MUSCLE_GROUP_HEX.legs,
-  calves: MUSCLE_GROUP_HEX.legs,
-  core: MUSCLE_GROUP_HEX.core,
-  glutes: MUSCLE_GROUP_HEX.glutes,
-  cardio: MUSCLE_GROUP_HEX.cardio,
+export const MUSCLE_HEX: Record<MuscleGroup, string> = Object.fromEntries(
+  (Object.keys(BUCKET_OF) as MuscleGroup[]).map((m) => [m, DARK_BUCKET_HEX[BUCKET_OF[m]]])
+) as Record<MuscleGroup, string>
+
+function readBucketColors(): Record<Bucket, string> {
+  if (typeof document === 'undefined') return DARK_BUCKET_HEX
+  const style = getComputedStyle(document.documentElement)
+  const out = {} as Record<Bucket, string>
+  for (const b of Object.keys(DARK_BUCKET_HEX) as Bucket[]) {
+    const raw = style.getPropertyValue(`--muscle-${b}`).trim()
+    out[b] = raw ? `rgb(${raw})` : DARK_BUCKET_HEX[b]
+  }
+  return out
+}
+
+/**
+ * Colores de grupo muscular resueltos del tema activo. Recalcula al cambiar
+ * de tema (mismo patrón que `useChartColors`).
+ */
+export function useMuscleColors(): Record<MuscleGroup, string> {
+  const theme = useThemeStore((s) => s.theme)
+  const [colors, setColors] = useState(readBucketColors)
+
+  useEffect(() => {
+    setColors(readBucketColors())
+  }, [theme])
+
+  return Object.fromEntries(
+    (Object.keys(BUCKET_OF) as MuscleGroup[]).map((m) => [m, colors[BUCKET_OF[m]]])
+  ) as Record<MuscleGroup, string>
 }

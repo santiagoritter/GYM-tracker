@@ -100,6 +100,49 @@ line-2   rgba(120,120,128,0.16)
 Un separador **o** una sombra, nunca los dos: borde de un pelo con sombra
 difusa ancha es firma de UI generada.
 
+### Modo claro
+
+Existe pero es secundario. Toda la paleta clara se rehízo en la tanda de
+expansión (B2) porque la anterior era ilegible: `ink-2`/`ink-3` a 0.6/0.3 de
+alpha y un acento (`84 132 20`) que apenas llegaba a 4.5:1 y leía "oliva
+militar". Los valores de abajo se calcularon con WCAG 2.1 real; los ratios
+anotados son contra `surface` (blanco) salvo aclaración.
+
+```
+bg           #F2F2F5
+surface      #FFFFFF   tarjeta
+surface-2    #EDEDF1   un escalón sobre el fondo (skeletons, celdas vacías) — distinguible a propósito
+surface-3    #E0E0E5   presionado
+ink          #18181B   títulos          (~18:1)
+ink-2        rgba(28,28,32,0.75)   cuerpo secundario   (~6.9:1)
+ink-3        rgba(28,28,32,0.62)   metadatos — el piso AA   (~4.5:1)
+ink-4        rgba(28,28,32,0.35)   solo deshabilitado
+accent       #3F6E0C   verde-lima profundo   (~6.1:1 sobre blanco, ~5.2:1 sobre surface-2)
+accent-dim   #32580A   presionado
+line         rgba(0,0,0,0.15)
+line-2       rgba(0,0,0,0.08)
+```
+
+Notas:
+
+- **El acento pierde el amarillo.** Un lima brillante no puede ser legible
+  como texto sobre blanco; el precio de cumplir AA es un verde profundo. Los
+  botones rellenos (`bg-accent text-bg`) siguen bien porque ambos tokens
+  invierten con el tema (texto casi blanco sobre verde, ~7:1).
+- **Semánticos** más oscuros que iOS (`#1E8533` / `#A56900` / `#C82A2A` /
+  `#0D63D5`): los de Apple (`#34C759`, `#FF9500`) fallan como texto/ícono
+  chico sobre blanco.
+- **Grupo muscular**: los tonos saturados de modo oscuro no llegan a 4.5:1
+  como texto de chip sobre blanco. Variantes propias en `[data-theme=light]`
+  de `index.css` (`--muscle-*`), misma identidad de hue, ratios 4.9–6.0.
+  Recharts las lee vía `useMuscleColors()` (mismo patrón que `useChartColors`).
+- **`card-shine`** y el sweep de `.skeleton` tienen override en claro: el
+  inset blanco y el brillo blanco no se ven sobre blanco.
+- `applyTheme` setea `color-scheme` en `<html>` para que inputs nativos
+  (date/time), scrollbars y autofill sigan el tema.
+- **Pendiente**: verificación visual en pantalla real (no hay navegador
+  disponible en el entorno de trabajo). Contraste sí verificado con WCAG 2.1.
+
 ---
 
 ## 2. Tipografía
