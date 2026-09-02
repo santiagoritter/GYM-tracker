@@ -51,17 +51,20 @@ export default {
         warning: 'rgb(var(--color-warning) / <alpha-value>)',
         danger: 'rgb(var(--color-danger) / <alpha-value>)',
         info: 'rgb(var(--color-info) / <alpha-value>)',
-        // Sin variantes de tema: son colores de dominio (grupo muscular),
-        // no de chrome, y no forman parte del sistema claro/oscuro.
+        // Colores de dominio (grupo muscular). SÍ tienen juego por tema: se
+        // usan como `text-muscle-*` (texto de color) en los chips, y los
+        // tonos saturados de modo oscuro no llegan a 4.5:1 sobre blanco. Los
+        // valores viven en src/index.css (:root oscuro / [data-theme=light]
+        // claro), acá solo la referencia a la variable.
         muscle: {
-          chest: '#FF6B35',
-          back: '#0A84FF',
-          shoulders: '#BF5AF2',
-          arms: '#FF375F',
-          legs: '#30D158',
-          core: '#FFD60A',
-          glutes: '#FF453A',
-          cardio: '#32ADE6',
+          chest: 'rgb(var(--muscle-chest) / <alpha-value>)',
+          back: 'rgb(var(--muscle-back) / <alpha-value>)',
+          shoulders: 'rgb(var(--muscle-shoulders) / <alpha-value>)',
+          arms: 'rgb(var(--muscle-arms) / <alpha-value>)',
+          legs: 'rgb(var(--muscle-legs) / <alpha-value>)',
+          core: 'rgb(var(--muscle-core) / <alpha-value>)',
+          glutes: 'rgb(var(--muscle-glutes) / <alpha-value>)',
+          cardio: 'rgb(var(--muscle-cardio) / <alpha-value>)',
         },
       },
       fontFamily: {

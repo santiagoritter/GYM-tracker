@@ -43,50 +43,69 @@
      usa en la tab bar (ver .glass-edge-top) — es el caso canónico de
      Apple, un toolbar flotando sobre contenido con luz viniendo de arriba. */
   --color-glass-edge: rgba(255, 255, 255, 0.14);
+
+  /* Colores de grupo muscular (ver tailwind.config.ts `muscle`). Modo
+     oscuro: los tonos saturados de iOS. */
+  --muscle-chest: 255 107 53;
+  --muscle-back: 10 132 255;
+  --muscle-shoulders: 191 90 242;
+  --muscle-arms: 255 55 95;
+  --muscle-legs: 48 209 88;
+  --muscle-core: 255 214 10;
+  --muscle-glutes: 255 69 58;
+  --muscle-cardio: 50 173 230;
 }
 
-/* Paleta iOS en modo claro: systemGroupedBackground de fondo, tarjetas en
-   blanco puro, labels estándar de Apple.
+/* ── Modo claro ────────────────────────────────────────────────────────────
+   Rediseño (tanda de expansión, B2): la paleta anterior era casi
+   ilegible — `ink-2`/`ink-3` a 0.6/0.3 de alpha sobre gris claro y un
+   acento (84 132 20) que rondaba apenas 4.5:1 y leía "oliva militar".
+   Todos los valores de acá se calcularon con WCAG 2.1 real (script en
+   scratchpad) y los ratios están anotados en DESIGN.md §1.
 
-   El acento (Fase 27, segunda vuelta): el valor anterior (138 154 0, R≈G)
-   daba 3.24:1 contra blanco — pasa el mínimo de AA para elementos grandes
-   (≥3:1) pero NO para texto normal (necesita ≥4.5:1), y el acento se usa
-   como texto chico en varios lugares (racha, tabs activos). Con R≈G y B=0
-   además lee como oliva/mostaza, no como "lima fresco". Se ajusta a
-   84 132 20 — más verde que amarillo (mejor relación G:R, menos "oliva
-   militar") y más oscuro, ronda los 4.5:1 reales contra blanco (calculado
-   a mano, sin poder verificarlo en pantalla real en este entorno — igual
-   que la vez pasada con este mismo token, queda anotado para confirmar a
-   ojo). accent-dim/accent-soft ajustados proporcionalmente.
-
-   surface-2/surface-3 NO copian los tokens tertiary/quaternary de iOS tal
-   cual — ahí Apple reutiliza el mismo valor que el fondo a propósito (listas
-   agrupadas), pero acá surface-2 hace de "un escalón por encima del fondo"
-   (celdas vacías de CalendarHeatmap, skeletons de carga) y necesita ser
-   distinguible de --color-bg, no idéntico. */
+   Criterio: blanco puro para las tarjetas, un gris muy claro para el fondo,
+   y tinta casi negra con alphas altos para que el texto secundario siga
+   entrando en AA. `surface-2` es distinguible del fondo a propósito
+   (skeletons, celdas vacías de CalendarHeatmap). El acento pasa a un
+   verde-lima profundo: es el precio de ser legible como texto sobre blanco
+   (6.1:1) sin perder del todo la identidad lima de la marca. */
 :root[data-theme='light'] {
-  --color-bg: 242 242 247; /* #F2F2F7 */
+  --color-bg: 242 242 245; /* #F2F2F5 */
   --color-surface: 255 255 255;
-  --color-surface-2: 230 230 235;
-  --color-surface-3: 220 220 225;
-  --color-surface-glass: rgba(255, 255, 255, 0.72);
-  --color-line: rgba(60, 60, 67, 0.29);
-  --color-line-2: rgba(60, 60, 67, 0.16);
-  --color-ink: 0 0 0;
-  --color-ink-2: rgba(60, 60, 67, 0.6);
-  --color-ink-3: rgba(60, 60, 67, 0.3);
-  --color-ink-4: rgba(60, 60, 67, 0.18);
-  --color-accent: 84 132 20; /* verde lima, ~4.5:1 sobre blanco */
-  --color-accent-dim: 66 104 14;
-  --color-accent-soft: rgba(84, 132, 20, 0.12);
-  --color-fill: rgba(120, 120, 128, 0.12);
-  --color-fill-2: rgba(120, 120, 128, 0.08);
-  --color-fill-3: rgba(118, 118, 128, 0.06);
-  --color-success: 52 199 89;
-  --color-warning: 255 149 0;
-  --color-danger: 255 59 48;
-  --color-info: 0 122 255;
-  --color-glass-edge: rgba(255, 255, 255, 0.5);
+  --color-surface-2: 237 237 241; /* +1 escalón sobre el fondo, distinguible */
+  --color-surface-3: 224 224 229; /* pressed */
+  --color-surface-glass: rgba(255, 255, 255, 0.8);
+  --color-line: rgba(0, 0, 0, 0.15);
+  --color-line-2: rgba(0, 0, 0, 0.08);
+  --color-ink: 24 24 27; /* casi negro, no #000 puro (~18:1) */
+  --color-ink-2: rgba(28, 28, 32, 0.75); /* ~6.9:1 sobre surface */
+  --color-ink-3: rgba(28, 28, 32, 0.62); /* ~4.5:1 sobre surface — el piso AA */
+  --color-ink-4: rgba(28, 28, 32, 0.35); /* solo deshabilitado */
+  --color-accent: 63 110 12; /* #3F6E0C — verde-lima, ~6.1:1 sobre blanco */
+  --color-accent-dim: 50 88 10; /* pressed */
+  --color-accent-soft: rgba(63, 110, 12, 0.14);
+  --color-fill: rgba(60, 60, 67, 0.1);
+  --color-fill-2: rgba(60, 60, 67, 0.07);
+  --color-fill-3: rgba(60, 60, 67, 0.05);
+  /* Semánticos: nudge más oscuro que iOS para que sirvan como texto/ícono
+     chico sobre blanco (los de iOS —#34C759, #FF9500— fallan ahí). */
+  --color-success: 30 133 51; /* #1E8533 */
+  --color-warning: 165 105 0; /* #A56900 */
+  --color-danger: 200 42 42; /* #C82A2A */
+  --color-info: 13 99 213; /* #0D63D5 */
+  --color-glass-edge: rgba(255, 255, 255, 0.6);
+
+  /* Grupo muscular en claro: los saturados de iOS no llegan a 4.5:1 sobre
+     blanco como texto de chip. Variantes más oscuras, misma identidad de
+     hue (ratios sobre blanco entre 4.9 y 6.0). */
+  --muscle-chest: 192 73 14; /* naranja */
+  --muscle-back: 10 102 199; /* azul */
+  --muscle-shoulders: 138 63 192; /* violeta */
+  --muscle-arms: 207 30 68; /* rosa-rojo */
+  --muscle-legs: 20 122 46; /* verde */
+  --muscle-core: 122 98 0; /* amarillo → oro oscuro */
+  --muscle-glutes: 196 42 34; /* rojo */
+  --muscle-cardio: 26 116 158; /* cian */
 }
 
 @layer utilities {
@@ -145,6 +164,11 @@
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
     animation: shimmer 1.6s infinite;
   }
+  /* En claro un brillo blanco sobre gris claro no se ve — el sweep va en
+     oscuro. */
+  :root[data-theme='light'] .skeleton::after {
+    background: linear-gradient(90deg, transparent, rgba(0,0,0,0.05), transparent);
+  }
 
   /* Frosted glass — únicos dos usos permitidos: cabecera fija y tab bar
      (DESIGN.md §3). Resuelve un problema real (contenido que scrollea por
@@ -181,6 +205,11 @@
   /* Highlight superior de tarjetas (efecto de luz) */
   .card-shine {
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.07), 0 2px 16px rgba(0,0,0,0.4);
+  }
+  /* En claro el inset blanco es invisible y la sombra de 0.4 es un manchón:
+     una elevación suave y neutra en su lugar. */
+  :root[data-theme='light'] .card-shine {
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
   }
 
   /* Botón iOS: pressed state */

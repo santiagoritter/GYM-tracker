@@ -33,8 +33,11 @@ export const useThemeStore = create<ThemeState>()(
 )
 
 export function applyTheme(theme: Theme): void {
-  document.documentElement.dataset.theme = theme === 'light' ? 'light' : ''
+  const isLight = theme === 'light'
+  document.documentElement.dataset.theme = isLight ? 'light' : ''
+  // Controles nativos (inputs date/time, scrollbars, autofill) siguen el tema.
+  document.documentElement.style.colorScheme = isLight ? 'light' : 'dark'
   document
     .querySelector('meta[name="theme-color"]')
-    ?.setAttribute('content', theme === 'light' ? '#F2F2F7' : '#0A0A0A')
+    ?.setAttribute('content', isLight ? '#F2F2F5' : '#0B0B0C')
 }

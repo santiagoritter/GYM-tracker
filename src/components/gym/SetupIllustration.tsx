@@ -1,19 +1,39 @@
+import { useThemeStore } from '@/stores/themeStore'
 import type { SetupKind } from '@/data/exerciseSetup'
 
 /**
  * Dibujo de línea del puesto de trabajo. Estilo consistente: trazo fino gris
  * para la estructura y acento lima para la pieza que se agarra o se carga,
  * que es la que sirve para reconocer la máquina de un vistazo.
+ *
+ * Los colores van por tema: en claro el acento lima brillante y el gris
+ * oscuro no se ven sobre blanco (B2, modo claro).
  */
 
-const FRAME = '#6E6E73'
-const ACCENT = '#E8FF47'
-const SEAT = '#48484C'
+interface StrokeStyle {
+  stroke: string
+  strokeWidth: number
+  fill: 'none'
+  strokeLinecap: 'round'
+}
+interface Palette {
+  s: StrokeStyle
+  a: StrokeStyle
+  seat: string
+}
 
-const s = { stroke: FRAME, strokeWidth: 2.4, fill: 'none', strokeLinecap: 'round' as const }
-const a = { stroke: ACCENT, strokeWidth: 2.8, fill: 'none', strokeLinecap: 'round' as const }
+const DARK: Palette = {
+  s: { stroke: '#6E6E73', strokeWidth: 2.4, fill: 'none', strokeLinecap: 'round' },
+  a: { stroke: '#E8FF47', strokeWidth: 2.8, fill: 'none', strokeLinecap: 'round' },
+  seat: '#48484C',
+}
+const LIGHT: Palette = {
+  s: { stroke: '#9A9AA0', strokeWidth: 2.4, fill: 'none', strokeLinecap: 'round' },
+  a: { stroke: '#3F6E0C', strokeWidth: 2.8, fill: 'none', strokeLinecap: 'round' },
+  seat: '#C6C6CC',
+}
 
-function Shapes({ kind }: { kind: SetupKind }) {
+function Shapes({ kind, s, a, seat: SEAT }: { kind: SetupKind } & Palette) {
   switch (kind) {
     case 'flat-bench':
       return (
@@ -326,6 +346,8 @@ export default function SetupIllustration({
   kind: SetupKind
   className?: string
 }) {
+  const theme = useThemeStore((st) => st.theme)
+  const p = theme === 'light' ? LIGHT : DARK
   return (
     <svg
       viewBox="0 0 80 72"
@@ -334,7 +356,7 @@ export default function SetupIllustration({
       aria-hidden="true"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <Shapes kind={kind} />
+      <Shapes kind={kind} s={p.s} a={p.a} seat={p.seat} />
     </svg>
   )
 }
