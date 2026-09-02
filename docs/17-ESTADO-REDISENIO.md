@@ -384,6 +384,28 @@ checkbox obligatorio en `Registro.tsx`, `profile.legalAcceptedAt`/`legalVersion`
 **B9 — FAQ + contacto (hecho):** `src/pages/FAQ.tsx` (`/faq`), acordeón `<details>` con 8
 preguntas + contacto por `mailto:`. Sección "Ayuda" en Ajustes. Sin backend de feedback.
 
+**B10 — Panel de admin, gestión de cuentas (hecho):** Edge Function `admin-users`
+(verifica rol admin server-side, usa service_role, cada mutación → `admin_audit`).
+`0011_admin_audit.sql`. `src/lib/adminMutations.ts`. `AdminUsers.tsx` reescrito con
+acciones (rol/reset/ban), crear usuario, registro de acciones. Ver `docs/20-ADMIN.md`.
+**Pendiente**: correr `0011`, `supabase functions deploy admin-users`.
+
+**B11 — Modo coach, núcleo (hecho):** `0012_coach.sql` (tablas `coaches`/`coach_invites`/
+`coach_clients`/`client_goals`, `is_coach_of()`, policies `*_coach`/`*_coach_read`, RPC
+`coach_client_summaries`). `src/lib/coachQueries.ts`/`coachMutations.ts`. Páginas en
+`src/pages/coach/` + `JoinCoach.tsx` (`/unirse/:code`). `VerifiedBadge`, `MyCoachCard`,
+`CoachRoute`. Compromisos de núcleo (asignar = plantilla; metas en Perfil; sin
+`max_uses`) — chat/reseñas/DNI/pago quedan para fase 2. Ver `docs/21-COACH.md`.
+**Pendiente**: correr `0012`, prueba de humo end-to-end.
+
+---
+
+**Tanda de expansión completa (B1–B11).** Rama `expansion-2026-09` mergeada a `main` por
+bloque. Falta del lado del usuario: los pasos de backend (correr `0009`–`0012`, desplegar
+las Edge Functions `admin-users` y redeploy de `send-push-reminders`), y las
+verificaciones que necesitan dispositivo/navegador reales (modo claro, running en Android,
+CSP, flujo coach). §2.8 del brief original ("rutina más popular") sigue sin implementar.
+
 ## Pendiente
 
 ### Bloqueado

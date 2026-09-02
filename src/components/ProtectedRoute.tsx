@@ -18,3 +18,13 @@ export function AdminRoute() {
   if (role !== 'admin') return <Navigate to="/" replace />
   return <Outlet />
 }
+
+/** Área de coach: rol `coach` (o `admin`, que puede ver todo). Mismo criterio
+ * de `sessionChecked` que AdminRoute. */
+export function CoachRoute() {
+  const role = useAuthStore((s) => s.role)
+  const sessionChecked = useAuthStore((s) => s.sessionChecked)
+  if (!sessionChecked) return null
+  if (role !== 'coach' && role !== 'admin') return <Navigate to="/" replace />
+  return <Outlet />
+}

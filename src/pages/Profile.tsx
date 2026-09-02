@@ -1,10 +1,11 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, Ruler, Settings, Shield } from 'lucide-react'
+import { LogOut, Ruler, Settings, Shield, Users } from 'lucide-react'
 import { db } from '@/db/schema'
 import { useAuthStore } from '@/stores/authStore'
 import { signOut } from '@/lib/supabaseAuth'
 import { Card, Row } from '@/components/ui/Card'
+import MyCoachCard from '@/components/gym/MyCoachCard'
 import type { LocalProfile } from '@/types'
 import { cn } from '@/lib/utils'
 import { getDailyMessage } from '@/lib/motivational'
@@ -62,9 +63,9 @@ export default function Profile() {
             <p className="truncate font-semibold">{name}</p>
             <p className="truncate text-sm text-ink-3">{email}</p>
           </div>
-          {role === 'admin' && (
+          {(role === 'admin' || role === 'coach') && (
             <span className="shrink-0 rounded-xs bg-accent/15 px-2 py-1 text-xs font-bold text-accent">
-              Admin
+              {role === 'admin' ? 'Admin' : 'Coach'}
             </span>
           )}
         </div>
@@ -81,6 +82,8 @@ export default function Profile() {
           </p>
         )}
       </Card>
+
+      {userId && <MyCoachCard userId={userId} />}
 
       {/* Datos corporales: alimentan el recomendador de cargas y los
           niveles de fuerza. Lo que es comportamiento de la app (unidades,
@@ -164,6 +167,15 @@ export default function Profile() {
             <p className="text-[13px] text-ink-3">Unidades, tema, recordatorios</p>
           </div>
         </Row>
+        {(role === 'coach' || role === 'admin') && (
+          <Row onClick={() => navigate('/coach')}>
+            <Users size={20} className="shrink-0 text-accent" />
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold">Mis alumnos</p>
+              <p className="text-[13px] text-ink-3">Ver progreso, asignar rutinas y metas</p>
+            </div>
+          </Row>
+        )}
         {role === 'admin' && (
           <Row onClick={() => navigate('/admin')}>
             <Shield size={20} className="shrink-0 text-accent" />

@@ -1,7 +1,7 @@
 import { Suspense, lazy } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import AppShell from '@/components/AppShell'
-import { ProtectedRoute, AdminRoute } from '@/components/ProtectedRoute'
+import { ProtectedRoute, AdminRoute, CoachRoute } from '@/components/ProtectedRoute'
 import Home from '@/pages/Home'
 import Workout from '@/pages/Workout'
 import Exercises from '@/pages/Exercises'
@@ -30,6 +30,13 @@ const Progress = lazy(() => import('@/pages/Progress'))
 const Admin = lazy(() => import('@/pages/Admin'))
 const AdminUsers = lazy(() => import('@/pages/AdminUsers'))
 const Measurements = lazy(() => import('@/pages/Measurements'))
+const CoachHome = lazy(() => import('@/pages/coach/CoachHome'))
+const CoachClientDetail = lazy(() => import('@/pages/coach/CoachClientDetail'))
+const CoachInvite = lazy(() => import('@/pages/coach/CoachInvite'))
+const CoachProfile = lazy(() => import('@/pages/coach/CoachProfile'))
+const JoinCoach = lazy(() => import('@/pages/JoinCoach'))
+
+const lazyFallback = <p className="py-12 text-center text-sm text-ink-3">Cargando…</p>
 
 export default function App() {
   return (
@@ -94,6 +101,18 @@ export default function App() {
         <Route path="/entreno/:workoutId" element={<Workout />} />
         <Route path="/cardio" element={<Cardio />} />
         <Route path="/correr" element={<Run />} />
+        <Route
+          path="/unirse/:code"
+          element={<Suspense fallback={lazyFallback}><JoinCoach /></Suspense>}
+        />
+
+        {/* Área de coach: rol `coach` (o admin). Pantalla completa, header propio. */}
+        <Route element={<CoachRoute />}>
+          <Route path="/coach" element={<Suspense fallback={lazyFallback}><CoachHome /></Suspense>} />
+          <Route path="/coach/alumno/:id" element={<Suspense fallback={lazyFallback}><CoachClientDetail /></Suspense>} />
+          <Route path="/coach/invitar" element={<Suspense fallback={lazyFallback}><CoachInvite /></Suspense>} />
+          <Route path="/coach/perfil" element={<Suspense fallback={lazyFallback}><CoachProfile /></Suspense>} />
+        </Route>
         <Route path="/rutina/:routineId" element={<RoutineEditor />} />
         <Route path="/spotify/callback" element={<SpotifyCallback />} />
         <Route path="/importar/:code" element={<ImportRoutine />} />
