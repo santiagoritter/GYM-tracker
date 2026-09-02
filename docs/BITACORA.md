@@ -613,3 +613,35 @@ que la CSP no rompe login/sync/Spotify/mapa.
 `npx tsc -b`, `npm run build`, `test:style` verde. **Pendiente (usuario)**: correr
 `0011`, `supabase functions deploy admin-users`, probar el flujo como admin y como
 no-admin (403).
+
+---
+
+## 2026-09-02 — Tanda de expansión, Bloque 11: modo coach (núcleo)
+
+- **`supabase/migrations/0012_coach.sql`**: tablas `coaches` (con trigger
+  `coaches_guard_verified` para que solo el admin toque `verified`),
+  `coach_invites`, `coach_clients` (el alumno crea el vínculo, y solo con una
+  invitación vigente real), `client_goals`. Columna `routines.source_coach_id`.
+  Helper `is_coach_of()`. Policies nuevas: `routines_coach`/`routine_days_coach`/
+  `routine_exercises_coach` (RW) + `*_coach_read` (solo lectura) sobre
+  workouts/sets/PRs/medidas/logros. `calorie_entries`/`progress_photos` fuera a
+  propósito. RPC `coach_client_summaries()` (`security definer`).
+- **`src/lib/coachQueries.ts` / `coachMutations.ts`**: lecturas/escrituras en
+  vivo contra Supabase.
+- **`src/pages/coach/`**: `CoachHome` (`/coach`), `CoachClientDetail`
+  (`/coach/alumno/:id`), `CoachInvite` (`/coach/invitar`, link + QR),
+  `CoachProfile` (`/coach/perfil` + onboarding). **`src/pages/JoinCoach.tsx`**
+  (`/unirse/:code`). **`VerifiedBadge`**, **`MyCoachCard`** ("Tu coach" + metas
+  en Perfil). `CoachRoute` en `ProtectedRoute.tsx`.
+- **`UserRole`** ya incluía `coach` (B10). Perfil: badge "Coach", fila "Mis
+  alumnos" (no se sumó pestaña — la tab bar mobile tiene pastilla de ancho
+  fijo con 5 posiciones).
+- **Compromisos de núcleo** (fase 2): "asignar rutina" = elegir una de las 6
+  plantillas y empujar copia (no armar a medida con RoutineEditor); metas en
+  Perfil, no en Progreso; sin enforcement de `max_uses`.
+- **`docs/21-COACH.md`** nuevo con modelo, RLS y pasos de despliegue.
+
+### Verificación
+`npx tsc -b`, `npm test` (16 ✅), `npm run build`, `test:style` verde.
+**Pendiente (usuario)**: correr `0012`, confirmar Advisors en cero, prueba de humo
+end-to-end del flujo coach (ver `docs/21`).
