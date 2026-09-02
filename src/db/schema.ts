@@ -12,6 +12,7 @@ import type {
   Routine,
   RoutineDay,
   RoutineExercise,
+  Run,
   SyncedTable,
   SyncStateRow,
   Tombstone,
@@ -59,6 +60,7 @@ export class GymTrackerDB extends Dexie {
   tombstones!: Table<Tombstone, string>
   syncState!: Table<SyncStateRow, string>
   calorieEntries!: Table<CalorieEntry, string>
+  runs!: Table<Run, string>
 
   constructor() {
     super('GymTrackerDB')
@@ -254,6 +256,15 @@ export class GymTrackerDB extends Dexie {
         .toCollection()
         .filter((e) => (e as { supersetGroup?: number | null }).supersetGroup === null)
         .modify({ supersetGroup: undefined })
+    })
+    // v13: salidas a correr con GPS (B6). Tabla nueva, sin datos que migrar.
+    // `route` (RunPointRecord[]) y `summary` no se indexan. Las columnas
+    // `userId`/`dirty` la dejan lista para sync, pero todavía NO entra en
+    // SYNC_ORDER — igual que cardio/fotos difirieron su sync.
+    this.version(13).stores({
+      runs: 'id, userId, workoutId, startedAt, dirty',
+    }).upgrade(async () => {
+      // no-op: tabla nueva
     })
   }
 }

@@ -11,7 +11,7 @@
     "ios": "npm run build:native && cap open ios",
     "android": "npm run build:native && cap open android",
     "typecheck": "tsc -b --noEmit",
-    "test:db": "node scripts/test-migration.mjs && node scripts/test-sync-hooks.mjs && node scripts/test-calories-migration.mjs && node scripts/test-bodyfat-migration.mjs && node scripts/test-superset-migration.mjs",
+    "test:db": "node scripts/test-migration.mjs && node scripts/test-sync-hooks.mjs && node scripts/test-calories-migration.mjs && node scripts/test-bodyfat-migration.mjs && node scripts/test-superset-migration.mjs && node scripts/test-runs-migration.mjs",
     "test:rec": "esbuild scripts/test-recommendation.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/rec.mjs --log-level=error && node node_modules/.tmp/rec.mjs",
     "test:style": "node scripts/test-style-rules.mjs",
     "test:levels": "esbuild scripts/test-muscle-group-levels.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/mgl.mjs --log-level=error && node node_modules/.tmp/mgl.mjs",
@@ -20,13 +20,16 @@
     "test:workout": "esbuild scripts/test-workout-summary.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/workout.mjs --log-level=error && node node_modules/.tmp/workout.mjs",
     "test:past": "esbuild scripts/test-past-workouts.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/past.mjs --log-level=error && node node_modules/.tmp/past.mjs",
     "test:quotes": "esbuild scripts/test-quotes.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/quotes.mjs --log-level=error && node node_modules/.tmp/quotes.mjs",
-    "test": "npm run test:style && npm run test:db && npm run test:rec && npm run test:levels && npm run test:backup && npm run test:user-id-remap && npm run test:workout && npm run test:past && npm run test:quotes"
+    "test:run": "esbuild scripts/test-run.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/run.mjs --log-level=error && node node_modules/.tmp/run.mjs",
+    "test": "npm run test:style && npm run test:db && npm run test:rec && npm run test:levels && npm run test:backup && npm run test:user-id-remap && npm run test:workout && npm run test:past && npm run test:quotes && npm run test:run"
   },
   "dependencies": {
+    "@capacitor-community/background-geolocation": "^1.2.26",
     "@capacitor/android": "^8.5.0",
     "@capacitor/app": "^8.1.1",
     "@capacitor/cli": "^8.5.0",
     "@capacitor/core": "^8.5.0",
+    "@capacitor/geolocation": "^8.2.2",
     "@capacitor/haptics": "^8.0.2",
     "@capacitor/ios": "^8.5.0",
     "@capacitor/local-notifications": "^8.2.1",
@@ -41,6 +44,7 @@
     "dexie": "^4.0.8",
     "dexie-react-hooks": "^1.1.7",
     "jsqr": "^1.4.0",
+    "leaflet": "^1.9.4",
     "lucide-react": "^0.427.0",
     "lz-string": "^1.5.0",
     "motion": "^13.0.0",
@@ -55,6 +59,7 @@
     "zustand": "^4.5.4"
   },
   "devDependencies": {
+    "@types/leaflet": "^1.9.12",
     "@types/node": "^26.1.1",
     "@types/qrcode": "^1.5.5",
     "@types/react": "^18.3.3",

@@ -359,6 +359,16 @@ Ajustes → Conexiones. `fetchUserPlaylists` pagina (antes cortaba a 50). Recone
 tap. **Pendiente runtime**: confirmar con cuenta real si el 403 es token viejo o app en
 "development mode".
 
+**B6 — Modo running con GPS, completo con mapa (hecho):** deps nuevas (aprobadas)
+`leaflet` + `@capacitor/geolocation` + `@capacitor-community/background-geolocation`.
+`src/lib/run.ts` (matemática pura testeada), `src/lib/geo.ts` (watch FG/BG),
+`src/stores/runStore.ts` (persistido), `src/pages/Run.tsx` (`/correr`, 4 fases),
+`RunMap`/`RunSplits`/`RunPermissionGate`. Dexie **v13** tabla `runs` (aún fuera de
+`SYNC_ORDER`). `Workout` espejo para el historial. `test:run` + `test-runs-migration`.
+`AndroidManifest.xml` con permisos de ubicación FG/BG. Ver `docs/18-RUNNING-GPS.md`.
+**Pendiente**: prueba en Android real (no hay GPS en el entorno); iOS necesita generar el
+proyecto en una Mac.
+
 ## Pendiente
 
 ### Bloqueado
