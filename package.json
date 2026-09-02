@@ -19,7 +19,8 @@
     "test:user-id-remap": "esbuild scripts/test-user-id-remap.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/user-id-remap.mjs --log-level=error && node node_modules/.tmp/user-id-remap.mjs",
     "test:workout": "esbuild scripts/test-workout-summary.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/workout.mjs --log-level=error && node node_modules/.tmp/workout.mjs",
     "test:past": "esbuild scripts/test-past-workouts.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/past.mjs --log-level=error && node node_modules/.tmp/past.mjs",
-    "test": "npm run test:style && npm run test:db && npm run test:rec && npm run test:levels && npm run test:backup && npm run test:user-id-remap && npm run test:workout && npm run test:past"
+    "test:quotes": "esbuild scripts/test-quotes.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/quotes.mjs --log-level=error && node node_modules/.tmp/quotes.mjs",
+    "test": "npm run test:style && npm run test:db && npm run test:rec && npm run test:levels && npm run test:backup && npm run test:user-id-remap && npm run test:workout && npm run test:past && npm run test:quotes"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",

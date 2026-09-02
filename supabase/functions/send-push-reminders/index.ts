@@ -41,12 +41,39 @@ webpush.setVapidDetails('mailto:santiagoritter26@gmail.com', VAPID_PUBLIC_KEY, V
 // horario, cualquier reminder_time con minuto >= 15 dejaría de matchear.
 const WINDOW_MINUTES = 15
 
-const MESSAGES = [
-  'Tu yo del futuro te agradece cada sesión de hoy. A entrenar.',
-  'La consistencia vence al talento. No rompas la racha.',
-  'Hoy es un buen día para ser más fuerte.',
-  '¿Listo para superar tu último entreno?',
-]
+// Frases por momento del día. Subconjunto de src/lib/quotes.ts — hay que
+// mantenerlo en sync a mano (mismo criterio que la duplicación del literal
+// de muscleColors). El cuerpo se elige con la hora LOCAL de cada
+// suscripción, no la del servidor.
+const QUOTES: Record<'dawn' | 'morning' | 'afternoon' | 'night', string[]> = {
+  dawn: [
+    'Al amanecer, cuando cueste levantarte: me despierto para hacer el trabajo de un ser humano. — Marco Aurelio',
+    'En medio del invierno aprendí que había en mí un verano invencible. — Albert Camus',
+  ],
+  morning: [
+    'Empezá de una vez a ser el que querés ser, y hacelo con lo que tenés ahora. — Epicteto',
+    'La suerte es lo que pasa cuando la preparación se cruza con la oportunidad. — Séneca',
+    'El obstáculo es el camino. — Marco Aurelio',
+    'La disciplina es elegir entre lo que querés ahora y lo que querés más. — Abraham Lincoln',
+  ],
+  afternoon: [
+    'Las dificultades fortalecen la mente igual que el trabajo fortalece el cuerpo. — Séneca',
+    'Hay que imaginarse a Sísifo feliz. — Albert Camus',
+    'Somos lo que hacemos repetidamente. La excelencia es un hábito. — Aristóteles',
+    'Cuídate de la esterilidad de una vida ocupada. — Sócrates',
+  ],
+  night: [
+    'Que ningún día se te vaya sin haber sumado una línea. — Plinio el Viejo',
+    'No es que tengamos poco tiempo, es que perdemos mucho. — Séneca',
+    'Lo que hacés todos los días importa más que lo que hacés de vez en cuando.',
+  ],
+}
+
+function quoteForHour(hour: number): string {
+  const part = hour < 6 ? 'dawn' : hour < 12 ? 'morning' : hour < 19 ? 'afternoon' : 'night'
+  const list = QUOTES[part]
+  return list[Math.floor(Math.random() * list.length)]
+}
 
 Deno.serve(async (req) => {
   if (req.headers.get('Authorization') !== `Bearer ${CRON_SECRET}`) {
@@ -73,7 +100,6 @@ Deno.serve(async (req) => {
   if (subsError) return new Response(subsError.message, { status: 500 })
 
   const profileById = new Map(profiles.map((p) => [p.id, p]))
-  const body = MESSAGES[Math.floor(Math.random() * MESSAGES.length)]
   let sent = 0
 
   for (const sub of subs ?? []) {
@@ -93,6 +119,8 @@ Deno.serve(async (req) => {
 
     const today = nowLocal.toISOString().slice(0, 10)
     if (sub.last_sent_on === today) continue // ya se le mandó hoy a esta suscripción
+
+    const body = quoteForHour(nowLocal.getHours())
 
     try {
       await webpush.sendNotification(
