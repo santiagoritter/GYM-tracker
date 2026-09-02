@@ -12,6 +12,7 @@ import {
   notificationsSupported,
   requestNotificationPermission,
 } from '@/lib/reminders'
+import { isNative, notify } from '@/lib/native'
 import { isPushAvailable, subscribeToPush, unsubscribeFromPush } from '@/lib/webPush'
 
 // getDay(): 0 = domingo … 6 = sábado. Orden de visualización lunes→domingo.
@@ -72,10 +73,14 @@ export default function Reminders() {
 
   const handleToggle = async () => {
     if (!enabled) {
-      const perm = await requestNotificationPermission()
-      if (perm !== 'granted') {
-        toast.error('Permiso denegado', 'Habilitá las notificaciones en tu navegador.')
-        return
+      // En nativo el permiso lo pide el schedule del SO (syncReminderSchedule,
+      // disparado por este cambio de perfil). En web hace falta el permiso ya.
+      if (!isNative) {
+        const perm = await requestNotificationPermission()
+        if (perm !== 'granted') {
+          toast.error('Permiso denegado', 'Habilitá las notificaciones en tu navegador.')
+          return
+        }
       }
       await update({ reminderEnabled: 1, reminderTime: time, reminderDays: days })
       toast.success('Recordatorios activados', `Te avisamos a las ${time}`)
@@ -91,13 +96,17 @@ export default function Reminders() {
   }
 
   const testNotification = async () => {
+    if (isNative) {
+      await notify('Hora de entrenar', 'Así se va a ver tu recordatorio.')
+      return
+    }
     const perm = await requestNotificationPermission()
     if (perm !== 'granted') {
       toast.error('Permiso denegado', 'Habilitá las notificaciones en tu navegador.')
       return
     }
     new Notification('Hora de entrenar', {
-      body: 'Así se va a ver tu recordatorio. ¡A darle!',
+      body: 'Así se va a ver tu recordatorio.',
       icon: '/icons/icon-192.png',
     })
   }
@@ -119,9 +128,9 @@ export default function Reminders() {
       </header>
 
       <div className="space-y-5 px-4 py-4">
-        {!notificationsSupported() && (
+        {!isNative && !notificationsSupported() && (
           <p className="rounded-sm bg-warning/10 p-3 text-sm text-warning">
-            Tu navegador no soporta notificaciones. Instalá la app como PWA para recibir avisos.
+            Tu navegador no soporta notificaciones. Instalá la app para recibir avisos.
           </p>
         )}
 
@@ -195,10 +204,22 @@ export default function Reminders() {
           Probar notificación
         </button>
 
-        {/* Push real: sobrevive a cerrar la app. Solo se ofrece si el
-            navegador la soporta y hay backend desplegado (VAPID + Supabase)
-            — no tiene sentido mostrar un toggle que no puede andar. */}
-        {isPushAvailable() ? (
+        {/* Push real: sobrevive a cerrar la app. En la app nativa esto no
+            hace falta — el aviso ya lo agenda el sistema operativo (llega con
+            la app cerrada). Solo se ofrece en web, si el navegador soporta
+            Push y hay backend (VAPID + Supabase). */}
+        {isNative ? (
+          <div className="rounded-md border border-info/20 bg-info/5 p-4">
+            <div className="flex items-center gap-2 text-info">
+              <BellRing size={16} />
+              <p className="text-sm font-semibold">Avisos con la app cerrada</p>
+            </div>
+            <p className="mt-1 text-xs text-ink-2">
+              En la app instalada, el recordatorio lo agenda tu teléfono: llega
+              a la hora elegida aunque tengas la app cerrada o la pantalla apagada.
+            </p>
+          </div>
+        ) : isPushAvailable() ? (
           <section>
             <SectionHeader title="Notificaciones push" />
             <Card>
@@ -237,9 +258,8 @@ export default function Reminders() {
             </div>
             <p className="mt-1 text-xs text-ink-2">
               El aviso local de arriba solo funciona con la app abierta. Para
-              que llegue aunque esté cerrada hace falta un backend — el
-              código ya está listo, falta desplegar Supabase. Ver
-              <span className="font-mono text-ink-3"> docs/13-BACKEND-SUPABASE.md</span>.
+              que llegue aunque esté cerrada, instalá la app (Android) o
+              agregala a la pantalla de inicio.
             </p>
           </div>
         )}

@@ -350,3 +350,40 @@ extendido con `weeklyGoal` y `reminder*`.
 - `tsc -b` strict sin errores · `npm run build` OK (2505 módulos)
 - Chunks: index 405KB / LineChart(Recharts) 385KB / QRScanner 135KB /
   Progress 55KB / Measurements 4.8KB / Admin 4.2KB (lazy). PWA 16 entradas.
+
+---
+
+## 2026-09-02 — Tanda de expansión, Bloque 1: Capacitor + notificaciones + link de instalación
+
+Rama `expansion-2026-09` (rama nueva + merge a `main` por bloque, pedido del usuario).
+Plan completo: `~/.claude/plans/starry-forging-snowflake.md`.
+
+### B0 — verificación de estado
+Supabase auth + sync ya están en producción (contradice `docs/17`, que quedó atrás). El
+fail-fast de `vite.config.ts` + deploys pasando implica secrets cargados. `docs/17` puesto
+al día con el estado real.
+
+### B1 — implementado
+- **`src/lib/nativeReminders.ts`** (nuevo): `syncReminderSchedule(profile)` agenda con el
+  SO (`@capacitor/local-notifications`) una repetición semanal por cada día elegido a la
+  hora del recordatorio — llega con la app cerrada, sin backend. IDs reservados
+  `4_200_000 + díaJS`; canal Android `gymtracker-reminders` (`ensureReminderChannel` desde
+  `main.tsx`). Cuerpo = `getQuoteForNow()`.
+- **`src/lib/reminders.ts`**: `useReminderScheduler` ahora también resincroniza el schedule
+  nativo en cada cambio de `reminder*`. `fireNotification` (web) usa frase filosófica.
+- **`src/lib/quotes.ts`** (nuevo, adelanto de B4): ~40 frases filosóficas con autor real,
+  etiquetadas por daypart. `getQuoteForNow()` pura y estable por día. Cableada en Home
+  (frase de cierre) y en los recordatorios.
+- **`src/lib/pwaInstall.ts`** (nuevo): captura `beforeinstallprompt`, hook `useCanInstallPwa`.
+  Ajustes → nueva sección "La app": "Instalar la app" (si el navegador lo permite) y
+  "Descargar para Android" (link al release). Solo en web.
+- **`.github/workflows/android.yml`** (nuevo): build manual del APK (debug) publicado en el
+  release `android-latest` — link directo estable. Firma de release documentada en `docs/16`.
+- **`src/pages/Reminders.tsx`**: permiso y "probar notificación" nativos; el bloque de push
+  se reemplaza por una nota cuando `isNative` (el SO ya cubre "app cerrada").
+- **`RestTimer.tsx`**: sin cambios — ya agendaba el aviso de fin de descanso con el SO.
+- `docs/16-CAPACITOR.md`, `README.md` actualizados.
+
+### Verificación
+`npx tsc -b`, `npm test` (18/18), `npm run build` verde. Pendiente de dispositivo real:
+recordatorio nativo con pantalla apagada, `beforeinstallprompt` en Chrome.

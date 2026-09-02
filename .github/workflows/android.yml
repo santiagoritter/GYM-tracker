@@ -1,0 +1,70 @@
+name: Build Android APK
+
+# Manual: se corre desde la pestaña Actions → "Build Android APK" → Run workflow.
+# Compila la web SIN base path (build:native), sincroniza Capacitor y arma el
+# APK. Lo sube como artifact del run y, además, lo publica en un release
+# `android-latest` para tener un link de descarga directo y estable
+# (github.com/<repo>/releases/latest).
+#
+# Hoy firma con el keystore DEBUG (el APK instala, pero Android avisa
+# "app de origen desconocido"). Para un APK de release firmado de verdad:
+# generar un keystore, cargarlo como secrets (ANDROID_KEYSTORE_BASE64,
+# ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD) y
+# cambiar `assembleDebug` por `assembleRelease` + firma. Ver docs/16.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - run: npm ci
+
+      # SIN VITE_BASE_PATH: la build nativa se sirve desde la raíz del webview.
+      - name: Build web + Capacitor sync
+        run: npm run build:native
+        env:
+          VITE_SPOTIFY_CLIENT_ID: ${{ secrets.VITE_SPOTIFY_CLIENT_ID }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
+
+      - name: Assemble debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Rename APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk gymtracker.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gymtracker-apk
+          path: gymtracker.apk
+
+      - name: Publish to android-latest release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-latest
+          name: GymTracker para Android (último build)
+          body: |
+            APK de la última versión. Descargá `gymtracker.apk` y abrilo en el
+            teléfono (hay que permitir "instalar apps de esta fuente").
+            Build de depuración: Android puede avisar "origen desconocido".
+          prerelease: true
+          files: gymtracker.apk

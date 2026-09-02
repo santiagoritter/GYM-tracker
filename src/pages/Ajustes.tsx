@@ -14,6 +14,7 @@ import {
   Moon,
   RefreshCw,
   Settings,
+  Smartphone,
   Sun,
   Upload,
 } from 'lucide-react'
@@ -29,7 +30,11 @@ import { Card, Row, SectionHeader } from '@/components/ui/Card'
 import type { LocalProfile } from '@/types'
 import { cn } from '@/lib/utils'
 import { exportBackup, importBackup } from '@/lib/backup'
+import { useCanInstallPwa, promptInstall, isStandalone } from '@/lib/pwaInstall'
+import { isNative } from '@/lib/native'
 import { toast } from '@/stores/toastStore'
+
+const ANDROID_APK_URL = 'https://github.com/santiagoritter/GYM-tracker/releases/latest'
 
 function timeAgo(iso: string): string {
   const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60_000)
@@ -53,6 +58,13 @@ export default function Ajustes() {
   const spotifyAccessToken = useSpotifyStore((s) => s.accessToken)
   const spotifyDisconnect = useSpotifyStore((s) => s.disconnect)
   const { status: syncStatus, lastSyncedAt } = useSyncStore()
+  const canInstall = useCanInstallPwa()
+  const showAppSection = !isNative && !isStandalone()
+
+  const handleInstall = async () => {
+    const ok = await promptInstall()
+    if (ok) toast.success('Instalando', 'Buscá el ícono de GymTracker en tu pantalla de inicio.')
+  }
 
   const update = (patch: Partial<LocalProfile>) => {
     if (userId) db.profile.update(userId, patch)
@@ -153,6 +165,31 @@ export default function Ajustes() {
       </header>
 
       <div className="space-y-5 px-4 py-4">
+        {showAppSection && (
+          <section>
+            <SectionHeader title="La app" />
+            <Card>
+              {canInstall && (
+                <Row onClick={handleInstall}>
+                  <Smartphone size={18} className="shrink-0 text-ink-3" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[15px]">Instalar la app</p>
+                    <p className="text-[13px] text-ink-3">Se agrega a tu pantalla de inicio y funciona sin conexión</p>
+                  </div>
+                </Row>
+              )}
+              <Row onClick={() => window.open(ANDROID_APK_URL, '_blank', 'noopener')}>
+                <Download size={18} className="shrink-0 text-ink-3" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[15px]">Descargar para Android</p>
+                  <p className="text-[13px] text-ink-3">APK con notificaciones nativas, desde GitHub Releases</p>
+                </div>
+                <ChevronRight size={16} className="shrink-0 text-ink-4" />
+              </Row>
+            </Card>
+          </section>
+        )}
+
         <section>
           <SectionHeader title="Apariencia" />
           <Card>
