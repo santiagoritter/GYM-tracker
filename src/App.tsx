@@ -20,6 +20,7 @@ import LogPastWorkout from '@/pages/LogPastWorkout'
 import SpotifyCallback from '@/pages/SpotifyCallback'
 import ImportRoutine from '@/pages/ImportRoutine'
 import Cardio from '@/pages/Cardio'
+import Run from '@/pages/Run'
 import ToastContainer from '@/components/ui/Toast'
 
 // Lazy: Recharts pesa ~400KB min; solo se descarga al entrar a Progreso
@@ -86,6 +87,7 @@ export default function App() {
         </Route>
         <Route path="/entreno/:workoutId" element={<Workout />} />
         <Route path="/cardio" element={<Cardio />} />
+        <Route path="/correr" element={<Run />} />
         <Route path="/rutina/:routineId" element={<RoutineEditor />} />
         <Route path="/spotify/callback" element={<SpotifyCallback />} />
         <Route path="/importar/:code" element={<ImportRoutine />} />

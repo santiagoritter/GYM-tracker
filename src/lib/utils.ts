@@ -13,6 +13,15 @@ export function nowIso(): string {
   return new Date().toISOString()
 }
 
+/** Color de acento del tema activo como string `rgb(...)`, para librerías
+ * que reciben color por JS y no leen CSS (Leaflet en RunMap). Cae al lima
+ * de modo oscuro si no hay `document`. */
+export function getComputedAccent(): string {
+  if (typeof document === 'undefined') return 'rgb(232, 255, 71)'
+  const raw = getComputedStyle(document.documentElement).getPropertyValue('--color-accent').trim()
+  return raw ? `rgb(${raw})` : 'rgb(232, 255, 71)'
+}
+
 /** 1RM estimado con fórmula de Epley. Con 1 rep, el 1RM es el peso mismo. */
 export function calc1RM(weightKg: number, reps: number): number {
   if (reps <= 0 || weightKg <= 0) return 0

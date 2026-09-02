@@ -485,3 +485,40 @@ allowlist (eso rompe todo, no solo playlists — se ve en el dashboard de Spotif
 
 ### Verificación
 `npx tsc -b`, `npm test`, `npm run build`, `test:style` verde.
+
+---
+
+## 2026-09-02 — Tanda de expansión, Bloque 6: modo running con GPS (completo, con mapa)
+
+Feature nueva. Deps nuevas (aprobadas por el usuario): `leaflet` (mapa OSM, chunk lazy
+~43KB gzip), `@capacitor/geolocation`, `@capacitor-community/background-geolocation` (GPS
+con pantalla apagada — foreground service en Android).
+
+- **`src/lib/run.ts`**: matemática pura y testeable — haversine, `cleanPoints` (filtro de
+  precisión >30 m + saltos imposibles), `summarizeRun` (distancia, ritmo, splits por km con
+  interpolación en el borde, desnivel, kcal), `currentPaceSecPerKm` (ventana ~30 s),
+  `formatRunNotes`.
+- **`src/lib/geo.ts`**: `ensureLocationPermission()` + `startWatch(onFix)`. Nativo →
+  `background-geolocation` (`registerPlugin`, el plugin no trae entrypoint JS); web/fallback
+  → `@capacitor/geolocation` `watchPosition`. Degrada sin romper.
+- **`src/stores/runStore.ts`**: sesión persistida en localStorage (a diferencia de cardio —
+  una salida es larga y el webview puede reciclarse). start/addPoint/pause/resume/end.
+- **`src/pages/Run.tsx`** (`/correr`, fuera de AppShell): fases permission → setup
+  ("buscando señal", objetivo opcional distancia/tiempo) → active (reloj grande, distancia,
+  ritmo actual+prom, barra de objetivo, mini-mapa lazy, splits en vivo, pausa/reanudar,
+  bloqueo anti-tap, terminar con HoldButton) → summary (mapa con recorrido + marcadores de
+  km, grilla de stats, splits, guardado).
+- **`RunPermissionGate` / `RunMap` (Leaflet lazy) / `RunSplits`** nuevos.
+- **Dexie v13**: tabla `runs` (`route`/`summary` no indexados; sync-ready pero NO en
+  `SYNC_ORDER` todavía). Al terminar: `Workout` espejo con `notes` (aparece en historial) +
+  fila `runs` con los datos ricos. `scripts/test-runs-migration.mjs`.
+- **`scripts/test-run.mts`** + `test:run`: geometría sintética conocida (línea recta de
+  5 km → 5 splits ~300 s/km, filtro de precisión, parado sin ritmo, desnivel, kcal).
+- **`AndroidManifest.xml`**: permisos de ubicación FG/BG + foreground service +
+  `POST_NOTIFICATIONS`. **`Home.tsx`**: tile "Correr" (grid de accesos rápidos a 3 col).
+  **`vite.config.ts`**: chunk `leaflet`. **`docs/18-RUNNING-GPS.md`** nuevo.
+
+### Verificación
+`npx tsc -b`, `npm test` (test:run + test-runs-migration verdes), `npm run build`,
+`test:style` verde. **Pendiente en dispositivo real**: no hay Android ni GPS en el entorno
+— recorrido con pantalla apagada, auto-lap, tiles OSM, permiso denegado, offline.

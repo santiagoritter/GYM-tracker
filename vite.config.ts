@@ -107,6 +107,9 @@ export default defineConfig(({ mode }) => {
             recharts: ['recharts'],
             vendor: ['react', 'react-dom', 'react-router-dom'],
             motion: ['motion'],
+            // Leaflet + su CSS solo se usan en RunMap (B6), ya lazy. Chunk
+            // propio para no mezclarlo con nada del bundle principal.
+            leaflet: ['leaflet'],
           },
         },
       },

@@ -248,6 +248,53 @@ export interface CalorieEntry extends SyncFields {
   label?: string // "Almuerzo", opcional
 }
 
+// ── Salida a correr con GPS (B6) ──────────────────────────────────────────
+// Un punto del recorrido, lo mínimo de la Geolocation API que sirve.
+export interface RunPointRecord {
+  lat: number
+  lng: number
+  t: number // epoch ms
+  alt?: number
+  acc?: number
+}
+
+// Snapshot de los números derivados en el momento de guardar — se guarda
+// junto al recorrido para no recalcular en cada render del historial.
+export interface RunSummaryRecord {
+  distanceM: number
+  durationSec: number
+  movingSec: number
+  avgPaceSecPerKm: number | null
+  avgSpeedMs: number
+  maxSpeedMs: number
+  elevationGainM: number
+  elevationLossM: number
+  bestSplitSecPerKm: number | null
+  kcal: number | null
+}
+
+/**
+ * Una salida a correr terminada. Tiene un `Workout` espejo (mismo truco que
+ * cardio: aparece en el historial y las métricas vía `notes`), y acá viven
+ * los datos ricos que un `Workout` no modela: el trazado y los splits.
+ *
+ * Extiende `SyncFields` (columnas `userId`/`dirty`/`updatedAt`) para quedar
+ * lista para sincronizar, pero por ahora NO está en `SyncedTable` ni en
+ * `SYNC_ORDER` — el sync de runs (tabla Postgres + RLS) es trabajo de la
+ * fase backend, mismo criterio con que cardio/fotos difirieron el suyo.
+ */
+export interface Run extends SyncFields {
+  id: string
+  userId: string
+  workoutId: string // FK al Workout espejo
+  startedAt: string
+  finishedAt: string
+  route: RunPointRecord[] // sin indexar
+  summary: RunSummaryRecord
+  targetKind?: 'distance' | 'time'
+  targetValue?: number // metros o segundos según targetKind
+}
+
 /** Tablas cuyas filas se sincronizan con Postgres. */
 export type SyncedTable =
   | 'profile'
