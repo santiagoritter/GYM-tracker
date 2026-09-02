@@ -26,7 +26,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22 # @capacitor/cli 8 requiere Node >= 22
           cache: npm
 
       - uses: actions/setup-java@v4
