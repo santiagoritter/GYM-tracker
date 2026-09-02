@@ -645,3 +645,34 @@ no-admin (403).
 `npx tsc -b`, `npm test` (16 ✅), `npm run build`, `test:style` verde.
 **Pendiente (usuario)**: correr `0012`, confirmar Advisors en cero, prueba de humo
 end-to-end del flujo coach (ver `docs/21`).
+
+---
+
+## 2026-09-02 — Tanda de expansión, Bloque 11 fase 2: chat, reseñas, DNI, maqueta de pago
+
+- **`supabase/migrations/0013_coach_phase2.sql`**: `coach_identity` (DNI único por cuenta
+  de coach, tabla aparte porque `coaches` es `public_read`), `coach_reviews` (1 por alumno
+  por coach, escribe quien tuvo vínculo — `has_bonded_with`), `coach_messages` (hilo
+  `(coach_id, client_id)`, se inserta **solo con vínculo activo**, el receptor marca
+  `read_at`). `alter publication supabase_realtime add table coach_messages`.
+- **`src/lib/coachChat.ts`**: `fetchThread`/`sendMessage`/`markThreadRead`/`subscribeThread`
+  — Realtime (`postgres_changes` filtrado por `coach_id`) con **fallback a polling de 4 s**
+  si el socket no queda `SUBSCRIBED` en 3 s.
+- **`src/lib/coachReviews.ts`** / **`coachIdentity.ts`** / **`coachSubscription.ts`**
+  (maqueta de pago: `isCoachBillingEnabled()` = `VITE_COACH_BILLING === 'on'`, hoy off).
+- **`src/components/gym/ChatThread.tsx`**: burbujas, input, adjuntar un ejercicio del
+  catálogo o una plantilla de rutina; el alumno importa la rutina desde el mensaje
+  (`importPayload`). **`src/pages/coach/ChatPages.tsx`** (`CoachChatWithClient` /
+  `MyCoachChat`) + rutas `/coach/alumno/:id/chat` y `/mi-coach/chat`.
+- **`CoachProfile.tsx`**: campo **DNI obligatorio** (bloquea guardar) + sección de reseñas
+  + link a `/coach/plan`. **`CoachPlan.tsx`** nuevo (maqueta, botón inerte).
+  **`MyCoachCard.tsx`**: "Mensajes" + "Dejar una reseña" (estrellas + comentario).
+  **`JoinCoach.tsx`**: `★ promedio (n)` en el preview. **`CoachClientDetail.tsx`**: botón
+  "Mensajes".
+- **`index.html`**: `wss://*.supabase.co` en la CSP (Realtime). `docs/21`, `docs/19`
+  actualizados.
+
+### Verificación
+`npx tsc -b`, `npm test` (16 ✅), `npm run build`, `test:style` verde. **Pendiente
+(usuario)**: correr `0013_coach_phase2.sql`, Realtime habilitado, prueba de humo de fase 2
+(ver `docs/21` §5). Pago real (Mercado Pago) = fase futura.

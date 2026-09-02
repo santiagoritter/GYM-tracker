@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, ClipboardList, Target, Unlink } from 'lucide-react'
+import { ArrowLeft, ClipboardList, MessageSquare, Target, Unlink } from 'lucide-react'
 import {
   fetchClientGoals,
   fetchClientOverview,
@@ -102,7 +102,14 @@ export default function CoachClientDetail() {
         <button onClick={() => navigate('/coach')} aria-label="Volver" className="flex h-11 w-11 items-center justify-center text-ink-2">
           <ArrowLeft size={22} />
         </button>
-        <h1 className="truncate font-semibold">{name}</h1>
+        <h1 className="min-w-0 flex-1 truncate font-semibold">{name}</h1>
+        <button
+          onClick={() => navigate(`/coach/alumno/${clientId}/chat`)}
+          aria-label="Mensajes"
+          className="flex h-11 w-11 items-center justify-center text-ink-2"
+        >
+          <MessageSquare size={20} />
+        </button>
       </header>
 
       <div className="space-y-5 px-4 py-4">

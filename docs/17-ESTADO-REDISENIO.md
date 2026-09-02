@@ -400,11 +400,21 @@ acciones (rol/reset/ban), crear usuario, registro de acciones. Ver `docs/20-ADMI
 
 ---
 
-**Tanda de expansión completa (B1–B11).** Rama `expansion-2026-09` mergeada a `main` por
-bloque. Falta del lado del usuario: los pasos de backend (correr `0009`–`0012`, desplegar
-las Edge Functions `admin-users` y redeploy de `send-push-reminders`), y las
-verificaciones que necesitan dispositivo/navegador reales (modo claro, running en Android,
-CSP, flujo coach). §2.8 del brief original ("rutina más popular") sigue sin implementar.
+**B11 fase 2 — chat, reseñas, DNI, maqueta de pago (hecho):** `0013_coach_phase2.sql`
+(`coach_identity` DNI único, `coach_reviews`, `coach_messages` + Realtime). `coachChat.ts`
+(Realtime + fallback polling), `coachReviews.ts`, `coachIdentity.ts`, `coachSubscription.ts`
+(maqueta). `ChatThread` + `ChatPages` + rutas `/coach/alumno/:id/chat` y `/mi-coach/chat`.
+DNI obligatorio y reseñas en `CoachProfile`; estrellas en `JoinCoach`; `CoachPlan` maqueta.
+`wss://` en la CSP. Pago real = fase futura. Ver `docs/21` §"Fase 2".
+
+---
+
+**Tanda de expansión completa (B1–B11 + fase 2 del coach).** Rama `expansion-2026-09`
+mergeada a `main` por bloque. Falta del lado del usuario: los pasos de backend (correr
+`0009`–`0013`, desplegar `admin-users`, redeploy de `send-push-reminders`, Realtime
+habilitado), y las verificaciones que necesitan dispositivo/navegador reales (modo claro,
+running en Android, CSP, flujo coach + chat). §2.8 del brief original ("rutina más
+popular") sigue sin implementar.
 
 ## Pendiente
 
