@@ -168,38 +168,49 @@ export type PlaylistsResult =
   | { kind: 'error' }
 
 /** Playlists del usuario (propias + seguidas) — requiere el scope
- * `playlist-read-private`, ver spotifyAuth.ts. */
+ * `playlist-read-private`, ver spotifyAuth.ts. Pagina siguiendo `next`
+ * (Spotify tope 50 por página) hasta un máximo razonable — antes truncaba
+ * en silencio a las primeras 50. */
 export async function fetchUserPlaylists(): Promise<PlaylistsResult> {
   const token = await getValidAccessToken()
   if (!token) return { kind: 'reauth-required' }
+
+  const MAX = 200
+  const playlists: SpotifyPlaylist[] = []
+  let url: string | null = 'https://api.spotify.com/v1/me/playlists?limit=50'
+
   try {
-    const res = await fetch('https://api.spotify.com/v1/me/playlists?limit=50', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    if (res.status === 401) return { kind: 'reauth-required' }
-    if (res.status === 403) return { kind: 'missing-scope' }
-    if (!res.ok) return { kind: 'error' }
-    const data = (await res.json()) as {
-      items: {
-        id: string
-        uri: string
-        name: string
-        images: { url: string }[]
-        tracks: { total: number }
-      }[]
+    while (url && playlists.length < MAX) {
+      const res: Response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      if (res.status === 401) return { kind: 'reauth-required' }
+      if (res.status === 403) return { kind: 'missing-scope' }
+      if (!res.ok) return playlists.length > 0 ? { kind: 'ok', playlists } : { kind: 'error' }
+
+      const data = (await res.json()) as {
+        next: string | null
+        items: ({
+          id: string
+          uri: string
+          name: string
+          images: { url: string }[]
+          tracks: { total: number }
+        } | null)[]
+      }
+      for (const p of data.items) {
+        if (!p) continue // Spotify a veces devuelve nulls en la lista
+        playlists.push({
+          id: p.id,
+          uri: p.uri,
+          name: p.name,
+          imageUrl: p.images[0]?.url ?? null,
+          trackCount: p.tracks.total,
+        })
+      }
+      url = data.next
     }
-    return {
-      kind: 'ok',
-      playlists: data.items.map((p) => ({
-        id: p.id,
-        uri: p.uri,
-        name: p.name,
-        imageUrl: p.images[0]?.url ?? null,
-        trackCount: p.tracks.total,
-      })),
-    }
+    return { kind: 'ok', playlists }
   } catch {
-    return { kind: 'error' }
+    return playlists.length > 0 ? { kind: 'ok', playlists } : { kind: 'error' }
   }
 }
 

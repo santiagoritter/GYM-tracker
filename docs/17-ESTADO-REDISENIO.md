@@ -352,6 +352,13 @@ barra de progreso hacia el objetivo (`scaleX` lineal), "faltan X" / overtime, h�
 cruzar. `cardioStore.CardioSession.targetDurationMin`. `formatCardioNotes` incluye el
 objetivo en el resumen del historial.
 
+**B3 — Spotify, playlists que no se veían (hecho):** el sheet de playlists solo se abría
+por long-press sobre la fila "sonando ahora", que solo existe con reproducción activa.
+Ahora `SpotifyPlayerSheet` acepta `playback` opcional y hay una fila "Elegir qué suena" en
+Ajustes → Conexiones. `fetchUserPlaylists` pagina (antes cortaba a 50). Reconexión en un
+tap. **Pendiente runtime**: confirmar con cuenta real si el 403 es token viejo o app en
+"development mode".
+
 ## Pendiente
 
 ### Bloqueado

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { motion, useReducedMotion } from 'motion/react'
 import { ListMusic, Music, Pause, Play, SkipBack, SkipForward, X } from 'lucide-react'
 import {
@@ -10,6 +9,7 @@ import {
   type PlaylistsResult,
   type SpotifyPlaylist,
 } from '@/lib/spotifyPlayer'
+import { startSpotifyLogin } from '@/lib/spotifyAuth'
 import { hapticTick } from '@/lib/native'
 import { toast } from '@/stores/toastStore'
 import ResponsiveSheet from '@/components/ui/ResponsiveSheet'
@@ -18,26 +18,29 @@ import { sheetItemVariants, sheetItemVariantsReduced } from '@/lib/motionVariant
 import { cn } from '@/lib/utils'
 
 /**
- * Se abre al mantener presionada la fila de "sonando ahora" (ver
- * SpotifyNowPlaying.tsx) — mismo criterio que un reproductor completo:
- * los mismos controles de la fila pero más grandes, más la lista de
- * playlists propias para elegir qué suena. No reproduce audio acá adentro
- * (ver nota de spotifyPlayer.ts): solo comanda el dispositivo que ya está
- * sonando.
+ * Reproductor completo de Spotify: los controles de "sonando ahora" en
+ * grande (si hay algo sonando) más la lista de playlists propias para
+ * elegir qué suena. No reproduce audio acá adentro (ver nota de
+ * spotifyPlayer.ts): comanda el dispositivo que ya tiene Spotify abierto.
+ *
+ * `playback` es opcional: se abre tanto desde el long-press de la fila
+ * "sonando ahora" (SpotifyNowPlaying.tsx, con estado) como desde
+ * Ajustes → Conexiones cuando NO hay nada sonando (sin estado) — ese
+ * segundo camino es el que faltaba y por el que "no se veían las
+ * playlists".
  */
 export default function SpotifyPlayerSheet({
   playback,
   onClose,
 }: {
-  playback: PlaybackState
+  playback?: PlaybackState
   onClose: () => void
 }) {
-  const navigate = useNavigate()
   const reduced = useReducedMotion()
   const { panelDragProps, handleDragProps } = useSheetDrag(onClose)
   const [playlistsResult, setPlaylistsResult] = useState<PlaylistsResult | null>(null)
   const [loadingUri, setLoadingUri] = useState<string | null>(null)
-  const [isPlaying, setIsPlaying] = useState(playback.isPlaying)
+  const [isPlaying, setIsPlaying] = useState(playback?.isPlaying ?? false)
 
   useEffect(() => {
     let cancelled = false
@@ -77,6 +80,11 @@ export default function SpotifyPlayerSheet({
     }
   }
 
+  const reconnect = () => {
+    onClose()
+    startSpotifyLogin()
+  }
+
   return (
     <ResponsiveSheet
       onClose={onClose}
@@ -84,131 +92,128 @@ export default function SpotifyPlayerSheet({
       panelClassName="flex max-h-[85vh] flex-col overflow-hidden"
     >
       <motion.div variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}>
-          <div className="flex justify-center pt-3 pb-1" {...handleDragProps}>
-            <div className="h-1 w-10 rounded-full bg-line-2" />
-          </div>
+        <div className="flex justify-center pt-3 pb-1" {...handleDragProps}>
+          <div className="h-1 w-10 rounded-full bg-line-2" />
+        </div>
 
-          <div className="flex items-start justify-between px-5 pt-1 pb-4">
-            <h2 className="text-xl font-bold leading-tight">Spotify</h2>
-            <button
-              onClick={onClose}
-              aria-label="Cerrar"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-fill text-ink-2 active:bg-fill-2"
-            >
-              <X size={16} />
-            </button>
-          </div>
+        <div className="flex items-start justify-between px-5 pt-1 pb-4">
+          <h2 className="text-xl font-bold leading-tight">Spotify</h2>
+          <button
+            onClick={onClose}
+            aria-label="Cerrar"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-fill text-ink-2 active:bg-fill-2"
+          >
+            <X size={16} />
+          </button>
+        </div>
 
-          <div className="flex items-center gap-4 px-5 pb-5">
-            <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-surface-2">
-              {playback.albumArtUrl ? (
-                <img src={playback.albumArtUrl} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <Music size={28} className="text-ink-3" />
-              )}
+        {playback ? (
+          <>
+            <div className="flex items-center gap-4 px-5 pb-5">
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-surface-2">
+                {playback.albumArtUrl ? (
+                  <img src={playback.albumArtUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <Music size={28} className="text-ink-3" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[16px] font-semibold">{playback.trackName}</p>
+                <p className="truncate text-[14px] text-ink-3">{playback.artistName}</p>
+              </div>
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[16px] font-semibold">{playback.trackName}</p>
-              <p className="truncate text-[14px] text-ink-3">{playback.artistName}</p>
+
+            <div className="flex items-center justify-center gap-6 px-5 pb-5">
+              <button
+                onClick={() => runCommand('previous')}
+                aria-label="Anterior"
+                className="flex h-12 w-12 items-center justify-center text-ink-2 active:text-ink"
+              >
+                <SkipBack size={22} fill="currentColor" />
+              </button>
+              <button
+                onClick={() => runCommand(isPlaying ? 'pause' : 'play')}
+                aria-label={isPlaying ? 'Pausar' : 'Reproducir'}
+                className="flex h-14 w-14 items-center justify-center rounded-full bg-accent text-bg active:bg-accent-dim"
+              >
+                {isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" />}
+              </button>
+              <button
+                onClick={() => runCommand('next')}
+                aria-label="Siguiente"
+                className="flex h-12 w-12 items-center justify-center text-ink-2 active:text-ink"
+              >
+                <SkipForward size={22} fill="currentColor" />
+              </button>
             </div>
-          </div>
-
-          <div className="flex items-center justify-center gap-6 px-5 pb-5">
-            <button
-              onClick={() => runCommand('previous')}
-              aria-label="Anterior"
-              className="flex h-12 w-12 items-center justify-center text-ink-2 active:text-ink"
-            >
-              <SkipBack size={22} fill="currentColor" />
-            </button>
-            <button
-              onClick={() => runCommand(isPlaying ? 'pause' : 'play')}
-              aria-label={isPlaying ? 'Pausar' : 'Reproducir'}
-              className="flex h-14 w-14 items-center justify-center rounded-full bg-accent text-bg active:bg-accent-dim"
-            >
-              {isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" />}
-            </button>
-            <button
-              onClick={() => runCommand('next')}
-              aria-label="Siguiente"
-              className="flex h-12 w-12 items-center justify-center text-ink-2 active:text-ink"
-            >
-              <SkipForward size={22} fill="currentColor" />
-            </button>
-          </div>
-        </motion.div>
-
-        <motion.div
-          variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}
-          className="flex-1 overflow-y-auto border-t border-line-2 px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-4"
-        >
-          <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-ink-2">
-            <ListMusic size={15} /> Tus playlists
+          </>
+        ) : (
+          <p className="px-5 pb-5 text-[14px] text-ink-3">
+            Nada sonando ahora. Elegí una playlist para empezar (tenés que tener Spotify
+            abierto en algún dispositivo).
           </p>
+        )}
+      </motion.div>
 
-          {playlistsResult === null ? (
-            <p className="py-6 text-center text-sm text-ink-3">Cargando…</p>
-          ) : playlistsResult.kind === 'missing-scope' ? (
-            <div className="flex flex-col items-center gap-2 py-6 text-center">
-              <p className="text-sm text-ink-2">
-                Tu conexión con Spotify es de antes de esta función y no tiene el permiso
-                para ver playlists.
-              </p>
+      <motion.div
+        variants={reduced ? sheetItemVariantsReduced : sheetItemVariants}
+        className="flex-1 overflow-y-auto border-t border-line-2 px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-4"
+      >
+        <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-ink-2">
+          <ListMusic size={15} /> Tus playlists
+        </p>
+
+        {playlistsResult === null ? (
+          <p className="py-6 text-center text-sm text-ink-3">Cargando…</p>
+        ) : playlistsResult.kind === 'missing-scope' ? (
+          <div className="flex flex-col items-center gap-2 py-6 text-center">
+            <p className="text-sm text-ink-2">
+              Tu conexión con Spotify es de antes de esta función y no tiene el permiso
+              para ver playlists.
+            </p>
+            <button onClick={reconnect} className="text-sm font-semibold text-accent">
+              Reconectar Spotify
+            </button>
+          </div>
+        ) : playlistsResult.kind === 'reauth-required' ? (
+          <div className="flex flex-col items-center gap-2 py-6 text-center">
+            <p className="text-sm text-ink-2">Tu sesión de Spotify venció.</p>
+            <button onClick={reconnect} className="text-sm font-semibold text-accent">
+              Reconectar Spotify
+            </button>
+          </div>
+        ) : playlistsResult.kind === 'error' ? (
+          <p className="py-6 text-center text-sm text-ink-3">No se pudieron cargar las playlists.</p>
+        ) : playlistsResult.playlists.length === 0 ? (
+          <p className="py-6 text-center text-sm text-ink-3">No encontramos playlists en tu cuenta.</p>
+        ) : (
+          <div className="space-y-1">
+            {playlistsResult.playlists.map((playlist) => (
               <button
-                onClick={() => {
-                  onClose()
-                  navigate('/ajustes')
-                }}
-                className="text-sm font-semibold text-accent"
+                key={playlist.id}
+                onClick={() => handlePlaylist(playlist)}
+                disabled={loadingUri !== null}
+                className={cn(
+                  'flex w-full items-center gap-3 rounded-lg py-2 text-left active:bg-surface-2',
+                  loadingUri === playlist.uri && 'opacity-60'
+                )}
               >
-                Reconectar en Ajustes
-              </button>
-            </div>
-          ) : playlistsResult.kind === 'reauth-required' ? (
-            <div className="flex flex-col items-center gap-2 py-6 text-center">
-              <p className="text-sm text-ink-2">Tu sesión de Spotify venció.</p>
-              <button
-                onClick={() => {
-                  onClose()
-                  navigate('/ajustes')
-                }}
-                className="text-sm font-semibold text-accent"
-              >
-                Reconectar en Ajustes
-              </button>
-            </div>
-          ) : playlistsResult.kind === 'error' ? (
-            <p className="py-6 text-center text-sm text-ink-3">No se pudieron cargar las playlists.</p>
-          ) : playlistsResult.playlists.length === 0 ? (
-            <p className="py-6 text-center text-sm text-ink-3">No encontramos playlists en tu cuenta.</p>
-          ) : (
-            <div className="space-y-1">
-              {playlistsResult.playlists.map((playlist) => (
-                <button
-                  key={playlist.id}
-                  onClick={() => handlePlaylist(playlist)}
-                  disabled={loadingUri !== null}
-                  className={cn(
-                    'flex w-full items-center gap-3 rounded-lg py-2 text-left active:bg-surface-2',
-                    loadingUri === playlist.uri && 'opacity-60'
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-sm bg-surface-2">
+                  {playlist.imageUrl ? (
+                    <img src={playlist.imageUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <Music size={16} className="text-ink-3" />
                   )}
-                >
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-sm bg-surface-2">
-                    {playlist.imageUrl ? (
-                      <img src={playlist.imageUrl} alt="" className="h-full w-full object-cover" />
-                    ) : (
-                      <Music size={16} className="text-ink-3" />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[14px] font-medium">{playlist.name}</p>
-                    <p className="text-[12px] text-ink-3">{playlist.trackCount} canciones</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </motion.div>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[14px] font-medium">{playlist.name}</p>
+                  <p className="text-[12px] text-ink-3">{playlist.trackCount} canciones</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </motion.div>
     </ResponsiveSheet>
   )
 }
