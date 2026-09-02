@@ -177,6 +177,11 @@ export interface LocalProfile extends SyncFields {
   reminderEnabled?: 0 | 1
   reminderTime?: string // "HH:MM" 24h
   reminderDays?: number[] // 0=domingo … 6=sábado
+  // Aceptación de términos + política de privacidad (B8). `legalVersion` es
+  // LEGAL_VERSION de src/lib/legal.ts al momento de aceptar; si sube, hay
+  // que volver a pedir aceptación.
+  legalAcceptedAt?: string // ISO
+  legalVersion?: number
   // Contador de calorías: opt-in (Redisenio.md §2.6). Configuración 1:1 por
   // usuario, así que va acá y no en una tabla propia; el registro diario
   // (N filas por día) sí necesita su propia tabla — ver CalorieEntry.
