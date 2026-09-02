@@ -11,6 +11,8 @@ import { runSync } from '@/lib/sync'
 import type { UserRole } from '@/types'
 import { initNativeShell } from '@/lib/native'
 import { initPwaUpdate } from '@/lib/pwaUpdate'
+import { initPwaInstall } from '@/lib/pwaInstall'
+import { ensureReminderChannel } from '@/lib/nativeReminders'
 import { applyTheme, useThemeStore } from '@/stores/themeStore'
 import '@/index.css'
 
@@ -23,6 +25,13 @@ initNativeShell()
 // en pwaUpdate.ts sobre por qué el registro automático de vite-plugin-pwa no
 // alcanza solo.
 initPwaUpdate()
+
+// Captura `beforeinstallprompt` para poder ofrecer "Instalar la app" desde
+// Ajustes en el momento que el usuario quiera (ver pwaInstall.ts).
+initPwaInstall()
+
+// Canal de Android para los recordatorios (no-op en web y en iOS).
+void ensureReminderChannel()
 
 // El script inline de index.html ya setea data-theme antes del primer
 // paint (lee localStorage directo, sin poder importar este módulo). Esto

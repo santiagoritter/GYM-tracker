@@ -9,7 +9,7 @@ import { useWorkoutStore } from '@/stores/workoutStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useCardioStore } from '@/stores/cardioStore'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
-import { HOME_MESSAGES } from '@/lib/motivational'
+import { getQuoteForNow } from '@/lib/quotes'
 import { activeWorkoutRoute } from '@/lib/cardio'
 import { useElapsedDuration } from '@/hooks/useElapsedDuration'
 import CalendarHeatmap from '@/components/gym/CalendarHeatmap'
@@ -23,7 +23,10 @@ export default function Home() {
   const startWorkout = useWorkoutStore((s) => s.startWorkout)
   const { name } = useAuthStore()
   const userId = useCurrentUserId()
-  const quote = useMemo(() => HOME_MESSAGES[Math.floor(Math.random() * HOME_MESSAGES.length)], [])
+  // Frase del momento del día (estoicos/filosofía, no genérica de gym).
+  // Estable dentro del día — ver getQuoteForNow. Se recalcula por render sin
+  // efecto; useMemo solo para no rebuscar la lista en cada re-render.
+  const quote = useMemo(() => getQuoteForNow(), [])
   const [daysSheetOpen, setDaysSheetOpen] = useState(false)
   const [cardioSheetOpen, setCardioSheetOpen] = useState(false)
 

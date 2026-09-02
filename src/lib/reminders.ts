@@ -2,7 +2,9 @@ import { useEffect } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '@/db/schema'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
-import { HOME_MESSAGES, getRandomMessage } from '@/lib/motivational'
+import { getQuoteForNow } from '@/lib/quotes'
+import { isNative } from '@/lib/native'
+import { syncReminderSchedule } from '@/lib/nativeReminders'
 import { localDayKey } from '@/lib/stats'
 
 const LAST_FIRED_KEY = 'gymtracker-reminder-last-fired'
@@ -19,9 +21,9 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
 
 function fireNotification() {
   if (!notificationsSupported() || Notification.permission !== 'granted') return
-  const msg = getRandomMessage(HOME_MESSAGES)
+  const q = getQuoteForNow()
   const notif = new Notification('Hora de entrenar', {
-    body: msg.text,
+    body: q.author ? `${q.text} — ${q.author}` : q.text,
     icon: '/icons/icon-192.png',
     badge: '/icons/icon-192.png',
     tag: 'gymtracker-reminder',
@@ -44,6 +46,13 @@ function fireNotification() {
 export function useReminderScheduler() {
   const userId = useCurrentUserId()
   const profile = useLiveQuery(() => (userId ? db.profile.get(userId) : undefined), [userId])
+
+  // En nativo, el recordatorio lo agenda el SO (llega con la app cerrada).
+  // Se resincroniza cada vez que cambia la config — ver nativeReminders.ts.
+  useEffect(() => {
+    if (!isNative) return
+    void syncReminderSchedule(profile)
+  }, [profile?.reminderEnabled, profile?.reminderTime, profile?.reminderDays])
 
   useEffect(() => {
     if (!profile?.reminderEnabled || !profile.reminderTime) return

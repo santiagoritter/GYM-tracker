@@ -285,6 +285,46 @@ técnica sí, colores/forma/texto no.
 
 ---
 
+## Tanda de expansión — septiembre 2026
+
+Plan completo en `~/.claude/plans/starry-forging-snowflake.md` (12 bloques). Rama de
+trabajo: `expansion-2026-09` (el usuario pidió rama nueva + merge a `main` por bloque, en
+vez de pasar por `beta`).
+
+**Estado real verificado (B0)** — corrige lo que este doc daba por "bloqueado" más abajo:
+Supabase auth + sync **ya están cableados y en producción** (`src/lib/supabaseClient.ts`,
+`supabaseAuth.ts` con login por código de 6 dígitos, `sync.ts` push/pull con
+`dirty`/`tombstones`, `runSync` en `main.tsx`, Dexie v12). El build de producción tiene
+fail-fast si faltan los secrets de Supabase (`vite.config.ts`) y los deploys a `main`
+vienen pasando → los secrets están cargados. Existen además: modo cardio, Spotify (PKCE),
+`/admin/usuarios` (lectura cross-user por RLS `*_admin_read` + RPC `admin_list_users`),
+layout desktop responsive. Pendiente de confirmar a mano en el dashboard: bucket `photos`,
+`VITE_VAPID_PUBLIC_KEY`, cron de `send-push-reminders`, rol admin asignado.
+
+`README.md` y `docs/01`, `04`, `05`, `06`, `PROMPT-CONTEXTO.md` siguen siendo en buena
+parte ficción aspiracional (shadcn, TanStack Query, Vercel, Firebase→Supabase, `#0A0A0A`,
+Inter). Fuera de alcance de esta tanda reescribirlos; queda el registro.
+
+**B1 — Capacitor completo + notificaciones + link de instalación (hecho):**
+- `src/lib/nativeReminders.ts` nuevo: `syncReminderSchedule(profile)` agenda con el SO una
+  repetición semanal por día elegido a la hora del recordatorio (llega con la app cerrada,
+  sin backend). IDs reservados `4_200_000 + díaJS`, canal Android `gymtracker-reminders`
+  (`ensureReminderChannel` desde `main.tsx`). Cuerpo = frase de `getQuoteForNow`.
+  Se dispara desde `useReminderScheduler` (`src/lib/reminders.ts`) en cada cambio de
+  `reminder*`.
+- `src/lib/pwaInstall.ts` nuevo: captura `beforeinstallprompt`; hook `useCanInstallPwa`.
+  Fila "Instalar la app" + "Descargar para Android" en Ajustes → sección "La app" (solo web).
+- `.github/workflows/android.yml` nuevo: build manual del APK (debug) → release
+  `android-latest` con link directo. Firma de release documentada en `docs/16`.
+- `src/pages/Reminders.tsx`: permiso y "probar notificación" nativos; el bloque de push
+  se oculta en nativo (el SO ya cubre "con la app cerrada").
+- `RestTimer.tsx` ya agendaba el aviso de fin de descanso con el SO (Fase 34) — sin cambios.
+- `src/lib/quotes.ts` nuevo (adelanto de B4): ~40 frases filosóficas con autor, etiquetadas
+  por daypart; `getQuoteForNow()` pura, estable por día. Cableada en Home (reemplaza
+  `HOME_MESSAGES` random en la frase de cierre) y en los recordatorios (web + nativo).
+- Verificación: `npx tsc -b`, `npm test`, `npm run build` verde. Falta prueba en Android
+  real (recordatorio con pantalla apagada) y `beforeinstallprompt` en Chrome.
+
 ## Pendiente
 
 ### Bloqueado
