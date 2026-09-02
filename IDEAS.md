@@ -115,6 +115,30 @@ plugins nativos y permisos; con Capacitor ya es posible.
 Registrar el tempo (ej. 3-1-1-0) por ejercicio. Interesa a poca gente pero
 a esa le interesa mucho.
 
+### Animar el trazado del recorrido de running (B6)
+En el resumen de una salida a correr (`RunMap.tsx`, Leaflet + polilínea OSM),
+"dibujar" el recorrido progresivamente en vez de mostrarlo entero de golpe —
+y opcionalmente un puntito que lo recorre de punta a punta.
+
+Referencia que pasó el usuario:
+<https://animejs.com/documentation/svg/createmotionpath> (anime.js
+`createMotionPath` mueve un elemento a lo largo de un `<path>` SVG).
+
+**Tensión con el stack actual**: `DESIGN.md` y el plan de la tanda de
+expansión dicen explícitamente *no sumar anime.js* (`motion` es la librería
+sancionada). Dos caminos si se retoma:
+- **Sin anime.js**: la polilínea del recorrido se puede dibujar sola con
+  `stroke-dasharray` + `stroke-dashoffset` animando de `longitud → 0` (una
+  transición CSS o `motion`), sobre un `<path>` en un overlay SVG de Leaflet
+  (`L.svgOverlay` o un `<svg>` propio posicionado con `map.latLngToLayerPoint`).
+  El "puntito que recorre" es un `<circle>` con `offset-path`/`offsetDistance`
+  animado, sin dependencia.
+- **Con anime.js**: sumar la dep solo para este efecto y `createMotionPath`.
+  Habría que actualizar `DESIGN.md §0`/§4 y el plan, no meterla de prepo.
+
+Solo `transform`/`opacity` (o `stroke-dashoffset`, ya usado en `ProgressRing`)
+para no romper `DESIGN.md §4`.
+
 ---
 
 ## Deuda técnica anotada
