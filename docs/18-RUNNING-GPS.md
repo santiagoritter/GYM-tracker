@@ -24,8 +24,21 @@ Estándar de apps de running (Strava/Apple Workout), lo que da la Geolocation
 API sin sensores extra:
 
 - Tiempo total y "en movimiento" (descuenta paradas).
-- Distancia acumulada (haversine, con filtro: precisión peor que 30 m se
-  descarta, pasos menores a 2.5 m se asumen ruido de GPS parado).
+- Distancia acumulada (haversine). **Filtro anti-drift** (`src/lib/run.ts`):
+  1. Se descartan los fixes con precisión reportada peor que **25 m** y los
+     "teletransportes" (> 40 m/s).
+  2. Se avanza de **punto confirmado en punto confirmado**: un fix nuevo
+     solo aporta su desplazamiento cuando se alejó del último confirmado
+     **más que el margen de error del GPS** (`movementGateM` = el promedio
+     de las dos precisiones, con piso de 4 m). Parado, el drift del GPS de
+     un navegador (saltos de 5-15 m con la app quieta) nunca supera su
+     propio margen de error → **no acumula distancia**. En movimiento
+     sostenido, aunque sea lento, tarde o temprano te alejás lo suficiente
+     y el tramo cuenta. Esto reemplazó a un simple "ignorá pasos < 2.5 m",
+     que en la web dibujaba una caminata estando quieto.
+  - Nota: en la **app nativa** el GPS es bastante más preciso (location
+    fusionada + GPS real vía `@capacitor-community/background-geolocation`);
+    el filtro igual aplica y no estorba.
 - Ritmo: instantáneo (ventana ~30 s), promedio total, y por km (auto-lap
   cada 1000 m con interpolación en el borde). Mejor km.
 - Velocidad promedio y máxima.

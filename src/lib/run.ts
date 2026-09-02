@@ -17,17 +17,33 @@ export interface RunPoint {
   acc?: number // precisión horizontal en metros
 }
 
-/** Puntos con precisión peor que esto se descartan: un pico de 50 m de
- * error mete una "pata" falsa en el recorrido y infla la distancia. */
-export const MAX_ACCURACY_M = 30
-/** Bajo este desplazamiento entre puntos consecutivos se asume ruido de GPS
- * parado (semáforo, esperando) y no se suma a la distancia. */
-const MIN_STEP_M = 2.5
+/** Puntos con precisión peor que esto se descartan de entrada. */
+export const MAX_ACCURACY_M = 25
+/** Precisión asumida cuando el fix no la reporta. */
+const ACC_FALLBACK_M = 10
+/** Piso de ruido: un tramo tiene que superar esto para contar como
+ * movimiento real, aunque el GPS diga que te moviste. */
+const MIN_STEP_M = 4
 /** Tramo de cada split automático. */
 export const SPLIT_DISTANCE_M = 1000
 /** Corte de "en movimiento": velocidad instantánea por debajo cuenta como
  * pausa para el "tiempo en movimiento" y el ritmo promedio de movimiento. */
 const MOVING_SPEED_MS = 0.6 // ~2.2 km/h
+/** Velocidad máxima creíble para un humano corriendo (~43 km/h). Un salto
+ * de GPS que la supere no infla `maxSpeed`. */
+const MAX_HUMAN_SPEED_MS = 12
+
+/**
+ * Distancia mínima que hay que alejarse de un punto "confirmado" para que
+ * el desplazamiento cuente. Escala con el error del GPS: si la precisión
+ * es de 15 m, moverse 5 m es ruido; recién a >15 m se sabe que te moviste
+ * de verdad. Esto es lo que evita que, parado, el drift dibuje una
+ * caminata: los saltitos nunca llegan a superar el propio margen de error.
+ */
+function movementGateM(a: RunPoint, b: RunPoint): number {
+  const acc = ((a.acc ?? ACC_FALLBACK_M) + (b.acc ?? ACC_FALLBACK_M)) / 2
+  return Math.max(MIN_STEP_M, acc)
+}
 
 const R_EARTH_M = 6_371_000
 
@@ -135,8 +151,9 @@ function computeSplits(clean: RunPoint[]): Split[] {
     accInSeg += remaining
   }
 
-  // Tramo final incompleto
-  if (accInSeg > MIN_STEP_M) {
+  // Tramo final incompleto: solo si tiene entidad (≥ 50 m). Por debajo es
+  // ruido acumulado y no vale mostrar un "parcial" con un ritmo absurdo.
+  if (accInSeg >= 50) {
     const durationSec = (clean[clean.length - 1].t - segStartT) / 1000
     splits.push({
       index: idx,
@@ -179,29 +196,43 @@ export function summarizeRun(points: RunPoint[], bodyWeightKg?: number): RunSumm
   let gain = 0
   let loss = 0
 
+  // Se avanza de punto "confirmado" en punto confirmado: un punto nuevo solo
+  // confirma (y aporta su desplazamiento) cuando se alejó de `confirmed` más
+  // que el margen de error del GPS (`movementGateM`). Parado, el drift nunca
+  // supera ese margen y no acumula nada; en movimiento sostenido, aunque sea
+  // lento, tarde o temprano te alejás lo suficiente y salta.
+  const moved: RunPoint[] = [clean[0]]
+  let confirmed = clean[0]
+
   for (let i = 1; i < clean.length; i++) {
-    const a = clean[i - 1]
-    const b = clean[i]
-    const dt = (b.t - a.t) / 1000
-    if (dt <= 0) continue
-    const stepM = haversineM(a, b)
-    if (stepM >= MIN_STEP_M) {
-      distanceM += stepM
-      const speed = stepM / dt
-      if (speed > maxSpeedMs) maxSpeedMs = speed
-      if (speed >= MOVING_SPEED_MS) movingSec += dt
+    const p = clean[i]
+    const d = haversineM(confirmed, p)
+    if (d < movementGateM(confirmed, p)) continue
+
+    const dt = (p.t - confirmed.t) / 1000
+    if (dt <= 0) {
+      confirmed = p
+      continue
     }
-    if (a.alt !== undefined && b.alt !== undefined) {
-      const dAlt = b.alt - a.alt
-      // umbral de 1 m para no acumular jitter de altímetro GPS
-      if (dAlt > 1) gain += dAlt
-      else if (dAlt < -1) loss += -dAlt
+    distanceM += d
+    const speed = d / dt
+    if (speed < MAX_HUMAN_SPEED_MS && speed > maxSpeedMs) maxSpeedMs = speed
+    if (speed >= MOVING_SPEED_MS) movingSec += dt
+
+    if (confirmed.alt !== undefined && p.alt !== undefined) {
+      const dAlt = p.alt - confirmed.alt
+      // umbral de 2 m: la altitud GPS es aún más ruidosa que la posición
+      if (dAlt > 2) gain += dAlt
+      else if (dAlt < -2) loss += -dAlt
     }
+
+    confirmed = p
+    moved.push(p)
   }
 
   const durationSec = (clean[clean.length - 1].t - clean[0].t) / 1000
   const avgPaceSecPerKm = distanceM > 0 ? (durationSec / distanceM) * 1000 : null
-  const splits = computeSplits(clean)
+  const splits = computeSplits(moved)
   const fullSplits = splits.filter((s) => s.distanceM === SPLIT_DISTANCE_M)
   const bestSplitSecPerKm =
     fullSplits.length > 0 ? Math.min(...fullSplits.map((s) => s.paceSecPerKm)) : null
@@ -227,14 +258,21 @@ export function summarizeRun(points: RunPoint[], bodyWeightKg?: number): RunSumm
 export function currentPaceSecPerKm(points: RunPoint[], windowSec = 30): number | null {
   if (points.length < 2) return null
   const now = points[points.length - 1].t
-  const window = points.filter((p) => now - p.t <= windowSec * 1000)
-  if (window.length < 2) return null
+  const win = cleanPoints(points).filter((p) => now - p.t <= windowSec * 1000)
+  if (win.length < 2) return null
+
+  // Misma lógica de "punto confirmado" que summarizeRun: el drift parado no
+  // debe generar un ritmo fantasma.
   let dist = 0
-  for (let i = 1; i < window.length; i++) {
-    const step = haversineM(window[i - 1], window[i])
-    if (step >= MIN_STEP_M) dist += step
+  let confirmed = win[0]
+  for (let i = 1; i < win.length; i++) {
+    const p = win[i]
+    const d = haversineM(confirmed, p)
+    if (d < movementGateM(confirmed, p)) continue
+    dist += d
+    confirmed = p
   }
-  const dur = (window[window.length - 1].t - window[0].t) / 1000
+  const dur = (win[win.length - 1].t - win[0].t) / 1000
   if (dist < MIN_STEP_M || dur <= 0) return null
   return (dur / dist) * 1000
 }

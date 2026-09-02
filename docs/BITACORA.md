@@ -698,3 +698,23 @@ Pedido del usuario: poder hacerse coach desde la app sin depender del admin.
 ### Verificación
 `npx tsc -b`, `npm test` (16 ✅), `npm run build`, `test:style` verde. **Pendiente
 (usuario)**: `supabase functions deploy become-coach`.
+
+---
+
+## 2026-09-02 — Fix: el tracker de running acumulaba distancia estando quieto
+
+Reporte del usuario probando en la **web** (el GPS del navegador es más ruidoso que el
+nativo): parado, marcaba que se había ido a caminar a la otra cuadra.
+
+- **`src/lib/run.ts`**: el filtro pasó de "ignorá pasos < 2.5 m" a un método de **punto
+  confirmado** — un fix nuevo solo aporta su desplazamiento cuando se alejó del último
+  confirmado **más que el margen de error del GPS** (`movementGateM` = promedio de las dos
+  precisiones, piso 4 m). Parado, el drift nunca supera su propio error → no acumula.
+  `MAX_ACCURACY_M` 30→25. `maxSpeed` ignora saltos > 12 m/s. Umbral de desnivel 1→2 m.
+  Splits: no se emite un parcial final < 50 m (evita "0.02 km a ritmo absurdo").
+  `currentPaceSecPerKm` usa la misma lógica.
+- **`scripts/test-run.mts`**: caso nuevo — 40 fixes de drift realista (saltos hasta 12 m,
+  precisión 10-15 m) con la app quieta → distancia ~0, sin splits, ritmo null.
+
+### Verificación
+`npm run test:run` + `npm test` (16 ✅), `npx tsc -b`, `npm run build` verde.
