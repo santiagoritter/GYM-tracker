@@ -83,12 +83,17 @@ Deno.serve(async (req) => {
       .upsert({ coach_id: userId, dni }, { onConflict: 'coach_id' })
     if (iErr) throw iErr
 
-    await admin.from('admin_audit').insert({
-      actor_id: userId,
-      action: 'self_become_coach',
-      target_user_id: userId,
-      detail: { display_name: displayName },
-    })
+    // Auditoría best-effort: si `admin_audit` (0011) todavía no existe, no
+    // debe tumbar el alta.
+    await admin
+      .from('admin_audit')
+      .insert({
+        actor_id: userId,
+        action: 'self_become_coach',
+        target_user_id: userId,
+        detail: { display_name: displayName },
+      })
+      .then(() => {}, () => {})
 
     return json({ ok: true, role: nextRole })
   } catch (err) {
