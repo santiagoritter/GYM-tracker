@@ -31,7 +31,7 @@ El workflow de Pages es el único que define `VITE_BASE_PATH`.
 ## Flujo de trabajo
 
 ```bash
-npm run build:native      # compila + copia el dist al proyecto nativo
+npm run build:native      # compila + copia el dist a los proyectos nativos
 
 npm run android           # abre Android Studio
 npm run ios               # abre Xcode (solo en macOS)
@@ -44,16 +44,67 @@ el webview sirve una copia, no el `dist/` en vivo.
 
 | Plataforma | Necesita |
 |---|---|
-| Android | Android Studio + JDK 17. La carpeta `android/` ya está en el repo. |
-| iOS | macOS + Xcode + CocoaPods. **La carpeta `ios/` no está**: `npx cap add ios` solo corre en macOS. |
+| Android | Android Studio + JDK 21. La carpeta `android/` está en el repo. |
+| iOS | macOS + **Xcode completo** (los Command Line Tools solos no alcanzan). **No** hace falta CocoaPods: Capacitor 8 usa Swift Package Manager. La carpeta `ios/` está en el repo. |
 
-Para generar el proyecto de iOS, desde una Mac:
+---
 
-```bash
-npm install
-npx cap add ios
-npm run ios
-```
+## iOS
+
+La carpeta `ios/` ya está generada (`npx cap add ios`, Capacitor 8 → Swift
+Package Manager, sin `Podfile`). Config aplicada sobre el scaffold:
+
+- **Solo iPhone** (`TARGETED_DEVICE_FAMILY = 1`), orientación **portrait** —
+  igual que el `orientation: portrait` del manifest PWA.
+- Bundle ID `com.santiagoritter.gymtracker` (el mismo que el `applicationId` de
+  Android). Deployment target iOS 15.
+- `Info.plist` con las descripciones de permiso que la app realmente usa:
+
+  | Clave | Para qué | Código |
+  |---|---|---|
+  | `NSCameraUsageDescription` | escanear QR de rutina, foto de progreso | `QRScanner.tsx` (`getUserMedia`), `PhotoGallery`/`ExerciseDetailSheet` (`<input capture>`) |
+  | `NSPhotoLibraryUsageDescription` | elegir foto de progreso de la galería | inputs `type=file accept="image/*"` |
+  | `NSLocationWhenInUseUsageDescription` | recorrido de running con la app abierta | `src/lib/geo.ts` |
+  | `NSLocationAlwaysAndWhenInUseUsageDescription` | seguir grabando con la pantalla bloqueada | `src/lib/geo.ts` (background-geolocation) |
+  | `UIBackgroundModes` → `location` | idem | idem |
+  | `ITSAppUsesNonExemptEncryption` = `false` | solo cripto estándar/exenta (HTTPS + AES-GCM/PBKDF2 de WebCrypto) — evita la pregunta de exportación en App Store Connect | `docs/19` |
+
+- Íconos y splash: los genera `scripts/generate-icons.mjs` (sin dependencias) —
+  mancuerna lima sobre `#0B0B0C`, en `ios/App/App/Assets.xcassets/`. El
+  `AppIcon` sale con canal alfa; **para App Store hay que aplanarlo** (Apple
+  rechaza alfa en el ícono de la app).
+
+### Correr en un iPhone (firma con Apple ID gratis)
+
+1. Instalar **Xcode** desde la Mac App Store. Después:
+   `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` y
+   `sudo xcodebuild -license accept`.
+2. `npm run ios` (compila la web sin base path, sincroniza Capacitor y abre
+   Xcode).
+3. En Xcode: target **App** → *Signing & Capabilities* → marcar *Automatically
+   manage signing* y elegir el *Team* (tu Apple ID personal, se agrega en
+   *Settings → Accounts*).
+4. Conectar el iPhone por cable, confiar en la Mac, elegirlo como destino y
+   *Run*. La primera vez, en el teléfono: *Ajustes → General → VPN y gestión de
+   dispositivos* → confiar en el certificado.
+
+Con un Apple ID gratis el perfil de firma **caduca a los 7 días**: se renueva
+volviendo a correr desde Xcode. Sin límite con el Apple Developer Program
+(USD 99/año).
+
+### Publicar en la App Store (pendiente, fuera de esta tanda)
+
+Requiere Apple Developer Program, registrar la app en App Store Connect, ficha +
+capturas + etiquetas de privacidad (cámara, ubicación, "datos no vinculados al
+usuario" por el historial local), aplanar el alfa del ícono, `Product → Archive`
+→ *Validate* → *Distribute* → TestFlight → review.
+
+### CI
+
+`.github/workflows/ios.yml` (manual, `macos-14`) compila el proyecto para
+simulador sin firma. No entrega `.ipa` — solo verifica que la parte nativa no
+se rompió. Los minutos de runner macOS son caros, por eso es manual como
+`android.yml`.
 
 ---
 
@@ -134,12 +185,22 @@ existe: la instalación es manual desde "Compartir → Agregar a inicio".
 
 ## Pendiente
 
-- [ ] Generar `ios/` desde una Mac.
-- [ ] Iconos y splash nativos (`@capacitor/assets` los genera desde un PNG de
-      1024×1024).
-- [ ] Firmar y publicar. Android: keystore + Play Console. iOS: cuenta de
-      desarrollador de Apple (99 USD/año) o instalación por cable con Xcode
-      para uso personal.
+- [x] Generar `ios/` desde una Mac. Hecho (Capacitor 8 / SPM).
+- [x] Iconos y splash nativos de iOS. Hecho vía `scripts/generate-icons.mjs`
+      (sin dependencias; Android tiene su propio juego en `res/`).
+- [ ] Probar el proyecto iOS en Xcode: correr en simulador y en un iPhone
+      físico. **No verificado en esta tanda** — el entorno de trabajo no tenía
+      Xcode. Chequear en particular que `@capacitor-community/background-geolocation`
+      (marcado "built for Capacitor 7" por el CLI) compila contra Capacitor 8
+      por SPM.
+- [ ] Aplanar el canal alfa del `AppIcon` antes de subir a la App Store.
+- [ ] Firmar y publicar. Android: keystore + Play Console. iOS: Apple Developer
+      Program (99 USD/año) para App Store; para uso personal alcanza el Apple ID
+      gratis y correr desde Xcode (perfil de 7 días).
 - [ ] Revisar el teclado en Android: `@capacitor/keyboard` permite ajustar
       cómo se comporta el layout al abrirse, y el temporizador de descanso es
       fijo en la parte inferior.
+- [ ] `android.useLegacyBridge: true` en `capacitor.config.ts`: el README de
+      `@capacitor-community/background-geolocation` lo pide para que el location
+      de fondo **en Android** no se corte a los 5 min. Hallazgo al configurar
+      iOS; no se tocó para no arriesgar el Android en producción. Ver `docs/18`.

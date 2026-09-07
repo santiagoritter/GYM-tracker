@@ -60,12 +60,27 @@ foreground y su notificación los aporta el plugin (manifest mergeado). El
 usuario tiene que elegir **"Permitir todo el tiempo"** para el registro con
 pantalla apagada.
 
-## Nativo — iOS (pendiente)
+## Nativo — iOS
 
-No hay proyecto `ios/` (necesita Mac). Cuando se genere, el `Info.plist`
-necesita: `NSLocationWhenInUseUsageDescription`,
-`NSLocationAlwaysAndWhenInUseUsageDescription`, y
-`UIBackgroundModes` con `location`. Ver README del plugin.
+El proyecto `ios/` ya existe (`docs/16`). El `Info.plist` ya trae las claves
+que pide el plugin: `NSLocationWhenInUseUsageDescription`,
+`NSLocationAlwaysAndWhenInUseUsageDescription` y `UIBackgroundModes` con
+`location`. El usuario tiene que elegir **"Permitir siempre"** para el registro
+con la pantalla bloqueada.
+
+**Sin verificar en dispositivo** (el entorno de trabajo no tenía Xcode ni GPS):
+el CLI de Capacitor marca `@capacitor-community/background-geolocation` como
+"built for Capacitor 7" — hay que confirmar en Xcode que compila y que el
+watcher de fondo entrega puntos con la app en segundo plano.
+
+## Nota sobre Android — `useLegacyBridge`
+
+El README del plugin recomienda `android.useLegacyBridge: true` en
+`capacitor.config.ts`: sin eso, en Android las actualizaciones de ubicación de
+fondo se cortan a los ~5 min. Hoy **no está seteado**. Puede ser parte de por
+qué el registro con pantalla apagada en Android sigue sin confirmarse. No se
+cambió junto con el trabajo de iOS para no tocar el Android que ya está en
+producción; queda como follow-up.
 
 ## Verificación
 

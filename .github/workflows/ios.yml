@@ -1,0 +1,53 @@
+name: Verify iOS build
+
+# Manual: Actions -> "Verify iOS build" -> Run workflow.
+#
+# NO produce una app instalable (a diferencia de android.yml): sin firma no hay
+# .ipa para un dispositivo. Solo comprueba que el proyecto iOS COMPILA para
+# simulador — sirve para detectar que un cambio en src/ o en los plugins de
+# Capacitor rompio la parte nativa antes de abrir Xcode.
+#
+# Corre en runner macOS (minutos ~10x mas caros que Linux), por eso es manual y
+# no en cada push, igual que android.yml.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22 # @capacitor/cli 8 requiere Node >= 22
+          cache: npm
+
+      - run: npm ci
+
+      # SIN VITE_BASE_PATH: la build nativa se sirve desde la raiz del webview.
+      - name: Build web
+        run: npm run build
+        env:
+          VITE_SPOTIFY_CLIENT_ID: ${{ secrets.VITE_SPOTIFY_CLIENT_ID }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
+
+      - name: Capacitor sync (iOS)
+        run: npx cap sync ios
+
+      # Capacitor 8 usa Swift Package Manager, no CocoaPods: xcodebuild resuelve
+      # los paquetes solo. Sin firma (CODE_SIGNING_ALLOWED=NO).
+      - name: xcodebuild (iphonesimulator)
+        run: |
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -skipPackagePluginValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            build

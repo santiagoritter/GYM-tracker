@@ -27,6 +27,7 @@ Supabase (auth + sync multi-dispositivo) es opcional y se configura recién en F
 ## Instalar en el teléfono
 
 - **Android (APK)**: descargá `gymtracker.apk` desde [Releases](https://github.com/santiagoritter/GYM-tracker/releases/latest) y abrilo en el teléfono (hay que permitir "instalar apps de esta fuente"). Trae notificaciones nativas: el recordatorio de entrenar y el aviso de fin de descanso llegan con la app cerrada. El APK lo genera el workflow `Build Android APK` (Actions). Detalles y firma de release en [docs/16-CAPACITOR.md](docs/16-CAPACITOR.md).
+- **iOS**: el proyecto nativo está en `ios/` (Capacitor + Swift Package Manager). Todavía no hay build en la App Store: se compila con Xcode en una Mac y se instala por cable (`npm run ios`). Pasos en [docs/16-CAPACITOR.md](docs/16-CAPACITOR.md) §iOS.
 - **PWA (cualquier dispositivo)**: abrí la app en el navegador y usá "Instalar" (aparece también en Ajustes → La app). En iOS: Compartir → Agregar a inicio.
 
 ## Estado actual

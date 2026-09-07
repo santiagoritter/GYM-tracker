@@ -1,9 +1,21 @@
-// Genera los íconos PWA (PNG) sin dependencias: dibuja una mancuerna
+// Genera los íconos de la app (PNG) sin dependencias: dibuja una mancuerna
 // lima sobre fondo oscuro píxel por píxel y codifica el PNG a mano.
+//
+// Salidas:
+//   - public/icons/icon-{192,512}.png        -> manifest de la PWA
+//   - ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png (1024)
+//   - ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732*.png
+//
+// Android tiene su propio juego de íconos en android/app/src/main/res/ y no
+// lo toca este script.
 import { deflateSync } from 'node:zlib'
 import { writeFileSync, mkdirSync } from 'node:fs'
 
+// Fondo de la PWA: #0A0A0A histórico (el que ya está desplegado, no se cambia).
 const BG = [0x0a, 0x0a, 0x0a, 255]
+// Fondo nativo: #0B0B0C, el token `bg` de DESIGN.md §1 y el `backgroundColor`
+// de capacitor.config.ts — así el splash y el ícono no "saltan" de tono al abrir.
+const BG_NATIVE = [0x0b, 0x0b, 0x0c, 255]
 const ACCENT = [0xe8, 0xff, 0x47, 255]
 
 function crc32(buf) {
@@ -71,15 +83,38 @@ function isDumbbell(u, v) {
   )
 }
 
-mkdirSync(new URL('../public/icons/', import.meta.url), { recursive: true })
+/** Ícono: mancuerna centrada ocupando todo el frame. */
+function iconPng(size, bg) {
+  return encodePng(size, (x, y) => (isDumbbell(x / size, y / size) ? ACCENT : bg))
+}
 
-for (const size of [192, 512]) {
-  const png = encodePng(size, (x, y) => {
-    const u = x / size
-    const v = y / size
-    return isDumbbell(u, v) ? ACCENT : BG
+/** Splash: mancuerna centrada al ~34% del lienzo sobre fondo sólido. */
+function splashPng(size, bg) {
+  const box = 0.34
+  const lo = (1 - box) / 2
+  return encodePng(size, (x, y) => {
+    const u = (x / size - lo) / box
+    const v = (y / size - lo) / box
+    const inside = u >= 0 && u <= 1 && v >= 0 && v <= 1
+    return inside && isDumbbell(u, v) ? ACCENT : bg
   })
-  const path = new URL(`../public/icons/icon-${size}.png`, import.meta.url)
-  writeFileSync(path, png)
-  console.log(`✓ icon-${size}.png (${png.length} bytes)`)
+}
+
+function write(relPath, buf) {
+  const url = new URL(`../${relPath}`, import.meta.url)
+  mkdirSync(new URL('.', url), { recursive: true })
+  writeFileSync(url, buf)
+  console.log(`✓ ${relPath} (${buf.length} bytes)`)
+}
+
+// --- PWA (sin cambios: mismo dibujo y mismo fondo que lo ya desplegado) ---
+for (const size of [192, 512]) {
+  write(`public/icons/icon-${size}.png`, iconPng(size, BG))
+}
+
+// --- iOS (Capacitor: un único AppIcon 1024 + un splash cuadrado 2732) ---
+write('ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png', iconPng(1024, BG_NATIVE))
+const splash = splashPng(2732, BG_NATIVE)
+for (const name of ['splash-2732x2732.png', 'splash-2732x2732-1.png', 'splash-2732x2732-2.png']) {
+  write(`ios/App/App/Assets.xcassets/Splash.imageset/${name}`, splash)
 }

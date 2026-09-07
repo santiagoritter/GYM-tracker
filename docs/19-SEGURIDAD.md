@@ -71,6 +71,15 @@ iteraciones** (`src/lib/crypto.ts`, WebCrypto, sin dependencias). El import
 detecta el formato y pide la frase si hace falta. Recomendado cifrar siempre
 que el archivo vaya a salir del dispositivo.
 
+## Cifrado — declaración para iOS
+
+`ios/App/App/Info.plist` declara `ITSAppUsesNonExemptEncryption = false`. La app
+solo usa cripto **estándar y exenta**: HTTPS/TLS del sistema y, para el backup
+opcional, AES-GCM 256 + PBKDF2 de WebCrypto (`src/lib/crypto.ts`). Nada de esto
+cae en la categoría que exige declaración de exportación de EE.UU., así que el
+`false` evita la pregunta en cada subida a App Store Connect. Si en el futuro se
+agrega cripto propietaria o no estándar, hay que revisar esta declaración.
+
 ## CSP
 
 `index.html` trae un `<meta http-equiv="Content-Security-Policy">` que acota

@@ -426,7 +426,12 @@ popular") sigue sin implementar.
   funciona hasta que el usuario despliegue Supabase y complete los pasos
   manuales de `docs/13-BACKEND-SUPABASE.md` §6 (claves VAPID, secrets,
   cron). Mismo estado que el resto de lo que depende de Supabase.
-- **iOS**: `npx cap add ios` solo corre en macOS.
+- **iOS**: ~~`npx cap add ios` solo corre en macOS~~ — hecho (septiembre 2026,
+  rama `ios-nativo`). Proyecto `ios/` generado (Capacitor 8 / Swift Package
+  Manager), `Info.plist` con permisos de cámara/ubicación, solo iPhone +
+  portrait, íconos/splash propios, workflow `ios.yml` de verificación. **Falta**
+  del lado del usuario: instalar Xcode y correr en un iPhone real (el entorno de
+  trabajo no tenía Xcode). Ver `docs/16` §iOS y `docs/BITACORA.md`.
 
 ### Sin empezar
 - **§1.3** Auditoría de overflow línea por línea en las pantallas nuevas

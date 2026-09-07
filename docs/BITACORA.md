@@ -718,3 +718,58 @@ nativo): parado, marcaba que se había ido a caminar a la otra cuadra.
 
 ### Verificación
 `npm run test:run` + `npm test` (16 ✅), `npx tsc -b`, `npm run build` verde.
+
+---
+
+## 2026-09-06 — Versión iOS nativa (Capacitor)
+
+Ahora hay una Mac (antes no, por eso `ios/` nunca se había generado). Rama
+`ios-nativo`. Objetivo acordado con el usuario: que la app —idéntica a la
+PWA— corra en un iPhone; App Store queda para después.
+
+### Entorno
+- No había Node en la máquina: `brew install node@22` (keg-only, en
+  `/opt/homebrew/opt/node@22/bin`; CI ya usa Node 22). Falta que el usuario lo
+  agregue a su `PATH` en `~/.zshrc` (el clasificador bloqueó editarlo desde acá).
+- `brew install cocoapods` — al final **no hizo falta**: Capacitor 8 genera el
+  proyecto iOS con **Swift Package Manager**, sin `Podfile`.
+- **Xcode no está instalado** en el entorno (solo Command Line Tools) → todo lo
+  que necesita `xcodebuild` (compilar, simulador, correr en dispositivo, Archive)
+  queda para el usuario.
+
+### Hecho
+- `npx cap add ios` → `ios/App/` (SPM, `CapApp-SPM/Package.swift`). El CLI marca
+  `@capacitor-community/background-geolocation` como "built for Capacitor 7":
+  a confirmar en Xcode.
+- `ios/App/App/Info.plist`: `NSCameraUsageDescription`,
+  `NSPhotoLibraryUsageDescription`, `NSLocationWhenInUseUsageDescription`,
+  `NSLocationAlwaysAndWhenInUseUsageDescription`, `UIBackgroundModes: [location]`,
+  `ITSAppUsesNonExemptEncryption = false`. Orientación reducida a **portrait**;
+  se quitó el bloque `~ipad`.
+- `project.pbxproj`: `TARGETED_DEVICE_FAMILY = 1` (solo iPhone), en debug y
+  release. Bundle ID `com.santiagoritter.gymtracker` (= `applicationId` de
+  Android), deployment target iOS 15, firma automática.
+- `scripts/generate-icons.mjs` extendido: además de los íconos PWA (salida
+  byte-idéntica, sin churn), emite el `AppIcon` 1024 (mancuerna lima sobre
+  `#0B0B0C`) y el splash 2732 en `ios/App/App/Assets.xcassets/`. Sin
+  dependencias nuevas (se evitó `@capacitor/assets` → `sharp`). El `AppIcon`
+  sale con alfa: para App Store hay que aplanarlo.
+- `.github/workflows/ios.yml`: manual, `macos-14`, `xcodebuild` para simulador
+  sin firma. No entrega `.ipa` — solo verifica que compila.
+- `.gitignore` raíz: sin cambios, el `ios/.gitignore` de Capacitor ya cubre
+  `App/App/public`, `Pods`, `build`, `DerivedData`, `xcuserdata`,
+  `capacitor-cordova-ios-plugins`.
+- Docs: `docs/16` (sección iOS nueva + pasos de firma/App Store), `docs/17`,
+  `docs/18` (iOS + nota `useLegacyBridge` de Android), `docs/19`
+  (`ITSAppUsesNonExemptEncryption`), `README.md`.
+
+### Verificación
+- `npm run build` limpio; `npm test` (16 ✅); `npm run test:style` verde.
+- `npx cap sync ios` OK. `ios/App/App/public/index.html` sirve con base `/`
+  (no `/GYM-tracker/`) → sin pantalla blanca en el webview.
+- **Pendiente (usuario)**: instalar Xcode; `npm run ios`; firmar con Apple ID;
+  correr en simulador y en iPhone real; probar cámara (QR + foto), running
+  (foreground y con pantalla bloqueada — ojo el plugin "Capacitor 7"), háptico,
+  notificación local con la app cerrada, splash, safe-area/notch, y todo el
+  flujo offline. Confirmar que el export de backup (`<a download>`) anda en
+  WKWebView.
