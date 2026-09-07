@@ -68,10 +68,11 @@ que pide el plugin: `NSLocationWhenInUseUsageDescription`,
 `location`. El usuario tiene que elegir **"Permitir siempre"** para el registro
 con la pantalla bloqueada.
 
-**Sin verificar en dispositivo** (el entorno de trabajo no tenía Xcode ni GPS):
-el CLI de Capacitor marca `@capacitor-community/background-geolocation` como
-"built for Capacitor 7" — hay que confirmar en Xcode que compila y que el
-watcher de fondo entrega puntos con la app en segundo plano.
+El CLI de Capacitor marca `@capacitor-community/background-geolocation` como
+"built for Capacitor 7", pero **compila sin problemas** contra Capacitor 8 por
+SPM (`xcodebuild` para simulador → BUILD SUCCEEDED). **Sin verificar en runtime**
+en un dispositivo: que el watcher de fondo entregue puntos con la app en segundo
+plano y la pantalla bloqueada.
 
 ## Nota sobre Android — `useLegacyBridge`
 

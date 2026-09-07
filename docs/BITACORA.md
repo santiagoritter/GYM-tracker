@@ -773,3 +773,22 @@ PWA— corra en un iPhone; App Store queda para después.
   notificación local con la app cerrada, splash, safe-area/notch, y todo el
   flujo offline. Confirmar que el export de backup (`<a download>`) anda en
   WKWebView.
+
+### Actualización (mismo día): compila en Xcode
+
+El usuario instaló Xcode 26.6 durante la sesión. Se bajó el runtime del
+simulador de iOS (`xcodebuild -downloadPlatform iOS`, ~8,5 GB) y se corrió el
+build: `xcodebuild -project ios/App/App.xcodeproj -scheme App -sdk
+iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 17'
+CODE_SIGNING_ALLOWED=NO build` → **`** BUILD SUCCEEDED **`, 0 errores**.
+
+- `@capacitor-community/background-geolocation` (el que el CLI marcaba "built
+  for Capacitor 7") **compila bien** contra Capacitor 8 por SPM. Riesgo
+  principal descartado.
+- La `Info.plist` embebida en `App.app` tiene los permisos, `UIBackgroundModes:
+  [location]`, `ITSAppUsesNonExemptEncryption: false` y `orientations: [Portrait]`.
+- Se versiona `ios/App/App.xcodeproj/.../swiftpm/Package.resolved` (pinea
+  `capacitor-swift-pm@8.5.0`, `ion-ios-geolocation@2.1.1`).
+
+Queda pendiente solo la prueba en un **iPhone físico** (el simulador no cubre
+GPS real, háptico ni notificaciones con la app cerrada de forma representativa).

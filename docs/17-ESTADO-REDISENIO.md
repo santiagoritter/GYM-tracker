@@ -429,9 +429,10 @@ popular") sigue sin implementar.
 - **iOS**: ~~`npx cap add ios` solo corre en macOS~~ — hecho (septiembre 2026,
   rama `ios-nativo`). Proyecto `ios/` generado (Capacitor 8 / Swift Package
   Manager), `Info.plist` con permisos de cámara/ubicación, solo iPhone +
-  portrait, íconos/splash propios, workflow `ios.yml` de verificación. **Falta**
-  del lado del usuario: instalar Xcode y correr en un iPhone real (el entorno de
-  trabajo no tenía Xcode). Ver `docs/16` §iOS y `docs/BITACORA.md`.
+  portrait, íconos/splash propios, workflow `ios.yml` de verificación. **Compila
+  para simulador** (`xcodebuild` → BUILD SUCCEEDED, verificado tras instalar
+  Xcode). **Falta**: correr en un iPhone real y probar los permisos/GPS/háptico
+  en runtime. Ver `docs/16` §iOS y `docs/BITACORA.md`.
 
 ### Sin empezar
 - **§1.3** Auditoría de overflow línea por línea en las pantallas nuevas

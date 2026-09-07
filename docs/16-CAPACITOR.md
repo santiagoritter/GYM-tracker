@@ -188,11 +188,17 @@ existe: la instalación es manual desde "Compartir → Agregar a inicio".
 - [x] Generar `ios/` desde una Mac. Hecho (Capacitor 8 / SPM).
 - [x] Iconos y splash nativos de iOS. Hecho vía `scripts/generate-icons.mjs`
       (sin dependencias; Android tiene su propio juego en `res/`).
-- [ ] Probar el proyecto iOS en Xcode: correr en simulador y en un iPhone
-      físico. **No verificado en esta tanda** — el entorno de trabajo no tenía
-      Xcode. Chequear en particular que `@capacitor-community/background-geolocation`
-      (marcado "built for Capacitor 7" por el CLI) compila contra Capacitor 8
-      por SPM.
+- [x] Compilar el proyecto en Xcode. **Verificado**: `xcodebuild` para
+      `iphonesimulator` (iPhone 17, iOS 26.5) → `** BUILD SUCCEEDED **`, 0
+      errores. `@capacitor-community/background-geolocation` (marcado "built for
+      Capacitor 7" por el CLI) **compila sin problemas** contra Capacitor 8 por
+      SPM. `Package.resolved` pinea `capacitor-swift-pm@8.5.0` y
+      `ion-ios-geolocation@2.1.1`.
+- [ ] Correr en un **iPhone físico** y probar en runtime: cámara, permiso de
+      ubicación "Siempre" + grabado con pantalla bloqueada, háptico,
+      notificación local con la app cerrada, splash, safe-area/notch, offline,
+      export de backup (`<a download>` en WKWebView). El simulador no cubre GPS
+      real ni háptico.
 - [ ] Aplanar el canal alfa del `AppIcon` antes de subir a la App Store.
 - [ ] Firmar y publicar. Android: keystore + Play Console. iOS: Apple Developer
       Program (99 USD/año) para App Store; para uso personal alcanza el Apple ID
