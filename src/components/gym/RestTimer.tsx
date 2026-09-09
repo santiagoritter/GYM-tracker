@@ -3,11 +3,13 @@ import { FastForward, Plus } from 'lucide-react'
 import { useWorkoutStore } from '@/stores/workoutStore'
 import { useCountdown } from '@/hooks/useCountdown'
 import { cancelScheduledNotifications, hapticSuccess, notify } from '@/lib/native'
+import { endRestActivity, startRestActivity } from '@/lib/liveActivity'
 import { REST_END_MESSAGES, getRandomMessage } from '@/lib/motivational'
 
 export function RestTimer() {
   const { restTimer, skipRest, extendRest } = useWorkoutStore()
   const endsAt = restTimer.endsAt
+  const totalSeconds = restTimer.totalSeconds
   const remaining = useCountdown(endsAt)
   // Evita que un re-render dispare dos veces el aviso de fin
   const firedFor = useRef<number | null>(null)
@@ -32,6 +34,20 @@ export function RestTimer() {
       cancelScheduledNotifications()
     }
   }, [endsAt])
+
+  /**
+   * Live Activity del descanso (pantalla de bloqueo + Dynamic Island en
+   * iOS). `startRestActivity` la crea o, si ya existe, la actualiza — así
+   * "+30s" no la reinicia. Se cierra al saltar / llegar a 0 (endsAt → null).
+   * El unmount (salir del entreno con un descanso corriendo) también la
+   * cierra, aparte del cambio de endsAt.
+   */
+  useEffect(() => {
+    if (endsAt) startRestActivity(endsAt, totalSeconds)
+    else endRestActivity()
+  }, [endsAt, totalSeconds])
+
+  useEffect(() => () => void endRestActivity(), [])
 
   // Efectos secundarios de llegar a 0 (haptic, notificación web, avanzar
   // el store) separados del propio conteo — useCountdown es puro display.

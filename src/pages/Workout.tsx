@@ -15,6 +15,7 @@ import AchievementIcon from '@/components/gym/AchievementIcon'
 import type { Exercise, PersonalRecord, WorkoutSet } from '@/types'
 import { formatDuration, formatWeight } from '@/lib/utils'
 import { hapticSuccess, hapticTick } from '@/lib/native'
+import { endWorkoutActivity, startWorkoutActivity, updateWorkoutActivity } from '@/lib/liveActivity'
 import { computeStats } from '@/lib/stats'
 import { syncAchievements, type AchievementDef } from '@/lib/achievements'
 import { toast } from '@/stores/toastStore'
@@ -117,6 +118,33 @@ export default function Workout() {
     const i = setInterval(tick, 1000)
     return () => clearInterval(i)
   }, [workout])
+
+  // Datos para la Live Activity del entreno (iOS). El nombre del ejercicio
+  // actual = el primero con una serie pendiente; si están todas hechas, el
+  // último.
+  const setsTotal = sets?.length ?? 0
+  const setsDone = (sets ?? []).filter((s) => s.completed === 1).length
+  const currentExerciseName = useMemo(() => {
+    const pending = grouped.find((g) => g.sets.some((s) => s.completed === 0))
+    return (pending ?? grouped.at(-1))?.exercise?.name
+  }, [grouped])
+
+  // Ciclo de vida de la Live Activity: se arranca con el entreno activo y se
+  // cierra al finalizar (screen deja de ser 'active') o al salir de la
+  // pantalla (unmount). `startWorkoutActivity` es idempotente del lado nativo.
+  useEffect(() => {
+    if (!workout || screen.kind !== 'active') {
+      endWorkoutActivity()
+      return
+    }
+    startWorkoutActivity(workout.name, Date.parse(workout.startedAt))
+    return () => void endWorkoutActivity()
+  }, [workout?.id, workout?.name, workout?.startedAt, screen.kind])
+
+  useEffect(() => {
+    if (!workout || screen.kind !== 'active') return
+    updateWorkoutActivity({ exerciseName: currentExerciseName, setsDone, setsTotal })
+  }, [workout, screen.kind, currentExerciseName, setsDone, setsTotal])
 
   if (!workoutId) return null
 
