@@ -27,7 +27,10 @@ interface LiveActivityPlugin {
   endWorkout(): Promise<void>
 }
 
-const LiveActivity = registerPlugin<LiveActivityPlugin>('LiveActivity')
+// El nombre tiene que coincidir EXACTO con el `@objc(...)` / `jsName` de
+// `ios/App/App/LiveActivityPlugin.swift` — Capacitor 8 en iOS lo resuelve con
+// `NSClassFromString(pluginId)`, no auto-descubre plugins embebidos.
+const LiveActivity = registerPlugin<LiveActivityPlugin>('GymTrackerLiveActivity')
 
 async function iosOnly(run: () => Promise<unknown>): Promise<void> {
   if (platform !== 'ios') return

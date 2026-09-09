@@ -4,17 +4,21 @@ import Foundation
 
 /// Puente entre `src/lib/liveActivity.ts` y ActivityKit.
 ///
-/// Plugin embebido en el target `App` (no es un paquete): Capacitor lo
-/// descubre por conformar `CAPBridgedPlugin` con la clase `@objc`. El layout
-/// de las actividades vive en la Widget Extension (`ios/App/GymTrackerWidget/`).
+/// Plugin embebido en el target `App` (no es un paquete). Capacitor 8 en iOS
+/// **no** escanea el runtime buscando `CAPBridgedPlugin`: cuando llega una
+/// llamada para un plugin que no está en `packageClassList`, hace
+/// `NSClassFromString(pluginId)` como fallback. Por eso el nombre ObjC de la
+/// clase (`@objc(...)`), el `identifier`, el `jsName` y el string que pasa
+/// `registerPlugin(...)` en el JS tienen que ser **exactamente el mismo**:
+/// `GymTrackerLiveActivity`.
 ///
-/// Todo método es no-op prolijo si el SO es < iOS 16.2 o si el usuario tiene
-/// las Live Activities desactivadas: resuelve la promesa igual, el lado JS ya
-/// asume que puede no pasar nada.
-@objc(LiveActivityPlugin)
-public class LiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
-    public let identifier = "LiveActivityPlugin"
-    public let jsName = "LiveActivity"
+/// El layout de las actividades vive en la Widget Extension
+/// (`ios/App/GymTrackerWidget/`). Todo método es no-op prolijo si el SO es
+/// < iOS 16.2 o si el usuario tiene las Live Activities desactivadas.
+@objc(GymTrackerLiveActivity)
+public class GymTrackerLiveActivity: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "GymTrackerLiveActivity"
+    public let jsName = "GymTrackerLiveActivity"
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "startRest", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "endRest", returnType: CAPPluginReturnPromise),
