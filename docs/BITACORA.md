@@ -792,3 +792,44 @@ CODE_SIGNING_ALLOWED=NO build` → **`** BUILD SUCCEEDED **`, 0 errores**.
 
 Queda pendiente solo la prueba en un **iPhone físico** (el simulador no cubre
 GPS real, háptico ni notificaciones con la app cerrada de forma representativa).
+
+---
+
+## 2026-09-08 — Live Activities (iOS) + frases motivacionales por notificación
+
+Pedido: features de Dynamic Island (descanso, entreno) y frases filosóficas
+como notificación cada cierto tiempo.
+
+### Frases motivacionales (cerrado)
+- `LocalProfile.motivationalNotifsEnabled` (Dexie **v15**, campo no indexado).
+- `src/lib/motivationalNotifs.ts`: 3 notificaciones locales diarias fijas
+  (09/15/20), cuerpo = frase de `quotes.ts` del daypart. IDs `4_300_000+slot`,
+  canal Android `gymtracker-quotes`. Solo nativo (el SO las agenda con la app
+  cerrada). Pura `buildMotivationalNotifications()` testeada en `test-quotes.mts`.
+- Toggle en `/recordatorios`. Cableado en `useReminderScheduler` + `main.tsx`.
+- `docs/12` §"Capa 3 — Nativo".
+
+### Live Activities (código completo, falta el paso de Xcode del usuario)
+- Alcance acordado: **descanso** + **entreno activo** (running/cardio quedan
+  para después, anotado en `IDEAS.md`).
+- `src/lib/liveActivity.ts` — puente sobre `registerPlugin('LiveActivity')`,
+  todo `platform === 'ios'` + try/catch (no-op sin la extensión / Android / web).
+- `RestTimer.tsx`: crea/actualiza la actividad al arrancar o extender el
+  descanso (así "+30s" no la reinicia), la cierra al saltar / llegar a 0 /
+  desmontar. `Workout.tsx`: la del entreno con el ciclo de vida de la sesión.
+- Swift en el repo, **todavía no en el target de Xcode**:
+  `ios/App/App/LiveActivity{Attributes,Plugin}.swift` (plugin embebido,
+  `CAPBridgedPlugin`, no-op si iOS < 16.2) + `ios/App/GymTrackerWidget/*.swift`
+  (WidgetBundle + 2 `ActivityConfiguration` con lock screen y Dynamic Island;
+  el timer lo dibuja iOS, la app no tickea).
+- `Info.plist`: `NSSupportsLiveActivities`.
+- Pasos para crear la Widget Extension en Xcode: `docs/16` §"Live Activities".
+
+### Verificación
+- `npx tsc -b`, `npm test` (16 ✅), `npm run build`, `test:style`: verde.
+- `xcodebuild -scheme App -sdk iphonesimulator` (iPhone 17): **BUILD SUCCEEDED**
+  con los `.swift` nuevos en el repo pero fuera del target (inertes).
+- **Pendiente (usuario)**: crear la Widget Extension en Xcode (6 pasos), volver
+  a compilar, y probar en el iPhone 14 Pro: completar una serie → cuenta
+  regresiva en la Isla; arrancar un entreno → actividad del entreno. Toggle de
+  frases → esperar una franja o probar.

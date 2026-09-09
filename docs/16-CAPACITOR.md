@@ -108,6 +108,54 @@ se rompió. Los minutos de runner macOS son caros, por eso es manual como
 
 ---
 
+## Live Activities / Dynamic Island (iOS)
+
+Dos Live Activities: **descanso entre series** (cuenta regresiva) y **entreno
+en curso** (tiempo, ejercicio actual, series hechas/totales). Aparecen en la
+pantalla de bloqueo (iOS 16.2+) y en la Dynamic Island (iPhone 14 Pro+).
+
+### Piezas
+
+| Archivo | Target | Rol |
+|---|---|---|
+| `src/lib/liveActivity.ts` | web | Puente JS. `registerPlugin('LiveActivity')`. Todo `platform === 'ios'` + `try/catch`: sin la extensión, en Android o web es no-op. |
+| `ios/App/App/LiveActivityAttributes.swift` | **App + Widget** | Los `ActivityAttributes` compartidos (`RestActivityAttributes`, `WorkoutActivityAttributes`). |
+| `ios/App/App/LiveActivityPlugin.swift` | **App** | Plugin Capacitor embebido (`CAPBridgedPlugin`). `startRest`/`endRest`/`startWorkout`/`updateWorkout`/`endWorkout`. Cada método es no-op si iOS < 16.2 o si el usuario apagó las Live Activities. |
+| `ios/App/GymTrackerWidget/*.swift` | **Widget** | `WidgetBundle` + las dos `ActivityConfiguration` (lock screen + Dynamic Island compact/minimal/expanded). El timer lo dibuja iOS (`Text(timerInterval:)` / `.timer`), la app no actualiza cada segundo. |
+
+Cableado: `RestTimer.tsx` (crea/actualiza al arrancar o extender el descanso,
+cierra al saltar / llegar a 0 / salir del entreno) y `Workout.tsx` (crea con
+la sesión, actualiza al completar series, cierra al finalizar).
+
+### Paso manual en Xcode (una vez)
+
+La Widget Extension es un **target nuevo** que hay que crear desde Xcode
+(reescribe el `project.pbxproj`, no se hace a mano):
+
+1. **File → New → Target… → Widget Extension**. Product Name: `GymTrackerWidget`.
+   Tildar **Include Live Activity**. Destildar **Include Configuration App
+   Intent**. Finish → cuando pregunte "Activate scheme?", **Cancel**.
+2. Seleccionar el target nuevo → **General** → *Minimum Deployments* → **iOS
+   16.2**. En **Signing & Capabilities**, mismo *Team* que `App`.
+3. Borrar los archivos de ejemplo que generó el wizard dentro del grupo
+   `GymTrackerWidget` (todos los `.swift`: `GymTrackerWidget.swift`,
+   `GymTrackerWidgetLiveActivity.swift`, `GymTrackerWidgetBundle.swift`,
+   `AppIntent.swift` si está) → *Move to Trash*.
+4. **Add Files to "App"…** → elegir `ios/App/GymTrackerWidget/` (los 3 `.swift`
+   que ya están en el repo) → *Add to targets*: **solo `GymTrackerWidgetExtension`**.
+5. **Add Files to "App"…** → `ios/App/App/LiveActivityAttributes.swift` y
+   `LiveActivityPlugin.swift`:
+   - `LiveActivityAttributes.swift` → targets **App y GymTrackerWidgetExtension**.
+   - `LiveActivityPlugin.swift` → target **App** solamente.
+6. Si el wizard agregó `NSSupportsLiveActivities` al `Info.plist` de la app,
+   dejá una sola copia (el repo ya lo trae).
+7. **Product → Build** (⌘B).
+
+`.github/workflows/ios.yml` compila `-scheme App`; el scheme incluye la
+extensión como dependencia una vez agregada, así que el CI la cubre.
+
+---
+
 ## Qué gana la app siendo nativa
 
 No es solo "se instala". Cosas que en el navegador no existen o funcionan

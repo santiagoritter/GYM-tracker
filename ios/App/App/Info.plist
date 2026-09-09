@@ -71,5 +71,7 @@
 	<string>Con permiso "Siempre", GymTracker sigue registrando tu recorrido aunque bloquees la pantalla durante una salida.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 </dict>
 </plist>

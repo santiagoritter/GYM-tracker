@@ -83,6 +83,13 @@ Con Capacitor ya en el proyecto, mostrar el cronómetro de descanso en la
 pantalla de bloqueo o en la Dynamic Island. Es exactamente el momento en que
 el usuario no quiere desbloquear el teléfono.
 
+**Hecho (septiembre 2026):** Live Activities para el **descanso entre series**
+y el **entreno en curso** — plugin propio `LiveActivityPlugin.swift` + Widget
+Extension `ios/App/GymTrackerWidget/`, cableado en `RestTimer.tsx` y
+`Workout.tsx` vía `src/lib/liveActivity.ts`. Ver `docs/16` §"Live Activities".
+Queda pendiente si se retoma: extenderlo al **running** (`Run.tsx`, ya corre
+en background por el GPS — encaje natural) y al **cardio** (`Cardio.tsx`).
+
 ### Exportar a CSV
 Sacar el historial completo. Cuesta poco y elimina la sensación de que los
 datos quedan encerrados en la app.
