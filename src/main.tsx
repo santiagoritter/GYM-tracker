@@ -14,6 +14,7 @@ import { initPwaUpdate } from '@/lib/pwaUpdate'
 import { initPwaInstall } from '@/lib/pwaInstall'
 import { ensureReminderChannel } from '@/lib/nativeReminders'
 import { ensureQuotesChannel } from '@/lib/motivationalNotifs'
+import { endRestActivity, endWorkoutActivity } from '@/lib/liveActivity'
 import { applyTheme, useThemeStore } from '@/stores/themeStore'
 import '@/index.css'
 
@@ -34,6 +35,13 @@ initPwaInstall()
 // Canales de Android para los avisos (no-op en web y en iOS).
 void ensureReminderChannel()
 void ensureQuotesChannel()
+
+// Al arrancar la app (cold start o webview reciclada por iOS) siempre se cae
+// en Inicio — la ruta no se persiste. Cualquier Live Activity que haya
+// quedado viva de una sesión anterior es un huérfano: se cierra. Las que
+// correspondan se recrean al entrar al entreno. No-op fuera de iOS.
+void endRestActivity()
+void endWorkoutActivity()
 
 // El script inline de index.html ya setea data-theme antes del primer
 // paint (lee localStorage directo, sin poder importar este módulo). Esto
