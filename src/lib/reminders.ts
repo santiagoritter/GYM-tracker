@@ -5,6 +5,7 @@ import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { getQuoteForNow } from '@/lib/quotes'
 import { isNative } from '@/lib/native'
 import { syncReminderSchedule } from '@/lib/nativeReminders'
+import { syncMotivationalSchedule } from '@/lib/motivationalNotifs'
 import { localDayKey } from '@/lib/stats'
 
 const LAST_FIRED_KEY = 'gymtracker-reminder-last-fired'
@@ -53,6 +54,15 @@ export function useReminderScheduler() {
     if (!isNative) return
     void syncReminderSchedule(profile)
   }, [profile?.reminderEnabled, profile?.reminderTime, profile?.reminderDays])
+
+  // Frases motivacionales 3x/día, también agendadas con el SO. Se
+  // resincroniza al cambiar el toggle y en cada arranque de la app (cuando
+  // el liveQuery del perfil resuelve): así la frase de las notificaciones
+  // que repiten a diario rota día a día — ver motivationalNotifs.ts.
+  useEffect(() => {
+    if (!isNative) return
+    void syncMotivationalSchedule(profile)
+  }, [profile?.motivationalNotifsEnabled])
 
   useEffect(() => {
     if (!profile?.reminderEnabled || !profile.reminderTime) return

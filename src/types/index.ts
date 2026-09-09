@@ -177,6 +177,11 @@ export interface LocalProfile extends SyncFields {
   reminderEnabled?: 0 | 1
   reminderTime?: string // "HH:MM" 24h
   reminderDays?: number[] // 0=domingo … 6=sábado
+  // Frases filosóficas por notificación, 3 veces al día (mañana/tarde/noche).
+  // Opt-in, solo nativo: el SO las agenda y llegan con la app cerrada. Los
+  // horarios son fijos (MOTIV_SLOTS en src/lib/motivationalNotifs.ts), no se
+  // guardan. `undefined` = desactivado.
+  motivationalNotifsEnabled?: 0 | 1
   // Aceptación de términos + política de privacidad (B8). `legalVersion` es
   // LEGAL_VERSION de src/lib/legal.ts al momento de aceptar; si sube, hay
   // que volver a pedir aceptación.

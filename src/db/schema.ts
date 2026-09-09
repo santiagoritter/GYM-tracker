@@ -274,6 +274,12 @@ export class GymTrackerDB extends Dexie {
     this.version(14).stores({}).upgrade(async () => {
       // no-op
     })
+    // v15: frases motivacionales por notificación (opt-in). Campo no indexado
+    // (`motivationalNotifsEnabled`) en el perfil — no toca .stores(). Sin
+    // default: `undefined` = desactivado, igual que `reminderEnabled`.
+    this.version(15).stores({}).upgrade(async () => {
+      // no-op
+    })
   }
 }
 

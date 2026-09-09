@@ -13,6 +13,7 @@ import { initNativeShell } from '@/lib/native'
 import { initPwaUpdate } from '@/lib/pwaUpdate'
 import { initPwaInstall } from '@/lib/pwaInstall'
 import { ensureReminderChannel } from '@/lib/nativeReminders'
+import { ensureQuotesChannel } from '@/lib/motivationalNotifs'
 import { applyTheme, useThemeStore } from '@/stores/themeStore'
 import '@/index.css'
 
@@ -30,8 +31,9 @@ initPwaUpdate()
 // Ajustes en el momento que el usuario quiera (ver pwaInstall.ts).
 initPwaInstall()
 
-// Canal de Android para los recordatorios (no-op en web y en iOS).
+// Canales de Android para los avisos (no-op en web y en iOS).
 void ensureReminderChannel()
+void ensureQuotesChannel()
 
 // El script inline de index.html ya setea data-theme antes del primer
 // paint (lee localStorage directo, sin poder importar este módulo). Esto

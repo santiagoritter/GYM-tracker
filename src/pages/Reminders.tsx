@@ -70,6 +70,26 @@ export default function Reminders() {
   const enabled = profile.reminderEnabled === 1
   const time = profile.reminderTime ?? '18:00'
   const days = profile.reminderDays ?? [1, 2, 3, 4, 5]
+  const motivEnabled = profile.motivationalNotifsEnabled === 1
+
+  const handleToggleMotiv = async () => {
+    if (!motivEnabled) {
+      // En nativo el permiso lo pide el schedule del SO (syncMotivationalSchedule,
+      // disparado por este cambio de perfil). En web hace falta el permiso ya.
+      if (!isNative) {
+        const perm = await requestNotificationPermission()
+        if (perm !== 'granted') {
+          toast.error('Permiso denegado', 'Habilitá las notificaciones en tu navegador.')
+          return
+        }
+      }
+      await update({ motivationalNotifsEnabled: 1 })
+      toast.success('Frases activadas', 'Una a la mañana, una a la tarde y una a la noche.')
+    } else {
+      await update({ motivationalNotifsEnabled: 0 })
+      toast.info('Frases desactivadas')
+    }
+  }
 
   const handleToggle = async () => {
     if (!enabled) {
@@ -155,6 +175,33 @@ export default function Reminders() {
                 className={cn(
                   'absolute top-1 h-5 w-5 rounded-full bg-white transition-all',
                   enabled ? 'left-6' : 'left-1'
+                )}
+              />
+            </span>
+          </Row>
+        </Card>
+
+        {/* Frases motivacionales: independiente del recordatorio de arriba.
+            3 horarios fijos (mañana/tarde/noche), agendadas con el SO en la
+            app instalada — ver motivationalNotifs.ts. */}
+        <Card>
+          <Row onClick={handleToggleMotiv}>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold">Frases motivacionales</p>
+              <p className="text-[13px] text-ink-3">Una a la mañana, otra a la tarde y otra a la noche</p>
+            </div>
+            <span
+              className={cn(
+                'relative h-7 w-12 shrink-0 rounded-full transition-colors',
+                motivEnabled ? 'bg-accent' : 'bg-surface-3'
+              )}
+              role="switch"
+              aria-checked={motivEnabled}
+            >
+              <span
+                className={cn(
+                  'absolute top-1 h-5 w-5 rounded-full bg-white transition-all',
+                  motivEnabled ? 'left-6' : 'left-1'
                 )}
               />
             </span>

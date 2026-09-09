@@ -49,3 +49,25 @@ navegador no soporta Push — no rompe nada, simplemente no ofrece la opción
 
 Pasos de despliegue completos (claves VAPID, secrets, cron) en
 `docs/13-BACKEND-SUPABASE.md`.
+
+---
+
+## Capa 3 — Nativo (app con Capacitor)
+
+En la app instalada el aviso lo agenda el **sistema operativo**: llega con la
+app cerrada y la pantalla apagada, sin depender de ningún backend.
+
+- **Recordatorio de entrenar** (`src/lib/nativeReminders.ts`): repetición
+  semanal por cada día elegido a la hora configurada. IDs `4_200_000 + díaJS`,
+  canal Android `gymtracker-reminders`. Se resincroniza desde
+  `useReminderScheduler` en cada cambio de `profile.reminder*`.
+- **Frases motivacionales** (`src/lib/motivationalNotifs.ts`): opt-in
+  (`profile.motivationalNotifsEnabled`). Tres repeticiones diarias a horas
+  fijas — 09:00, 15:00, 20:00 — cada una con una frase de `quotes.ts` del
+  daypart correspondiente. IDs `4_300_000 + slot` (0–2), canal Android
+  `gymtracker-quotes` (silenciable por separado). La frase rota día a día al
+  reprogramarse en cada arranque de la app. `buildMotivationalNotifications()`
+  es pura y está cubierta por `scripts/test-quotes.mts`.
+
+Los tres rangos de ID (recordatorio, frases, y el aviso de fin de descanso de
+`RestTimer.tsx` que usa `Date.now() % 2147483647`) no se solapan.
