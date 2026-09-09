@@ -27,30 +27,33 @@ struct RestLiveActivity: Widget {
                         Image(systemName: "dumbbell.fill")
                         Text(finished ? "Ahora" : "Descanso")
                     }
-                    .font(.footnote.weight(.semibold))
+                    .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
+                    .padding(.top, 2)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     if !finished {
                         Text(timerInterval: range, countsDown: true)
-                            .font(.system(size: 38, weight: .heavy, design: .rounded))
+                            .font(.system(size: 44, weight: .heavy, design: .rounded))
                             .monospacedDigit()
                             .foregroundStyle(gymAccent)
                             .lineLimit(1)
                             .minimumScaleFactor(0.5)
                             .frame(alignment: .trailing)
+                            .padding(.top, 2)
                     }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     if let exercise {
                         Text(exercise)
-                            .font(finished ? .title3.weight(.semibold) : .headline)
+                            .font(finished ? .title2.weight(.bold) : .title3.weight(.semibold))
                             .foregroundStyle(finished ? gymAccent : .primary)
                             .lineLimit(2)
-                            .minimumScaleFactor(0.75)
+                            .minimumScaleFactor(0.7)
                             .multilineTextAlignment(.leading)
                             .fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 4)
                     }
                 }
             } compactLeading: {
@@ -61,15 +64,12 @@ struct RestLiveActivity: Widget {
                     Image(systemName: "arrow.right")
                         .foregroundStyle(gymAccent)
                 } else {
-                    // maxWidth .infinity + alignment .trailing: el texto se
-                    // pega al borde derecho, sin espacio muerto a la derecha
-                    // (Text(timerInterval:) reserva ancho para estabilidad).
+                    // .fixedSize(): el texto usa su ancho real, sin el espacio
+                    // extra que Text(timerInterval:) reserva "por las dudas".
                     Text(timerInterval: range, countsDown: true)
                         .monospacedDigit()
                         .foregroundStyle(gymAccent)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .fixedSize()
                 }
             } minimal: {
                 if finished {
