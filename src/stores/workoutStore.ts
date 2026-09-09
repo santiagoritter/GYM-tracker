@@ -11,11 +11,12 @@ import { computeVolumeKg, previewPRs } from '@/lib/workoutSummary'
 interface RestTimerState {
   endsAt: number | null // epoch ms
   totalSeconds: number
+  exerciseName?: string // para la Live Activity: de qué ejercicio se descansa
 }
 
 interface WorkoutStore {
   restTimer: RestTimerState
-  startRest: (seconds: number) => void
+  startRest: (seconds: number, exerciseName?: string) => void
   extendRest: (seconds: number) => void
   skipRest: () => void
 
@@ -43,8 +44,10 @@ export const useWorkoutStore = create<WorkoutStore>()(
     (set, get) => ({
       restTimer: { endsAt: null, totalSeconds: 90 },
 
-      startRest: (seconds) =>
-        set({ restTimer: { endsAt: Date.now() + seconds * 1000, totalSeconds: seconds } }),
+      startRest: (seconds, exerciseName) =>
+        set({
+          restTimer: { endsAt: Date.now() + seconds * 1000, totalSeconds: seconds, exerciseName },
+        }),
 
       extendRest: (seconds) => {
         const { restTimer } = get()
@@ -53,6 +56,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
             restTimer: {
               endsAt: restTimer.endsAt + seconds * 1000,
               totalSeconds: restTimer.totalSeconds + seconds,
+              exerciseName: restTimer.exerciseName,
             },
           })
         }

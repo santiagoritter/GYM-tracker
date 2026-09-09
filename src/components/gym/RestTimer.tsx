@@ -42,10 +42,11 @@ export function RestTimer() {
    * El unmount (salir del entreno con un descanso corriendo) también la
    * cierra, aparte del cambio de endsAt.
    */
+  const exerciseName = restTimer.exerciseName
   useEffect(() => {
-    if (endsAt) startRestActivity(endsAt, totalSeconds)
+    if (endsAt) startRestActivity(endsAt, totalSeconds, exerciseName)
     else endRestActivity()
-  }, [endsAt, totalSeconds])
+  }, [endsAt, totalSeconds, exerciseName])
 
   useEffect(() => () => void endRestActivity(), [])
 

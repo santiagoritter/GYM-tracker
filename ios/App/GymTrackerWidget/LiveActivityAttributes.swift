@@ -13,6 +13,8 @@ struct RestActivityAttributes: ActivityAttributes {
         var endsAt: Date
         /// Duración total del descanso, para el rango del timer.
         var totalSeconds: Double
+        /// De qué ejercicio se descansa (se muestra en la vista expandida).
+        var exerciseName: String?
     }
 }
 

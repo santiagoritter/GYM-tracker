@@ -16,7 +16,7 @@ import { platform } from '@/lib/native'
  */
 
 interface LiveActivityPlugin {
-  startRest(options: { endsAt: number; totalSeconds: number }): Promise<void>
+  startRest(options: { endsAt: number; totalSeconds: number; exerciseName?: string }): Promise<void>
   endRest(): Promise<void>
   startWorkout(options: { name: string; startedAt: number }): Promise<void>
   updateWorkout(options: {
@@ -44,9 +44,12 @@ async function iosOnly(run: () => Promise<unknown>): Promise<void> {
 
 /** Arranca (o actualiza, si ya hay una) la Live Activity del descanso. iOS
  * dibuja la cuenta regresiva solo a partir de `endsAt` — no hay que
- * actualizar cada segundo. */
-export const startRestActivity = (endsAt: number, totalSeconds: number): Promise<void> =>
-  iosOnly(() => LiveActivity.startRest({ endsAt, totalSeconds }))
+ * actualizar cada segundo. `exerciseName` se muestra en la vista expandida. */
+export const startRestActivity = (
+  endsAt: number,
+  totalSeconds: number,
+  exerciseName?: string
+): Promise<void> => iosOnly(() => LiveActivity.startRest({ endsAt, totalSeconds, exerciseName }))
 
 export const endRestActivity = (): Promise<void> => iosOnly(() => LiveActivity.endRest())
 

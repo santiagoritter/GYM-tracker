@@ -178,7 +178,7 @@ export default function Workout() {
       )
       if (partnerPending) return
     }
-    store.startRest(profile?.restTimerDefault ?? 90)
+    store.startRest(profile?.restTimerDefault ?? 90, exerciseMap.get(s.exerciseId)?.name)
   }
 
   // Calcula todo en memoria, sin tocar Dexie, y muestra la vista previa —

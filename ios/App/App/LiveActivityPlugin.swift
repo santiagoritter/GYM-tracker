@@ -45,7 +45,11 @@ public class GymTrackerLiveActivity: CAPPlugin, CAPBridgedPlugin {
         let endsAtMs = call.getDouble("endsAt") ?? 0
         let totalSeconds = max(call.getDouble("totalSeconds") ?? 1, 1)
         let endsAt = Date(timeIntervalSince1970: endsAtMs / 1000.0)
-        let state = RestActivityAttributes.ContentState(endsAt: endsAt, totalSeconds: totalSeconds)
+        let state = RestActivityAttributes.ContentState(
+            endsAt: endsAt,
+            totalSeconds: totalSeconds,
+            exerciseName: call.getString("exerciseName")
+        )
         let content = ActivityContent(state: state, staleDate: endsAt.addingTimeInterval(10))
 
         if let existing = restActivity as? Activity<RestActivityAttributes> {
