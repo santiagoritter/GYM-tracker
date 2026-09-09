@@ -13,8 +13,12 @@ struct RestActivityAttributes: ActivityAttributes {
         var endsAt: Date
         /// Duración total del descanso, para el rango del timer.
         var totalSeconds: Double
-        /// De qué ejercicio se descansa (se muestra en la vista expandida).
+        /// El ejercicio a hacer cuando termine el descanso (el próximo con
+        /// series pendientes). Se muestra en la vista expandida.
         var exerciseName: String?
+        /// El descanso ya terminó: se muestra solo el próximo ejercicio,
+        /// sin el timer, durante unos segundos antes de cerrarse.
+        var finished: Bool = false
     }
 }
 

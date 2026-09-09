@@ -17,6 +17,7 @@ import { platform } from '@/lib/native'
 
 interface LiveActivityPlugin {
   startRest(options: { endsAt: number; totalSeconds: number; exerciseName?: string }): Promise<void>
+  finishRest(options: { exerciseName?: string }): Promise<void>
   endRest(): Promise<void>
   startWorkout(options: { name: string; startedAt: number }): Promise<void>
   updateWorkout(options: {
@@ -50,6 +51,11 @@ export const startRestActivity = (
   totalSeconds: number,
   exerciseName?: string
 ): Promise<void> => iosOnly(() => LiveActivity.startRest({ endsAt, totalSeconds, exerciseName }))
+
+/** El descanso llegó a 0: la Live Activity deja de mostrar el timer y muestra
+ * solo el próximo ejercicio unos segundos antes de cerrarse sola. */
+export const finishRestActivity = (exerciseName?: string): Promise<void> =>
+  iosOnly(() => LiveActivity.finishRest({ exerciseName }))
 
 export const endRestActivity = (): Promise<void> => iosOnly(() => LiveActivity.endRest())
 

@@ -3,7 +3,7 @@ import { FastForward, Plus } from 'lucide-react'
 import { useWorkoutStore } from '@/stores/workoutStore'
 import { useCountdown } from '@/hooks/useCountdown'
 import { cancelScheduledNotifications, hapticSuccess, notify } from '@/lib/native'
-import { endRestActivity, startRestActivity } from '@/lib/liveActivity'
+import { endRestActivity, finishRestActivity, startRestActivity } from '@/lib/liveActivity'
 import { REST_END_MESSAGES, getRandomMessage } from '@/lib/motivational'
 
 export function RestTimer() {
@@ -38,9 +38,11 @@ export function RestTimer() {
   /**
    * Live Activity del descanso (pantalla de bloqueo + Dynamic Island en
    * iOS). `startRestActivity` la crea o, si ya existe, la actualiza — así
-   * "+30s" no la reinicia. Se cierra al saltar / llegar a 0 (endsAt → null).
-   * El unmount (salir del entreno con un descanso corriendo) también la
-   * cierra, aparte del cambio de endsAt.
+   * "+30s" no la reinicia. Se cierra al saltar (endsAt → null). Al llegar a
+   * 0, el efecto de abajo llama a `finishRestActivity` primero, que la deja
+   * unos segundos mostrando solo el próximo ejercicio; el `endRestActivity`
+   * que dispara este efecto queda como no-op durante esa ventana.
+   * El unmount (salir del entreno) también la cierra.
    */
   const exerciseName = restTimer.exerciseName
   useEffect(() => {
@@ -58,8 +60,10 @@ export function RestTimer() {
     hapticSuccess()
     // En web, la notificación agendada no existe: se dispara acá.
     notify('Descanso terminado', getRandomMessage(REST_END_MESSAGES).text)
+    // iOS: la Live Activity pasa a mostrar solo el próximo ejercicio.
+    finishRestActivity(exerciseName)
     skipRest()
-  }, [remaining, endsAt, skipRest])
+  }, [remaining, endsAt, skipRest, exerciseName])
 
   if (!endsAt) return null
 

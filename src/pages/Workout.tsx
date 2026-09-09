@@ -178,7 +178,15 @@ export default function Workout() {
       )
       if (partnerPending) return
     }
-    store.startRest(profile?.restTimerDefault ?? 90, exerciseMap.get(s.exerciseId)?.name)
+    // Para la Live Activity: qué toca hacer cuando termine el descanso. El
+    // liveQuery de `sets` todavía no reflejó el completado de `s`, así que se
+    // excluye a mano — el primer grupo con otra serie pendiente es "el
+    // próximo" (sigue siendo este ejercicio si le quedan series). Si no queda
+    // nada, se usa el ejercicio actual.
+    const nextName =
+      grouped.find((g) => g.sets.some((x) => x.id !== s.id && x.completed === 0))?.exercise?.name ??
+      exerciseMap.get(s.exerciseId)?.name
+    store.startRest(profile?.restTimerDefault ?? 90, nextName)
   }
 
   // Calcula todo en memoria, sin tocar Dexie, y muestra la vista previa —

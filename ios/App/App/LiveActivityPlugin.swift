@@ -25,6 +25,7 @@ public class GymTrackerLiveActivity: CAPPlugin, CAPBridgedPlugin {
     public let jsName = "GymTrackerLiveActivity"
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "startRest", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "finishRest", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "endRest", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "startWorkout", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "updateWorkout", returnType: CAPPluginReturnPromise),
@@ -32,9 +33,12 @@ public class GymTrackerLiveActivity: CAPPlugin, CAPBridgedPlugin {
     ]
 
     /// Cierra la Live Activity del descanso cuando su tiempo termina, aunque
-    /// el JS nunca llame a `endRest` (webview reciclada). Si la app está
-    /// suspendida el `sleep` se congela y corre al volver a primer plano.
+    /// el JS nunca llame a `finishRest`/`endRest` (webview reciclada). Si la
+    /// app está suspendida el `sleep` se congela y corre al volver.
     private var restEndTask: Task<Void, Never>?
+    /// Está corriendo la ventana de "descanso terminado, mostrar próximo
+    /// ejercicio": `endRest` la respeta en vez de cortarla de una.
+    private var finishing = false
 
     private func activitiesEnabled() -> Bool {
         guard #available(iOS 16.2, *) else { return false }
@@ -46,15 +50,17 @@ public class GymTrackerLiveActivity: CAPPlugin, CAPBridgedPlugin {
     @objc func startRest(_ call: CAPPluginCall) {
         guard #available(iOS 16.2, *), activitiesEnabled() else { call.resolve(); return }
 
+        finishing = false
         let endsAtMs = call.getDouble("endsAt") ?? 0
         let totalSeconds = max(call.getDouble("totalSeconds") ?? 1, 1)
         let endsAt = Date(timeIntervalSince1970: endsAtMs / 1000.0)
         let state = RestActivityAttributes.ContentState(
             endsAt: endsAt,
             totalSeconds: totalSeconds,
-            exerciseName: call.getString("exerciseName")
+            exerciseName: call.getString("exerciseName"),
+            finished: false
         )
-        let content = ActivityContent(state: state, staleDate: endsAt.addingTimeInterval(3))
+        let content = ActivityContent(state: state, staleDate: nil)
 
         Task {
             if let existing = Activity<RestActivityAttributes>.activities.first {
@@ -72,20 +78,60 @@ public class GymTrackerLiveActivity: CAPPlugin, CAPBridgedPlugin {
             }
         }
 
+        // Red de seguridad: si el JS nunca llama a finishRest/endRest, cerrar
+        // ~20 s después de que el descanso terminaba.
         restEndTask?.cancel()
         restEndTask = Task { [weak self] in
-            let seconds = endsAt.timeIntervalSinceNow + 2
+            let seconds = endsAt.timeIntervalSinceNow + 20
             if seconds > 0 {
                 try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
             }
             if Task.isCancelled { return }
+            self?.finishing = false
             await self?.endActivities(RestActivityAttributes.self)
         }
 
         call.resolve()
     }
 
+    /// El descanso llegó a 0: se muestra solo el próximo ejercicio (sin timer)
+    /// unos segundos y después se cierra.
+    @objc func finishRest(_ call: CAPPluginCall) {
+        guard #available(iOS 16.2, *) else { call.resolve(); return }
+
+        finishing = true
+        let exerciseName = call.getString("exerciseName")
+        let holdSeconds: Double = 12
+
+        Task {
+            for activity in Activity<RestActivityAttributes>.activities {
+                let state = RestActivityAttributes.ContentState(
+                    endsAt: Date(),
+                    totalSeconds: 1,
+                    exerciseName: exerciseName,
+                    finished: true
+                )
+                await activity.update(ActivityContent(state: state, staleDate: nil))
+            }
+        }
+
+        restEndTask?.cancel()
+        restEndTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(holdSeconds * 1_000_000_000))
+            if Task.isCancelled { return }
+            self?.finishing = false
+            await self?.endActivities(RestActivityAttributes.self)
+        }
+        call.resolve()
+    }
+
     @objc func endRest(_ call: CAPPluginCall) {
+        // Si está en la ventana de "descanso terminado", dejar que esa cierre
+        // sola — es lo que muestra el próximo ejercicio.
+        if finishing {
+            call.resolve()
+            return
+        }
         restEndTask?.cancel()
         restEndTask = nil
         guard #available(iOS 16.2, *) else { call.resolve(); return }
@@ -105,7 +151,6 @@ public class GymTrackerLiveActivity: CAPPlugin, CAPBridgedPlugin {
         let content = ActivityContent(state: state, staleDate: nil)
 
         Task {
-            // Solo puede haber una: si quedó alguna vieja, cerrarla.
             for old in Activity<WorkoutActivityAttributes>.activities {
                 await old.end(nil, dismissalPolicy: .immediate)
             }
