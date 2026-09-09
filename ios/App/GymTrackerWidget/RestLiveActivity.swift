@@ -13,8 +13,8 @@ struct RestLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: RestActivityAttributes.self) { context in
             RestLockScreenView(state: context.state)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 14)
                 .activityBackgroundTint(Color.black.opacity(0.45))
                 .activitySystemActionForegroundColor(gymAccent)
         } dynamicIsland: { context in
@@ -33,12 +33,12 @@ struct RestLiveActivity: Widget {
                 DynamicIslandExpandedRegion(.trailing) {
                     if !finished {
                         Text(timerInterval: range, countsDown: true)
-                            .font(.system(size: 34, weight: .bold, design: .rounded))
+                            .font(.system(size: 38, weight: .heavy, design: .rounded))
                             .monospacedDigit()
                             .foregroundStyle(gymAccent)
                             .lineLimit(1)
-                            .minimumScaleFactor(0.6)
-                            .frame(maxWidth: 150, alignment: .trailing)
+                            .minimumScaleFactor(0.5)
+                            .frame(alignment: .trailing)
                     }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
@@ -61,12 +61,15 @@ struct RestLiveActivity: Widget {
                     Image(systemName: "arrow.right")
                         .foregroundStyle(gymAccent)
                 } else {
+                    // maxWidth .infinity + alignment .trailing: el texto se
+                    // pega al borde derecho, sin espacio muerto a la derecha
+                    // (Text(timerInterval:) reserva ancho para estabilidad).
                     Text(timerInterval: range, countsDown: true)
                         .monospacedDigit()
                         .foregroundStyle(gymAccent)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                        .frame(maxWidth: 48)
+                        .minimumScaleFactor(0.8)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
                 }
             } minimal: {
                 if finished {
@@ -77,7 +80,7 @@ struct RestLiveActivity: Widget {
                         .foregroundStyle(gymAccent)
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
-                        .frame(maxWidth: 36)
+                        .frame(maxWidth: 34)
                 }
             }
             .keylineTint(gymAccent)
@@ -85,39 +88,46 @@ struct RestLiveActivity: Widget {
     }
 }
 
-/// Pantalla de bloqueo / banner. Texto a la izquierda, número grande a la
-/// derecha. Cuando el descanso terminó, no hay número: solo el próximo
-/// ejercicio.
+/// Pantalla de bloqueo / banner. Texto a la izquierda; el número, grande y
+/// centrado verticalmente, a la derecha. Cuando el descanso terminó no hay
+/// número: solo el próximo ejercicio.
 private struct RestLockScreenView: View {
     let state: RestActivityAttributes.ContentState
 
     private var exercise: String? { trimmed(state.exerciseName) }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(state.finished ? "Ahora" : "Descanso")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                if let exercise {
-                    Text(exercise)
-                        .font(state.finished ? .title3.weight(.bold) : .headline)
-                        .foregroundStyle(state.finished ? gymAccent : .primary)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.8)
-                        .fixedSize(horizontal: false, vertical: true)
+        ZStack {
+            // Texto a la izquierda, ocupando el ancho.
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(state.finished ? "Ahora" : "Descanso")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    if let exercise {
+                        Text(exercise)
+                            .font(state.finished ? .title3.weight(.bold) : .title3.weight(.semibold))
+                            .foregroundStyle(state.finished ? gymAccent : .primary)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.8)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
+                Spacer(minLength: 84)
             }
+
+            // Número centrado de arriba a abajo, pegado a la derecha.
             if !state.finished {
-                Spacer(minLength: 8)
-                Text(timerInterval: restRange(state), countsDown: true)
-                    .font(.system(size: 44, weight: .bold, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundStyle(gymAccent)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                    .layoutPriority(1)
-                    .frame(minWidth: 96, alignment: .trailing)
+                HStack {
+                    Spacer()
+                    Text(timerInterval: restRange(state), countsDown: true)
+                        .font(.system(size: 54, weight: .heavy, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(gymAccent)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                        .fixedSize()
+                }
             }
         }
     }
