@@ -7,43 +7,62 @@ import WidgetKit
 struct WorkoutLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: WorkoutActivityAttributes.self) { context in
-            HStack(alignment: .center) {
+            HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(context.state.exerciseName ?? context.attributes.name)
+                    Text(title(context))
                         .font(.headline)
-                        .lineLimit(1)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.8)
+                        .fixedSize(horizontal: false, vertical: true)
                     Text(setsLabel(context.state))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                Spacer()
+                Spacer(minLength: 8)
                 Text(context.attributes.startedAt, style: .timer)
-                    .font(.system(.title3, design: .rounded).weight(.semibold))
+                    .font(.system(size: 26, weight: .semibold, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(gymAccent)
-                    .frame(maxWidth: 84)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .layoutPriority(1)
+                    .frame(minWidth: 76, alignment: .trailing)
             }
-            .padding()
+            .padding(.vertical, 4)
             .activityBackgroundTint(Color.black.opacity(0.45))
             .activitySystemActionForegroundColor(gymAccent)
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    Label(context.state.exerciseName ?? context.attributes.name,
-                          systemImage: "figure.strengthtraining.traditional")
-                        .lineLimit(1)
-                        .foregroundStyle(.secondary)
+                    HStack(spacing: 5) {
+                        Image(systemName: "figure.strengthtraining.traditional")
+                        Text("Entreno")
+                    }
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.secondary)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     Text(context.attributes.startedAt, style: .timer)
+                        .font(.system(size: 20, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .foregroundStyle(gymAccent)
-                        .frame(maxWidth: 96)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                        .frame(maxWidth: 120, alignment: .trailing)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    Text(setsLabel(context.state))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title(context))
+                            .font(.headline)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.75)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text(setsLabel(context.state))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
             } compactLeading: {
                 Image(systemName: "figure.strengthtraining.traditional")
@@ -52,13 +71,21 @@ struct WorkoutLiveActivity: Widget {
                 Text(context.attributes.startedAt, style: .timer)
                     .monospacedDigit()
                     .foregroundStyle(gymAccent)
-                    .frame(maxWidth: 44)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .frame(maxWidth: 52)
             } minimal: {
                 Image(systemName: "figure.strengthtraining.traditional")
                     .foregroundStyle(gymAccent)
             }
             .keylineTint(gymAccent)
         }
+    }
+
+    private func title(_ context: ActivityViewContext<WorkoutActivityAttributes>) -> String {
+        let exercise = context.state.exerciseName?.trimmingCharacters(in: .whitespaces)
+        if let exercise, !exercise.isEmpty { return exercise }
+        return context.attributes.name
     }
 
     private func setsLabel(_ state: WorkoutActivityAttributes.ContentState) -> String {
