@@ -14,7 +14,6 @@ import {
   Flame,
   GraduationCap,
   HelpCircle,
-  ListMusic,
   Music,
   Moon,
   Palette,
@@ -31,7 +30,6 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 
-const SpotifyPlayerSheet = lazy(() => import('@/components/gym/SpotifyPlayerSheet'))
 const CoachSignupSheet = lazy(() => import('@/components/gym/CoachSignupSheet'))
 import { db } from '@/db/schema'
 // Sin lazy(): es genérico (<K extends string>) y React.lazy() no preserva
@@ -129,7 +127,6 @@ export default function Ajustes() {
   const { status: syncStatus, lastSyncedAt } = useSyncStore()
   const canInstall = useCanInstallPwa()
   const showAppSection = !isNative && !isStandalone()
-  const [playerOpen, setPlayerOpen] = useState(false)
   const [coachSheetOpen, setCoachSheetOpen] = useState(false)
   const [levelSheetOpen, setLevelSheetOpen] = useState(false)
   const [goalSheetOpen, setGoalSheetOpen] = useState(false)
@@ -446,16 +443,6 @@ export default function Ajustes() {
                 <ChevronRight size={16} className="shrink-0 text-ink-4" />
               )}
             </Row>
-            {spotifyConnected && (
-              <Row onClick={() => setPlayerOpen(true)}>
-                <ListMusic size={18} className="shrink-0 text-ink-3" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[15px]">Elegir qué suena</p>
-                  <p className="text-[13px] text-ink-3">Tus playlists, sin salir de la app</p>
-                </div>
-                <ChevronRight size={16} className="shrink-0 text-ink-4" />
-              </Row>
-            )}
           </Card>
         </section>
 
@@ -579,11 +566,6 @@ export default function Ajustes() {
         </p>
       </div>
 
-      {playerOpen && (
-        <Suspense fallback={null}>
-          <SpotifyPlayerSheet onClose={() => setPlayerOpen(false)} />
-        </Suspense>
-      )}
       {coachSheetOpen && (
         <Suspense fallback={null}>
           <CoachSignupSheet onClose={() => setCoachSheetOpen(false)} />
