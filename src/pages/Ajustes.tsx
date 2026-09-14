@@ -1,4 +1,4 @@
-import { Suspense, lazy, useRef, useState } from 'react'
+import { Suspense, lazy, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import {
@@ -40,6 +40,46 @@ import { db } from '@/db/schema'
 // pena perder el tipado por el code-splitting acá.
 import OptionPickerSheet from '@/components/gym/OptionPickerSheet'
 import { GOAL_LABELS, GOAL_OPTIONS, LEVEL_LABELS, LEVEL_OPTIONS } from '@/lib/strengthStandards'
+import { useMuscleGroupLevels } from '@/hooks/useMuscleGroupLevels'
+import type { ExperienceLevel } from '@/types'
+
+// Orden de menor a mayor — comparar niveles es comparar esta posición, no
+// el string. Mismos 6 escalones que ExperienceLevel/StrengthLevel.
+const LEVEL_RANK: Record<ExperienceLevel, number> = {
+  novice: 0,
+  beginner: 1,
+  intermediate: 2,
+  advanced: 3,
+  elite: 4,
+  champion: 5,
+}
+
+/**
+ * Sugerencia de nivel a partir de PRs reales (useMuscleGroupLevels, ya
+ * calculado para la pantalla de niveles por grupo muscular) — nunca
+ * escribe profile.level sola, solo informa. El nivel MÁS FRECUENTE entre
+ * los grupos con datos reales (no el promedio ni el máximo: un PR suelto
+ * en un solo grupo no debería disparar "sos elite"). Con menos de 4 grupos
+ * con datos todavía no alcanza para sugerir nada.
+ */
+function suggestLevel(levels: { result: { level: string } }[]): ExperienceLevel | null {
+  const real = levels.filter((m) => m.result.level !== 'no_data')
+  if (real.length < 4) return null
+  const counts = new Map<ExperienceLevel, number>()
+  for (const m of real) {
+    const lvl = m.result.level as ExperienceLevel
+    counts.set(lvl, (counts.get(lvl) ?? 0) + 1)
+  }
+  let best: ExperienceLevel | null = null
+  let bestCount = 0
+  for (const [level, count] of counts) {
+    if (count > bestCount || (count === bestCount && best && LEVEL_RANK[level] > LEVEL_RANK[best])) {
+      best = level
+      bestCount = count
+    }
+  }
+  return best
+}
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useThemeStore } from '@/stores/themeStore'
 import { useSpotifyStore } from '@/stores/spotifyStore'
@@ -75,6 +115,14 @@ export default function Ajustes() {
     () => (userId ? db.profile.get(userId) : undefined),
     [userId]
   )
+  const { levels: muscleLevels } = useMuscleGroupLevels()
+  const levelSuggestion = useMemo(() => {
+    const suggested = suggestLevel(muscleLevels)
+    if (!suggested || !profile) return null
+    if (profile.level && LEVEL_RANK[suggested] <= LEVEL_RANK[profile.level]) return null
+    return suggested
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [muscleLevels, profile?.level])
   const spotifyDisplayName = useSpotifyStore((s) => s.displayName)
   const spotifyAccessToken = useSpotifyStore((s) => s.accessToken)
   const spotifyDisconnect = useSpotifyStore((s) => s.disconnect)
@@ -342,6 +390,11 @@ export default function Ajustes() {
                 <p className="text-[13px] text-ink-3">
                   {profile.level ? LEVEL_LABELS[profile.level] : 'Sin definir'}
                 </p>
+                {levelSuggestion && (
+                  <p className="text-[13px] text-accent">
+                    Tus marcas sugieren {LEVEL_LABELS[levelSuggestion]} — tocá para actualizar
+                  </p>
+                )}
               </div>
               <ChevronRight size={16} className="shrink-0 text-ink-4" />
             </Row>

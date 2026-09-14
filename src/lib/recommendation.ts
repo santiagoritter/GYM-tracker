@@ -437,12 +437,21 @@ export function recommend(
  * llegando al tope de repeticiones, subí un escalón del equipo. Reemplaza al
  * "+2.5 kg" fijo, que era el mismo salto para elevaciones laterales que para
  * peso muerto.
+ *
+ * `streak`: cuántas sesiones SEGUIDAS (contando desde la más reciente, sin
+ * cortarse) cumplieron el objetivo completo — lo calcula el caller
+ * (`src/db/routines.ts`, mirando hasta las últimas 3 sesiones de este
+ * ejercicio). Una racha real de 3 o más pesa distinto que "cumplió una
+ * sola vez": ahí se suben dos escalones en vez de uno. Default 1 para
+ * quien no calcule la racha — mismo comportamiento de siempre.
  */
 export function progressWeight(
   lastTopWeightKg: number,
   metTarget: boolean,
-  equipment: Equipment
+  equipment: Equipment,
+  streak = 1
 ): number {
   if (!metTarget || lastTopWeightKg <= 0) return lastTopWeightKg
-  return roundToLoadable(lastTopWeightKg + WEIGHT_INCREMENT[equipment], equipment)
+  const steps = streak >= 3 ? 2 : 1
+  return roundToLoadable(lastTopWeightKg + WEIGHT_INCREMENT[equipment] * steps, equipment)
 }

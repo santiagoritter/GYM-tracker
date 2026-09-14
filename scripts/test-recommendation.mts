@@ -11,6 +11,7 @@ import {
   estimate1RMFromProfile,
   estimate1RMFromHistory,
   estimate1RMFromRelatedHistory,
+  progressWeight,
 } from '../src/lib/recommendation'
 import { MIN_LOAD_KG, WEIGHT_INCREMENT, isBodyweight } from '../src/lib/loading'
 import { ROUTINE_TEMPLATES } from '../src/data/routineTemplates'
@@ -205,6 +206,28 @@ const totalTemplateExercises = ROUTINE_TEMPLATES.reduce(
   (n, t) => n + t.payload.d.reduce((m, d) => m + (d.e?.length ?? 0), 0),
   0
 )
+
+// progressWeight: racha de sesiones completas escala el incremento.
+{
+  const barbellStep = WEIGHT_INCREMENT.barbell // 2.5
+  check(progressWeight(100, false, 'barbell', 0) === 100, 'progressWeight: sin cumplir no sube')
+  check(
+    progressWeight(100, true, 'barbell', 1) === 100 + barbellStep,
+    'progressWeight: racha 1 sube un escalón'
+  )
+  check(
+    progressWeight(100, true, 'barbell', 2) === 100 + barbellStep,
+    'progressWeight: racha 2 sigue siendo un escalón'
+  )
+  check(
+    progressWeight(100, true, 'barbell', 3) === 100 + barbellStep * 2,
+    'progressWeight: racha de 3+ sube dos escalones'
+  )
+  check(
+    progressWeight(100, true, 'barbell') === 100 + barbellStep,
+    'progressWeight: sin pasar streak, default 1 escalón (compat)'
+  )
+}
 
 console.log(`Ejercicios evaluados: ${EXERCISES_SEED.length}`)
 console.log(

@@ -247,16 +247,40 @@ export async function startWorkoutFromDay(userId: string, dayId: string): Promis
     let suggestedKg = 0
 
     if (history.length > 0 && exercise) {
-      // Progresión sobre el último entreno donde se hizo este ejercicio
-      const lastWorkoutId = history
-        .slice()
-        .sort((a, b) => a.updatedAt.localeCompare(b.updatedAt))
-        .at(-1)!.workoutId
-      const lastSets = history.filter((s) => s.workoutId === lastWorkoutId)
+      // Sesiones pasadas de este ejercicio, agrupadas por entreno y
+      // ordenadas de la más reciente a la más vieja (por el updatedAt más
+      // nuevo de cada grupo — dentro de un mismo entreno cada set se sella
+      // en un momento distinto).
+      const byWorkout = new Map<string, WorkoutSet[]>()
+      for (const s of history) {
+        const list = byWorkout.get(s.workoutId)
+        if (list) list.push(s)
+        else byWorkout.set(s.workoutId, [s])
+      }
+      const sessions = [...byWorkout.values()]
+        .map((sets) => ({
+          sets,
+          latest: sets.reduce((m, s) => (s.updatedAt > m ? s.updatedAt : m), sets[0]!.updatedAt),
+        }))
+        .sort((a, b) => (a.latest > b.latest ? -1 : a.latest < b.latest ? 1 : 0))
+        .map(({ sets }) => sets)
+
+      const metTargetOf = (sets: WorkoutSet[]) =>
+        sets.length >= entry.setsTarget && sets.every((s) => s.reps >= entry.repsMax)
+
+      const lastSets = sessions[0]!
       const topWeight = Math.max(...lastSets.map((s) => s.weightKg))
-      const metTarget =
-        lastSets.length >= entry.setsTarget && lastSets.every((s) => s.reps >= entry.repsMax)
-      suggestedKg = progressWeight(topWeight, metTarget, exercise.equipment)
+      const metTarget = metTargetOf(lastSets)
+
+      // Racha: cuántas de las últimas 3 sesiones cumplieron seguidas,
+      // contando desde la más reciente — corta apenas una no cumple.
+      let streak = 0
+      for (const sets of sessions.slice(0, 3)) {
+        if (!metTargetOf(sets)) break
+        streak++
+      }
+
+      suggestedKg = progressWeight(topWeight, metTarget, exercise.equipment, streak)
     } else if (exercise) {
       suggestedKg = recommend(exercise, profile, [], allHistory).weightKg
     }
