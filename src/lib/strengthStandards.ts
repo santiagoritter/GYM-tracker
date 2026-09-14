@@ -2,6 +2,9 @@
 // Fuente: adaptado de ExRx.net Strength Standards y Symmetric Strength.
 // Metodología completa en docs/08-NIVELES-FUERZA.md
 
+import { Dumbbell, HeartPulse, Layers, Timer, TrendingUp, type LucideIcon } from 'lucide-react'
+import type { ExperienceLevel, FitnessGoal } from '@/types'
+
 export type StrengthLevel =
   | 'no_data'
   | 'novice'
@@ -20,6 +23,36 @@ export const LEVEL_LABELS: Record<StrengthLevel, string> = {
   elite: 'Elite',
   champion: 'Campeón',
 }
+
+/** Nivel + descripción, para el picker de Onboarding y de Ajustes — un
+ * solo lugar, antes vivía duplicado como array local en Onboarding.tsx. */
+export const LEVEL_OPTIONS: { key: ExperienceLevel; label: string; desc: string }[] = [
+  { key: 'novice', label: 'Novato', desc: 'Recién arrancás o volvés después de mucho tiempo parado' },
+  { key: 'beginner', label: 'Principiante', desc: 'Menos de 1 año entrenando con regularidad' },
+  { key: 'intermediate', label: 'Intermedio', desc: '1–3 años de entrenamiento constante' },
+  { key: 'advanced', label: 'Avanzado', desc: 'Varios años entrenando en serio' },
+  { key: 'elite', label: 'Elite', desc: 'Nivel competitivo, entre los más fuertes de tu categoría' },
+  { key: 'champion', label: 'Campeón', desc: 'Nivel de récord nacional o internacional' },
+]
+
+export const GOAL_LABELS: Record<FitnessGoal, string> = {
+  strength: 'Fuerza máxima',
+  mass: 'Ganar masa',
+  endurance: 'Resistencia',
+  health: 'Salud general',
+  general: 'Todo un poco',
+}
+
+/** Objetivo + ícono, mismo criterio que `LEVEL_OPTIONS` — antes vivía
+ * duplicado como array local en Onboarding.tsx, con `GOAL_LABELS` repetido
+ * aparte en Profile.tsx. */
+export const GOAL_OPTIONS: { key: FitnessGoal; label: string; Icon: LucideIcon }[] = [
+  { key: 'strength', label: GOAL_LABELS.strength, Icon: Dumbbell },
+  { key: 'mass', label: GOAL_LABELS.mass, Icon: TrendingUp },
+  { key: 'endurance', label: GOAL_LABELS.endurance, Icon: Timer },
+  { key: 'health', label: GOAL_LABELS.health, Icon: HeartPulse },
+  { key: 'general', label: GOAL_LABELS.general, Icon: Layers },
+]
 
 interface LevelThresholds {
   novice: number

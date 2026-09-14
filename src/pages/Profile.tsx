@@ -9,15 +9,7 @@ import MyCoachCard from '@/components/gym/MyCoachCard'
 import type { LocalProfile } from '@/types'
 import { cn } from '@/lib/utils'
 import { getDailyMessage } from '@/lib/motivational'
-import { LEVEL_LABELS } from '@/lib/strengthStandards'
-
-const GOAL_LABELS: Record<string, string> = {
-  strength: 'Fuerza máxima',
-  mass: 'Ganar masa',
-  endurance: 'Resistencia',
-  health: 'Salud general',
-  general: 'Todo un poco',
-}
+import { GOAL_LABELS, LEVEL_LABELS } from '@/lib/strengthStandards'
 
 const dailyMsg = getDailyMessage()
 

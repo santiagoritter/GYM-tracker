@@ -1,23 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  ChevronRight,
-  Dumbbell,
-  Flame,
-  HeartPulse,
-  Layers,
-  Scale,
-  Target,
-  Timer,
-  TrendingUp,
-  Trophy,
-  User,
-  WifiOff,
-  type LucideIcon,
-} from 'lucide-react'
+import { ChevronRight, Flame, Scale, Target, TrendingUp, Trophy, User, WifiOff, type LucideIcon } from 'lucide-react'
 import { db } from '@/db/schema'
 import { useAuthStore } from '@/stores/authStore'
 import { ONBOARDING_MESSAGES, getRandomMessage } from '@/lib/motivational'
+import { GOAL_OPTIONS as GOALS, LEVEL_OPTIONS as LEVELS } from '@/lib/strengthStandards'
 import { cn, nowIso } from '@/lib/utils'
 import type { FitnessGoal, ExperienceLevel } from '@/types'
 
@@ -25,23 +12,6 @@ const WELCOME_HIGHLIGHTS: { text: string; Icon: LucideIcon }[] = [
   { text: 'Funciona sin conexión: entrená aunque el gimnasio no tenga señal', Icon: WifiOff },
   { text: 'Te sugiere el peso de cada serie según tu historial', Icon: Scale },
   { text: 'Seguí tu progreso con niveles de fuerza y récords personales', Icon: TrendingUp },
-]
-
-const GOALS: { key: FitnessGoal; label: string; Icon: LucideIcon }[] = [
-  { key: 'strength', label: 'Fuerza máxima', Icon: Dumbbell },
-  { key: 'mass', label: 'Ganar masa', Icon: TrendingUp },
-  { key: 'endurance', label: 'Resistencia', Icon: Timer },
-  { key: 'health', label: 'Salud general', Icon: HeartPulse },
-  { key: 'general', label: 'Todo un poco', Icon: Layers },
-]
-
-const LEVELS: { key: ExperienceLevel; label: string; desc: string }[] = [
-  { key: 'novice', label: 'Novato', desc: 'Recién arrancás o volvés después de mucho tiempo parado' },
-  { key: 'beginner', label: 'Principiante', desc: 'Menos de 1 año entrenando con regularidad' },
-  { key: 'intermediate', label: 'Intermedio', desc: '1–3 años de entrenamiento constante' },
-  { key: 'advanced', label: 'Avanzado', desc: 'Varios años entrenando en serio' },
-  { key: 'elite', label: 'Elite', desc: 'Nivel competitivo, entre los más fuertes de tu categoría' },
-  { key: 'champion', label: 'Campeón', desc: 'Nivel de récord nacional o internacional' },
 ]
 
 export default function Onboarding() {

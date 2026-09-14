@@ -10,6 +10,7 @@ import {
   CloudOff,
   Download,
   FileText,
+  Flag,
   Flame,
   GraduationCap,
   HelpCircle,
@@ -24,6 +25,7 @@ import {
   Sun,
   Target,
   Timer,
+  Trophy,
   Upload,
   Users,
 } from 'lucide-react'
@@ -32,6 +34,12 @@ import { useAuthStore } from '@/stores/authStore'
 const SpotifyPlayerSheet = lazy(() => import('@/components/gym/SpotifyPlayerSheet'))
 const CoachSignupSheet = lazy(() => import('@/components/gym/CoachSignupSheet'))
 import { db } from '@/db/schema'
+// Sin lazy(): es genérico (<K extends string>) y React.lazy() no preserva
+// el parámetro de tipo — el generic se erosiona a `string` en el punto de
+// uso y rompe el chequeo de `onSelect`. El componente es chico, no vale la
+// pena perder el tipado por el code-splitting acá.
+import OptionPickerSheet from '@/components/gym/OptionPickerSheet'
+import { GOAL_LABELS, GOAL_OPTIONS, LEVEL_LABELS, LEVEL_OPTIONS } from '@/lib/strengthStandards'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useThemeStore } from '@/stores/themeStore'
 import { useSpotifyStore } from '@/stores/spotifyStore'
@@ -75,6 +83,8 @@ export default function Ajustes() {
   const showAppSection = !isNative && !isStandalone()
   const [playerOpen, setPlayerOpen] = useState(false)
   const [coachSheetOpen, setCoachSheetOpen] = useState(false)
+  const [levelSheetOpen, setLevelSheetOpen] = useState(false)
+  const [goalSheetOpen, setGoalSheetOpen] = useState(false)
   const role = useAuthStore((s) => s.role)
   const isCoach = role === 'coach' || role === 'admin'
 
@@ -325,6 +335,26 @@ export default function Ajustes() {
                 ))}
               </div>
             </Row>
+            <Row onClick={() => setLevelSheetOpen(true)}>
+              <Trophy size={18} className="shrink-0 text-ink-3" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[15px]">Nivel</p>
+                <p className="text-[13px] text-ink-3">
+                  {profile.level ? LEVEL_LABELS[profile.level] : 'Sin definir'}
+                </p>
+              </div>
+              <ChevronRight size={16} className="shrink-0 text-ink-4" />
+            </Row>
+            <Row onClick={() => setGoalSheetOpen(true)}>
+              <Flag size={18} className="shrink-0 text-ink-3" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[15px]">Objetivo</p>
+                <p className="text-[13px] text-ink-3">
+                  {profile.goal ? GOAL_LABELS[profile.goal] : 'Sin definir'}
+                </p>
+              </div>
+              <ChevronRight size={16} className="shrink-0 text-ink-4" />
+            </Row>
           </Card>
         </section>
 
@@ -505,6 +535,24 @@ export default function Ajustes() {
         <Suspense fallback={null}>
           <CoachSignupSheet onClose={() => setCoachSheetOpen(false)} />
         </Suspense>
+      )}
+      {levelSheetOpen && (
+        <OptionPickerSheet
+          title="Tu nivel"
+          options={LEVEL_OPTIONS}
+          value={profile.level}
+          onSelect={(level) => update({ level })}
+          onClose={() => setLevelSheetOpen(false)}
+        />
+      )}
+      {goalSheetOpen && (
+        <OptionPickerSheet
+          title="Tu objetivo"
+          options={GOAL_OPTIONS}
+          value={profile.goal}
+          onSelect={(goal) => update({ goal })}
+          onClose={() => setGoalSheetOpen(false)}
+        />
       )}
     </div>
   )
