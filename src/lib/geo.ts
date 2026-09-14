@@ -36,6 +36,39 @@ export interface GeoWatch {
 
 export type PermissionResult = 'granted' | 'denied' | 'unavailable'
 
+// Si el watcher de background no entregó ningún fix en este tiempo, se
+// arranca también el foreground como respaldo (ver comentario en
+// startWatch). 10s alcanza para el primer fix GPS típico y no hace
+// esperar tanto como para que el usuario piense que el mapa no funciona.
+const BACKGROUND_FALLBACK_MS = 10_000
+
+/** Camino foreground puro (@capacitor/geolocation, o navigator.geolocation
+ * en web por debajo). Se usa como watcher único en web/sin plugin de
+ * background, y también como respaldo cuando el de background no entrega
+ * nada (ver startWatch). */
+async function startForegroundWatch(onFix: (fix: GeoFix) => void): Promise<GeoWatch> {
+  try {
+    const { Geolocation } = await import('@capacitor/geolocation')
+    const id = await Geolocation.watchPosition(
+      { enableHighAccuracy: true, timeout: 20_000, maximumAge: 0 },
+      (position, err) => {
+        if (err || !position) return
+        onFix({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          t: position.timestamp,
+          alt: position.coords.altitude ?? undefined,
+          acc: position.coords.accuracy ?? undefined,
+          speed: position.coords.speed ?? undefined,
+        })
+      }
+    )
+    return { clear: () => void Geolocation.clearWatch({ id }) }
+  } catch {
+    return { clear: () => {} }
+  }
+}
+
 /** Pide permiso de ubicación (fina). En nativo con background, además pide
  * el permiso "Siempre" cuando se arranca el watcher — acá solo el de uso. */
 export async function ensureLocationPermission(): Promise<PermissionResult> {
@@ -72,6 +105,14 @@ export async function ensureLocationPermission(): Promise<PermissionResult> {
 /**
  * Arranca el seguimiento. `onFix` se llama con cada punto nuevo.
  * `background: true` (default en nativo) usa el plugin de background.
+ *
+ * Fallback por timeout: `addWatcher` puede resolver bien (devuelve un `id`
+ * válido) y sin embargo no llamar nunca a su callback — visto en el
+ * dispositivo real, es la causa más probable de que el mapa de running
+ * nunca aparezca (necesita >1 punto para montarse, ver Run.tsx). Eso NO
+ * tira excepción, así que el `catch` de abajo no lo cubre. Si a los
+ * `BACKGROUND_FALLBACK_MS` no entregó nada, se arranca también el
+ * foreground en paralelo — el que entregue primero, entrega.
  */
 export async function startWatch(
   onFix: (fix: GeoFix) => void,
@@ -79,6 +120,7 @@ export async function startWatch(
 ): Promise<GeoWatch> {
   if (isNative && background) {
     try {
+      let gotFix = false
       const id = await BackgroundGeolocation.addWatcher(
         {
           backgroundTitle: 'Registrando tu salida',
@@ -89,6 +131,7 @@ export async function startWatch(
         },
         (location, error) => {
           if (error || !location) return
+          gotFix = true
           onFix({
             lat: location.latitude,
             lng: location.longitude,
@@ -99,30 +142,30 @@ export async function startWatch(
           })
         }
       )
-      return { clear: () => void BackgroundGeolocation.removeWatcher({ id }) }
+      const bgWatch: GeoWatch = { clear: () => void BackgroundGeolocation.removeWatcher({ id }) }
+
+      let fgWatch: GeoWatch | null = null
+      const timer = setTimeout(() => {
+        if (gotFix) return
+        startForegroundWatch((fix) => {
+          gotFix = true
+          onFix(fix)
+        }).then((w) => {
+          fgWatch = w
+        })
+      }, BACKGROUND_FALLBACK_MS)
+
+      return {
+        clear: () => {
+          clearTimeout(timer)
+          bgWatch.clear()
+          fgWatch?.clear()
+        },
+      }
     } catch {
-      // cae al camino foreground
+      // addWatcher tiró: cae al camino foreground de una
     }
   }
 
-  try {
-    const { Geolocation } = await import('@capacitor/geolocation')
-    const id = await Geolocation.watchPosition(
-      { enableHighAccuracy: true, timeout: 20_000, maximumAge: 0 },
-      (position, err) => {
-        if (err || !position) return
-        onFix({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          t: position.timestamp,
-          alt: position.coords.altitude ?? undefined,
-          acc: position.coords.accuracy ?? undefined,
-          speed: position.coords.speed ?? undefined,
-        })
-      }
-    )
-    return { clear: () => void Geolocation.clearWatch({ id }) }
-  } catch {
-    return { clear: () => {} }
-  }
+  return startForegroundWatch(onFix)
 }
