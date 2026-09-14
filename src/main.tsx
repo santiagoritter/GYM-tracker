@@ -14,6 +14,7 @@ import { initPwaUpdate } from '@/lib/pwaUpdate'
 import { initPwaInstall } from '@/lib/pwaInstall'
 import { ensureReminderChannel } from '@/lib/nativeReminders'
 import { ensureQuotesChannel } from '@/lib/motivationalNotifs'
+import { initSpotifyNativeCallback } from '@/lib/spotifyNativeCallback'
 import { endRestActivity } from '@/lib/liveActivity'
 import { applyTheme, useThemeStore } from '@/stores/themeStore'
 import '@/index.css'
@@ -35,6 +36,11 @@ initPwaInstall()
 // Canales de Android para los avisos (no-op en web y en iOS).
 void ensureReminderChannel()
 void ensureQuotesChannel()
+
+// Captura el redirect de Spotify en nativo (esquema propio gymtracker://).
+// No-op en web, donde el login vuelve por navegación normal a
+// SpotifyCallback.tsx.
+initSpotifyNativeCallback()
 
 // Al arrancar la app (cold start o webview reciclada por iOS) siempre se cae
 // en Inicio — la ruta no se persiste. Un descanso dura minutos: si hubo un

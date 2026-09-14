@@ -16,7 +16,15 @@
  * configurar".
  */
 
+import { isNative } from '@/lib/native'
+
 const SPOTIFY_CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID as string | undefined
+
+// Esquema propio registrado en ios/App/App/Info.plist (CFBundleURLTypes) y
+// android/app/src/main/AndroidManifest.xml (intent-filter). Tiene que
+// coincidir EXACTO con lo que se da de alta en developer.spotify.com — ver
+// docs/BITACORA.md, el paso queda anotado como pendiente del usuario.
+const NATIVE_REDIRECT_URI = 'gymtracker://spotify-callback'
 
 // playlist-read-private: hace falta para listar las playlists del usuario
 // en el sheet de reproductor (ver SpotifyPlayerSheet.tsx) — quien ya había
@@ -32,10 +40,17 @@ export function isSpotifyConfigured(): boolean {
 
 /** Misma URL para armar el authorize request y para registrarla en el
  * dashboard de Spotify — tiene que coincidir EXACTO (Spotify no acepta
- * wildcards), por eso se deriva de `window.location`/`BASE_URL` en vez
- * de hardcodearla, así funciona igual en dev y en producción sin tocar
- * código (solo hay que cargar las dos URLs resultantes en el dashboard). */
+ * wildcards). Dos casos:
+ *  - Web: se deriva de `window.location`/`BASE_URL` en vez de
+ *    hardcodearla, así funciona igual en dev y en producción sin tocar
+ *    código (solo hay que cargar las dos URLs resultantes en el dashboard).
+ *  - Nativo: `window.location.origin` es `capacitor://localhost` —
+ *    inservible como redirect_uri (nunca se registró, y aunque se
+ *    registrara no hay forma de que iOS/Android le devuelvan esa URL a la
+ *    app). Se usa el esquema propio en su lugar.
+ */
 export function getSpotifyRedirectUri(): string {
+  if (isNative) return NATIVE_REDIRECT_URI
   return `${window.location.origin}${import.meta.env.BASE_URL}spotify/callback`
 }
 
@@ -58,9 +73,19 @@ async function generateCodeChallenge(verifier: string): Promise<string> {
 /**
  * Arranca el login: genera el par verifier/challenge, guarda el
  * verifier en sessionStorage (sobrevive el round-trip a Spotify y
- * vuelta, no hace falta que sobreviva más que eso) y redirige. No
- * devuelve nada — la respuesta llega por navegación a
- * SpotifyCallback.tsx, no por promesa.
+ * vuelta, no hace falta que sobreviva más que eso) y redirige.
+ *
+ * Web: `window.location.href` — navega el único documento afuera, Spotify
+ * redirige de vuelta a SpotifyCallback.tsx por navegación normal, no por
+ * promesa (por eso esta función no devuelve nada).
+ *
+ * Nativo: `window.location.href` navegaría el ÚNICO webview de la app
+ * afuera, sin plugin de browser ni forma de volver — antes rompía el login
+ * de punta a punta. Se abre con `@capacitor/browser` (`Browser.open`, un
+ * SFSafariViewController/Custom Tab aparte, el webview de la app sigue
+ * vivo por debajo) y la respuesta la captura el listener `appUrlOpen`
+ * registrado en main.tsx (ver src/lib/spotifyNativeCallback.ts) cuando iOS
+ * intercepta el esquema propio y se lo devuelve a la app.
  */
 export async function startSpotifyLogin(): Promise<void> {
   if (!SPOTIFY_CLIENT_ID) return
@@ -76,7 +101,19 @@ export async function startSpotifyLogin(): Promise<void> {
     code_challenge: challenge,
     scope: SCOPES,
   })
-  window.location.href = `https://accounts.spotify.com/authorize?${params}`
+  const url = `https://accounts.spotify.com/authorize?${params}`
+
+  if (isNative) {
+    try {
+      const { Browser } = await import('@capacitor/browser')
+      await Browser.open({ url })
+      return
+    } catch {
+      // Sin el plugin disponible: cae al camino web (rompe igual en
+      // nativo, pero no peor que antes de este fix).
+    }
+  }
+  window.location.href = url
 }
 
 export interface SpotifyTokenResult {

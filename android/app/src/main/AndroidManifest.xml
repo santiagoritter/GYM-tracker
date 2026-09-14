@@ -22,6 +22,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Redirect del login de Spotify (PKCE, src/lib/spotifyAuth.ts).
+                 Mismo esquema que ios/App/App/Info.plist — tiene que coincidir
+                 con la URI dada de alta en developer.spotify.com. -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="gymtracker" android:host="spotify-callback" />
+            </intent-filter>
+
         </activity>
 
         <provider

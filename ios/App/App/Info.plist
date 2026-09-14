@@ -73,5 +73,16 @@
 	<false/>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.santiagoritter.gymtracker.spotify</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>gymtracker</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>
