@@ -2,13 +2,19 @@ import ActivityKit
 import SwiftUI
 import WidgetKit
 
-/// Live Activity del entreno en curso: tiempo transcurrido (lo cuenta iOS
-/// con `Text(_:style: .timer)`, sin que la app actualice nada), ejercicio
+/// Live Activity del entreno en curso: tiempo transcurrido, ejercicio
 /// actual y series hechas / totales. Mismo criterio visual que
-/// `RestLiveActivity.swift` — número grande a la derecha, texto con
-/// `.lineLimit` + `.minimumScaleFactor` en vez de truncar, `.fixedSize()`
-/// en vez de un frame fijo en el compacto (esto último causaba un hueco
-/// muerto a la derecha del número, ya visto y corregido en el descanso).
+/// `RestLiveActivity.swift` — número grande, texto con `.lineLimit` +
+/// `.minimumScaleFactor` en vez de truncar.
+///
+/// El timer usa `Text(timerInterval:countsDown:)` con rango hasta
+/// `.distantFuture` (cuenta ARRIBA desde `startedAt`, sin techo real) — NO
+/// `Text(date, style: .timer)`. Se probó primero con esa segunda forma y en
+/// el compacto de la Dynamic Island (`compactTrailing`) renderizaba
+/// **vacío** en el dispositivo real (bug reportado: "no muestra la hora,
+/// ocupa todo el ancho en negro") — `Text(timerInterval:)` es la misma API
+/// que ya funciona bien en el descanso, así que se unifica acá en vez de
+/// mantener dos caminos distintos para lo mismo.
 struct WorkoutLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: WorkoutActivityAttributes.self) { context in
@@ -18,7 +24,8 @@ struct WorkoutLiveActivity: Widget {
                 .activityBackgroundTint(Color.black.opacity(0.45))
                 .activitySystemActionForegroundColor(gymAccent)
         } dynamicIsland: { context in
-            DynamicIsland {
+            let range = workoutRange(context.attributes)
+            return DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
                     HStack(spacing: 5) {
                         Image(systemName: "figure.strengthtraining.traditional")
@@ -29,7 +36,7 @@ struct WorkoutLiveActivity: Widget {
                     .padding(.top, 2)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text(context.attributes.startedAt, style: .timer)
+                    Text(timerInterval: range, countsDown: false, showsHours: true)
                         .font(.system(size: 40, weight: .heavy, design: .rounded))
                         .monospacedDigit()
                         .foregroundStyle(gymAccent)
@@ -58,13 +65,12 @@ struct WorkoutLiveActivity: Widget {
                 Image(systemName: "figure.strengthtraining.traditional")
                     .foregroundStyle(gymAccent)
             } compactTrailing: {
-                // .fixedSize(): mismo fix que en el descanso — sin esto el
-                // texto queda centrado en un frame más ancho que su
-                // contenido real y sobra hueco a la derecha.
-                Text(context.attributes.startedAt, style: .timer)
+                Text(timerInterval: range, countsDown: false, showsHours: false)
                     .monospacedDigit()
                     .foregroundStyle(gymAccent)
-                    .fixedSize()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .frame(width: 42, alignment: .trailing)
             } minimal: {
                 Image(systemName: "figure.strengthtraining.traditional")
                     .foregroundStyle(gymAccent)
@@ -82,6 +88,13 @@ struct WorkoutLiveActivity: Widget {
     private func setsLabel(_ state: WorkoutActivityAttributes.ContentState) -> String {
         state.setsTotal > 0 ? "\(state.setsDone)/\(state.setsTotal) series" : "En curso"
     }
+}
+
+/// Rango desde que arrancó el entreno hasta "nunca" — `Text(timerInterval:)`
+/// necesita un `ClosedRange<Date>`, no una fecha suelta. `countsDown: false`
+/// lo hace contar para arriba sin importar el techo.
+private func workoutRange(_ attributes: WorkoutActivityAttributes) -> ClosedRange<Date> {
+    attributes.startedAt...Date.distantFuture
 }
 
 /// Pantalla de bloqueo / banner: texto a la izquierda (nombre del
@@ -124,7 +137,7 @@ private struct WorkoutLockScreenView: View {
 
             HStack {
                 Spacer()
-                Text(context.attributes.startedAt, style: .timer)
+                Text(timerInterval: workoutRange(context.attributes), countsDown: false, showsHours: true)
                     .font(.system(size: 40, weight: .heavy, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(gymAccent)
