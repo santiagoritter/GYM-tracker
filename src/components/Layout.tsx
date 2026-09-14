@@ -11,9 +11,13 @@ import AppHeader from '@/components/gym/AppHeader'
 // en el primer y último tab tocaba el borde de la cápsula exterior.
 const PILL_INSET = 6
 
+// -1 si la ruta actual no es ninguno de los 5 tabs — pasa en cualquier
+// pantalla "hija" del AppShell que no tiene tab propio (Ajustes,
+// Calculadora, Recordatorios, Calorías, Entrenos pasados, FAQ, Admin,
+// Coach…). El caller decide qué hacer con -1: acá se elige no mover la
+// pastilla, no defaultear a Home (ver el bug que corrige más abajo).
 function activeTabIndex(pathname: string): number {
-  const i = TABS.findIndex(({ to }) => (to === '/' ? pathname === '/' : pathname.startsWith(to)))
-  return i === -1 ? 0 : i
+  return TABS.findIndex(({ to }) => (to === '/' ? pathname === '/' : pathname.startsWith(to)))
 }
 
 export default function Layout() {
@@ -38,7 +42,19 @@ export default function Layout() {
     return () => ro.disconnect()
   }, [])
 
-  const activeIndex = activeTabIndex(location.pathname)
+  // La pastilla necesita un índice siempre válido (0-4). En una ruta sin
+  // tab propio (ej. /ajustes, llegada desde "Yo") `activeTabIndex` da -1 —
+  // acá se mantiene el último tab que sí matcheó en vez de saltar a Home
+  // (bug reportado: "entrás a Ajustes y la pastilla se va a Hoy"). Patrón
+  // de "recordar info del render anterior" (ajustar estado durante el
+  // render, sin efecto) — https://react.dev/learn/you-might-not-need-an-effect.
+  const rawIndex = activeTabIndex(location.pathname)
+  const [activeIndex, setActiveIndex] = useState(() => Math.max(rawIndex, 0))
+  const [lastPathname, setLastPathname] = useState(location.pathname)
+  if (location.pathname !== lastPathname) {
+    setLastPathname(location.pathname)
+    if (rawIndex !== -1) setActiveIndex(rawIndex)
+  }
   const pillX = (i: number) => i * tabWidth + PILL_INSET
 
   // Motion value propio (no el prop `animate`): así se puede comandar la

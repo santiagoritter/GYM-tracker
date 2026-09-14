@@ -16,10 +16,14 @@ import {
   ListMusic,
   Music,
   Moon,
+  Palette,
   RefreshCw,
+  Scale,
   Settings,
   Smartphone,
   Sun,
+  Target,
+  Timer,
   Upload,
   Users,
 } from 'lucide-react'
@@ -220,7 +224,10 @@ export default function Ajustes() {
           <SectionHeader title="Apariencia" />
           <Card>
             <Row>
-              <span className="min-w-0 flex-1 text-[15px]">Tema</span>
+              <Palette size={18} className="shrink-0 text-ink-3" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[15px]">Tema</p>
+              </div>
               <div className="flex shrink-0 gap-1 rounded-sm bg-surface-2 p-1">
                 <button
                   onClick={() => setTheme('dark')}
@@ -253,7 +260,10 @@ export default function Ajustes() {
           <SectionHeader title="Entrenamiento" />
           <Card>
             <Row className="flex-col items-stretch gap-2">
-              <span className="text-[15px]">Unidades</span>
+              <span className="flex items-center gap-3 text-[15px]">
+                <Scale size={18} className="shrink-0 text-ink-3" />
+                Unidades
+              </span>
               <div className="flex gap-2">
                 {(['kg', 'lbs'] as const).map((u) => (
                   <button
@@ -272,7 +282,10 @@ export default function Ajustes() {
               </div>
             </Row>
             <Row className="flex-col items-stretch gap-2">
-              <span className="text-[15px]">Descanso por defecto</span>
+              <span className="flex items-center gap-3 text-[15px]">
+                <Timer size={18} className="shrink-0 text-ink-3" />
+                Descanso por defecto
+              </span>
               <div className="flex gap-2">
                 {[60, 90, 120, 180].map((s) => (
                   <button
@@ -291,7 +304,10 @@ export default function Ajustes() {
               </div>
             </Row>
             <Row className="flex-col items-stretch gap-2">
-              <span className="text-[15px]">Meta semanal (entrenos)</span>
+              <span className="flex items-center gap-3 text-[15px]">
+                <Target size={18} className="shrink-0 text-ink-3" />
+                Meta semanal (entrenos)
+              </span>
               <div className="flex gap-2">
                 {[2, 3, 4, 5, 6].map((n) => (
                   <button
