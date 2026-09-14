@@ -14,7 +14,7 @@ import { initPwaUpdate } from '@/lib/pwaUpdate'
 import { initPwaInstall } from '@/lib/pwaInstall'
 import { ensureReminderChannel } from '@/lib/nativeReminders'
 import { ensureQuotesChannel } from '@/lib/motivationalNotifs'
-import { endRestActivity, endWorkoutActivity } from '@/lib/liveActivity'
+import { endRestActivity } from '@/lib/liveActivity'
 import { applyTheme, useThemeStore } from '@/stores/themeStore'
 import '@/index.css'
 
@@ -37,11 +37,17 @@ void ensureReminderChannel()
 void ensureQuotesChannel()
 
 // Al arrancar la app (cold start o webview reciclada por iOS) siempre se cae
-// en Inicio — la ruta no se persiste. Cualquier Live Activity que haya
-// quedado viva de una sesión anterior es un huérfano: se cierra. Las que
-// correspondan se recrean al entrar al entreno. No-op fuera de iOS.
+// en Inicio — la ruta no se persiste. Un descanso dura minutos: si hubo un
+// reload completo de la app, casi seguro ya quedó obsoleto, así que se
+// cierra sin condición. No-op fuera de iOS.
+//
+// La Live Activity del ENTRENO no se toca acá: a diferencia del descanso,
+// una sesión de varias horas es tiempo de sobra para que iOS recicle la
+// webview sin que el entreno haya terminado — cerrarla ciego mataba la Isla
+// de un entreno real todavía en curso. Esa limpieza es condicional y vive en
+// useWorkoutActivityReconciler (Layout.tsx/LayoutDesktop.tsx), que primero
+// chequea si hay un entreno sin terminar antes de decidir.
 void endRestActivity()
-void endWorkoutActivity()
 
 // El script inline de index.html ya setea data-theme antes del primer
 // paint (lee localStorage directo, sin poder importar este módulo). Esto

@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useReminderScheduler } from '@/lib/reminders'
+import { useWorkoutActivityReconciler } from '@/hooks/useWorkoutActivityReconciler'
 import { cn } from '@/lib/utils'
 import { TABS } from '@/lib/navTabs'
 import AppHeader from '@/components/gym/AppHeader'
@@ -12,6 +13,7 @@ import AppHeader from '@/components/gym/AppHeader'
  */
 export default function LayoutDesktop() {
   useReminderScheduler()
+  useWorkoutActivityReconciler()
 
   return (
     <div className="flex min-h-screen bg-bg">

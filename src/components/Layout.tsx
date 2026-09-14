@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { animate, motion, useMotionValue, useReducedMotion } from 'motion/react'
 import { useReminderScheduler } from '@/lib/reminders'
+import { useWorkoutActivityReconciler } from '@/hooks/useWorkoutActivityReconciler'
 import { cn } from '@/lib/utils'
 import { TABS } from '@/lib/navTabs'
 import AppHeader from '@/components/gym/AppHeader'
@@ -20,6 +21,7 @@ export default function Layout() {
   const location = useLocation()
   const reduced = useReducedMotion()
   useReminderScheduler()
+  useWorkoutActivityReconciler()
 
   // Ancho de cada columna de la tab bar, medido en vivo: hace falta en
   // píxeles reales para poder animar/arrastrar la pastilla por posición
