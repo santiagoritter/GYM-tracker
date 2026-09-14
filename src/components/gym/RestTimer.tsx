@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { FastForward, Plus } from 'lucide-react'
 import { useWorkoutStore } from '@/stores/workoutStore'
 import { useCountdown } from '@/hooks/useCountdown'
-import { cancelScheduledNotifications, hapticSuccess, notify } from '@/lib/native'
+import { cancelScheduledNotifications, hapticSuccess, isNative, notify } from '@/lib/native'
 import { endRestActivity, finishRestActivity, startRestActivity } from '@/lib/liveActivity'
 import { REST_END_MESSAGES, getRandomMessage } from '@/lib/motivational'
 
@@ -58,8 +58,17 @@ export function RestTimer() {
     if (!endsAt || remaining !== 0 || firedFor.current === endsAt) return
     firedFor.current = endsAt
     hapticSuccess()
-    // En web, la notificación agendada no existe: se dispara acá.
-    notify('Descanso terminado', getRandomMessage(REST_END_MESSAGES).text)
+    // Solo en web: en nativo esto duplicaba el aviso. El efecto de arriba
+    // ([endsAt]) YA agendó una notificación con el SO para este mismo
+    // momento — si la app estaba en segundo plano, el SO ya la entregó; si
+    // estaba abierta, el conteo puede haberse pausado (WKWebView frena los
+    // timers en background) y este efecto recién dispara al volver a
+    // primer plano, mucho después de la hora agendada. Bug real reportado:
+    // sonaba al terminar Y otra vez (con háptico) al reabrir la app. En web
+    // no existe notificación agendada — ahí sí hace falta disparar acá.
+    if (!isNative) {
+      notify('Descanso terminado', getRandomMessage(REST_END_MESSAGES).text)
+    }
     // iOS: la Live Activity pasa a mostrar solo el próximo ejercicio.
     finishRestActivity(exerciseName)
     skipRest()
