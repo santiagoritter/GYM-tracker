@@ -833,3 +833,56 @@ como notificación cada cierto tiempo.
   a compilar, y probar en el iPhone 14 Pro: completar una serie → cuenta
   regresiva en la Isla; arrancar un entreno → actividad del entreno. Toggle de
   frases → esperar una franja o probar.
+
+---
+
+## 2026-09-14 — Tanda de correcciones pre-demo (rama `ios-nativo`)
+
+El usuario probó a fondo el build nativo en su iPhone 14 Pro antes de
+mostrarle la app a amigos y reportó 8 problemas en un solo mensaje.
+Investigado con 3 agentes Explore en paralelo + lectura directa — causa raíz
+confirmada por código en cada ítem, no supuesta. 8 commits, uno por bloque.
+
+1. **Live Activity del entreno se apagaba en sesiones largas**: `main.tsx`
+   cerraba TODA Live Activity al arrancar la app, sin condición — en una
+   sesión de 4+ horas alcanza para que iOS recicle la webview con el
+   entreno todavía en curso, y al reabrir la app mataba la Isla de un
+   entreno real. `useWorkoutActivityReconciler` (nuevo) chequea si hay un
+   workout sin `finishedAt` antes de cerrar nada.
+2. **Pulido de `WorkoutLiveActivity.swift`**: nunca había recibido las
+   rondas de ajuste de `RestLiveActivity.swift` (compact con hueco a la
+   derecha, expandido sin jerarquía). Mismo tratamiento.
+3. **Onboarding se repetía en un dispositivo nuevo**: carrera determinística
+   entre `ensureProfile()` (sincrónico, gana siempre) y `runSync()` (red,
+   en paralelo) — podía además clobberear `onboarding_complete` en el
+   servidor. `pullProfile()` nuevo en `sync.ts`, `finishAuth` lo pide antes
+   de decidir ruta.
+4. **Nivel y objetivo editables en Ajustes** + **sugerencia de nivel** por
+   PRs reales (nunca escribe sola) + **progresión con rachas**
+   (`progressWeight` mira las últimas 3 sesiones, no solo la última).
+5. **Cards de Ajustes desalineadas** ("Tema"/Entrenamiento sin ícono líder,
+   rompía el ritmo visual con el resto de la pantalla) + **tab bar saltaba
+   a "Hoy" en `/ajustes`** (`activeTabIndex` defaulteaba a 0 en rutas sin
+   tab propio) — ahora recuerda el último tab que matcheó.
+6. **Mapa de running nunca aparecía**: `RunMap` depende de recibir puntos
+   del watcher de background, que puede resolver bien y no llamar nunca a
+   su callback (no tira excepción, así que el fallback existente no lo
+   cubría). Fallback por timeout de 10s que arranca también el foreground.
+7. **Spotify no conectaba en nativo**: `redirect_uri` derivado de
+   `capacitor://localhost` (nunca registrado) + `window.location.href`
+   navegando el único webview afuera + sin `CFBundleURLTypes`. Esquema
+   propio `gymtracker://`, `@capacitor/browser` (`Browser.open`) +
+   listener `appUrlOpen` que resuelve el login directo.
+
+### Verificación
+`npx tsc -b`, `npm test` (16, incluye casos nuevos de `progressWeight` y
+notificaciones motivacionales), `npm run build`, `xcodebuild -scheme App
+-sdk iphonesimulator`: verde en cada commit.
+
+### Pendiente (usuario, en su iPhone)
+- Registrar `gymtracker://spotify-callback` en developer.spotify.com → la
+  app → Redirect URIs (bloqueante, sin esto Spotify sigue rechazando).
+- Confirmar en dispositivo real: Live Activity del entreno sobreviviendo
+  una sesión larga, mapa de running con GPS real, login de Spotify de
+  punta a punta, onboarding no repitiéndose en un segundo dispositivo/
+  reinstalación.
