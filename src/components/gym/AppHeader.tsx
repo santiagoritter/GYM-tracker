@@ -5,6 +5,7 @@ import { workoutsFor } from '@/db/scoped'
 import { useAuthStore } from '@/stores/authStore'
 import { useWorkoutStore } from '@/stores/workoutStore'
 import { useCardioStore } from '@/stores/cardioStore'
+import { useRunStore } from '@/stores/runStore'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useElapsedDuration } from '@/hooks/useElapsedDuration'
 import { useCountdown } from '@/hooks/useCountdown'
@@ -33,6 +34,7 @@ export default function AppHeader() {
   const restEndsAt = useWorkoutStore((s) => s.restTimer.endsAt)
   const restRemaining = useCountdown(restEndsAt)
   const cardioWorkoutId = useCardioStore((s) => s.session?.workoutId)
+  const runWorkoutId = useRunStore((s) => s.session?.workoutId)
 
   const initials = (name ?? 'U')
     .split(' ')
@@ -60,7 +62,7 @@ export default function AppHeader() {
       <div className="flex items-center gap-1.5">
         {activeWorkout && (
           <button
-            onClick={() => navigate(activeWorkoutRoute(activeWorkout.id, cardioWorkoutId))}
+            onClick={() => navigate(activeWorkoutRoute(activeWorkout.id, cardioWorkoutId, runWorkoutId))}
             aria-label="Entreno en curso"
             className="flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-accent px-2.5 text-[12px] font-bold text-bg"
           >
@@ -70,7 +72,7 @@ export default function AppHeader() {
         )}
         {activeWorkout && restEndsAt && (
           <button
-            onClick={() => navigate(activeWorkoutRoute(activeWorkout.id, cardioWorkoutId))}
+            onClick={() => navigate(activeWorkoutRoute(activeWorkout.id, cardioWorkoutId, runWorkoutId))}
             aria-label="Descanso restante"
             className="flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-fill px-2.5 text-[12px] font-semibold text-ink-2"
           >

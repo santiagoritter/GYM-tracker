@@ -8,6 +8,7 @@ import { nextRoutineDay, startWorkoutFromDay } from '@/db/routines'
 import { useWorkoutStore } from '@/stores/workoutStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useCardioStore } from '@/stores/cardioStore'
+import { useRunStore } from '@/stores/runStore'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { getQuoteForNow } from '@/lib/quotes'
 import { activeWorkoutRoute } from '@/lib/cardio'
@@ -36,6 +37,7 @@ export default function Home() {
   )
   const activeElapsed = useElapsedDuration(activeWorkout?.startedAt)
   const cardioWorkoutId = useCardioStore((s) => s.session?.workoutId)
+  const runWorkoutId = useRunStore((s) => s.session?.workoutId)
   const activeRoutine = useLiveQuery(
     () =>
       userId
@@ -106,7 +108,7 @@ export default function Home() {
           grande es el CTA principal de Inicio específicamente. */}
       {activeWorkout ? (
         <button
-          onClick={() => navigate(activeWorkoutRoute(activeWorkout.id, cardioWorkoutId))}
+          onClick={() => navigate(activeWorkoutRoute(activeWorkout.id, cardioWorkoutId, runWorkoutId))}
           className="flex w-full items-center justify-between rounded-2xl border border-accent/40 bg-accent/10 p-5 text-left"
         >
           <div>

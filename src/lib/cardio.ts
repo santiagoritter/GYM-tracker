@@ -20,12 +20,22 @@ export function cardioMachine(id: CardioMachineId): CardioMachine {
   return CARDIO_MACHINES.find((m) => m.id === id) ?? CARDIO_MACHINES[0]
 }
 
-/** A qué ruta lleva "volver al entreno en curso" — un Workout de cardio no
- * tiene WorkoutSets, así que mandarlo a /entreno/:id (la pantalla de
- * pesas) lo mostraba vacío. Si el workout activo coincide con la sesión
- * de cardio en curso, vuelve a /cardio en cambio. */
-export function activeWorkoutRoute(workoutId: string, cardioWorkoutId: string | undefined): string {
-  return workoutId === cardioWorkoutId ? '/cardio' : `/entreno/${workoutId}`
+/** A qué ruta lleva "volver al entreno en curso" — un Workout de cardio o de
+ * running no tiene WorkoutSets, así que mandarlo a /entreno/:id (la pantalla
+ * de pesas) lo mostraba vacío. Si el workout activo coincide con la sesión
+ * de cardio o de running en curso, vuelve a /cardio o /correr en cambio.
+ * Bug real reportado: Run.tsx también crea su Workout espejo al ARRANCAR
+ * (no solo al terminar, ver src/pages/Run.tsx `handleStart`), así que el
+ * banner "Entreno en curso" de Home.tsx lo detectaba pero mandaba a un
+ * entreno de gimnasio vacío por no conocer el caso de running. */
+export function activeWorkoutRoute(
+  workoutId: string,
+  cardioWorkoutId: string | undefined,
+  runWorkoutId: string | undefined
+): string {
+  if (workoutId === cardioWorkoutId) return '/cardio'
+  if (workoutId === runWorkoutId) return '/correr'
+  return `/entreno/${workoutId}`
 }
 
 /** Distancia recorrida hasta ahora, calculada desde el último "checkpoint"

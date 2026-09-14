@@ -36,12 +36,6 @@ export interface GeoWatch {
 
 export type PermissionResult = 'granted' | 'denied' | 'unavailable'
 
-// Si el watcher de background no entregó ningún fix en este tiempo, se
-// arranca también el foreground como respaldo (ver comentario en
-// startWatch). 10s alcanza para el primer fix GPS típico y no hace
-// esperar tanto como para que el usuario piense que el mapa no funciona.
-const BACKGROUND_FALLBACK_MS = 10_000
-
 /** Camino foreground puro (@capacitor/geolocation, o navigator.geolocation
  * en web por debajo). Se usa como watcher único en web/sin plugin de
  * background, y también como respaldo cuando el de background no entrega
@@ -106,21 +100,31 @@ export async function ensureLocationPermission(): Promise<PermissionResult> {
  * Arranca el seguimiento. `onFix` se llama con cada punto nuevo.
  * `background: true` (default en nativo) usa el plugin de background.
  *
- * Fallback por timeout: `addWatcher` puede resolver bien (devuelve un `id`
- * válido) y sin embargo no llamar nunca a su callback — visto en el
- * dispositivo real, es la causa más probable de que el mapa de running
- * nunca aparezca (necesita >1 punto para montarse, ver Run.tsx). Eso NO
- * tira excepción, así que el `catch` de abajo no lo cubre. Si a los
- * `BACKGROUND_FALLBACK_MS` no entregó nada, se arranca también el
- * foreground en paralelo — el que entregue primero, entrega.
+ * En nativo se arrancan los DOS backends en paralelo desde el arranque, no
+ * uno como respaldo del otro con un timeout de por medio. Dos motivos:
+ *
+ * 1. `addWatcher` puede resolver bien (da un `id` válido) y sin embargo no
+ *    llamar nunca a su callback en el dispositivo real — eso no tira
+ *    excepción, así que un `catch` no lo cubre.
+ * 2. Un `setTimeout` como respaldo NO SIRVE si la app está en segundo
+ *    plano: WKWebView congela los timers de JS ahí — el `setTimeout` recién
+ *    corre cuando la app vuelve a primer plano, mucho después de vencer.
+ *    Bug real reportado: el mapa "solo aparecía al cerrar y reabrir la
+ *    app" — exactamente ese patrón (el respaldo quedaba congelado y recién
+ *    disparaba al reabrir). Arrancando el foreground YA, sin esperar nada,
+ *    hay cobertura real desde el primer segundo mientras la pantalla esté
+ *    prendida — que es también cuando `watchPosition` funciona.
+ *
+ * `runStore.addPoint` ya descarta fixes con timestamp idéntico, así que
+ * si ambos backends entregan el mismo punto no se duplica.
  */
 export async function startWatch(
   onFix: (fix: GeoFix) => void,
   { background = isNative }: { background?: boolean } = {}
 ): Promise<GeoWatch> {
   if (isNative && background) {
+    let bgWatch: GeoWatch | null = null
     try {
-      let gotFix = false
       const id = await BackgroundGeolocation.addWatcher(
         {
           backgroundTitle: 'Registrando tu salida',
@@ -131,7 +135,6 @@ export async function startWatch(
         },
         (location, error) => {
           if (error || !location) return
-          gotFix = true
           onFix({
             lat: location.latitude,
             lng: location.longitude,
@@ -142,28 +145,17 @@ export async function startWatch(
           })
         }
       )
-      const bgWatch: GeoWatch = { clear: () => void BackgroundGeolocation.removeWatcher({ id }) }
-
-      let fgWatch: GeoWatch | null = null
-      const timer = setTimeout(() => {
-        if (gotFix) return
-        startForegroundWatch((fix) => {
-          gotFix = true
-          onFix(fix)
-        }).then((w) => {
-          fgWatch = w
-        })
-      }, BACKGROUND_FALLBACK_MS)
-
-      return {
-        clear: () => {
-          clearTimeout(timer)
-          bgWatch.clear()
-          fgWatch?.clear()
-        },
-      }
+      bgWatch = { clear: () => void BackgroundGeolocation.removeWatcher({ id }) }
     } catch {
-      // addWatcher tiró: cae al camino foreground de una
+      // Sin watcher de background: sigue solo con el foreground de abajo.
+    }
+
+    const fgWatch = await startForegroundWatch(onFix)
+    return {
+      clear: () => {
+        bgWatch?.clear()
+        fgWatch.clear()
+      },
     }
   }
 
