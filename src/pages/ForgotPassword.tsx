@@ -4,6 +4,7 @@ import { Eye, EyeOff, KeyRound, RefreshCw } from 'lucide-react'
 import { requestPasswordReset, confirmPasswordReset } from '@/lib/supabaseAuth'
 import { db, ensureProfile } from '@/db/schema'
 import { migrateLocalUserToSupabase } from '@/db/migrateLocalUserToSupabase'
+import { pullProfile } from '@/lib/sync'
 
 type Step = 'request' | 'reset'
 
@@ -47,9 +48,16 @@ export default function ForgotPassword() {
       const user = await confirmPasswordReset(email, code, password)
       // Mismo criterio que Login.tsx: el remapeo de datos locales previos
       // corre acá también, por si esta cuenta ya tenía historial bajo un
-      // id local viejo (ver migrateLocalUserToSupabase.ts).
+      // id local viejo (ver migrateLocalUserToSupabase.ts). Y el mismo fix
+      // de la carrera onboarding-vs-sync: se pide el perfil remoto antes de
+      // decidir — ver el comentario largo en Login.tsx `finishAuth`.
       await migrateLocalUserToSupabase(user.id, user.email)
-      await ensureProfile(user.id)
+      const remote = await pullProfile(user.id)
+      if (remote) {
+        await db.profile.put({ ...remote, id: user.id, dirty: 0 })
+      } else {
+        await ensureProfile(user.id)
+      }
       const profile = await db.profile.get(user.id)
       navigate(profile?.onboardingComplete === 1 ? '/' : '/onboarding', { replace: true })
     } catch (err) {

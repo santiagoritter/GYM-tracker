@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ChevronRight,
@@ -58,6 +58,25 @@ export default function Onboarding() {
   const [goal, setGoal] = useState<FitnessGoal | ''>('')
   const [level, setLevel] = useState<ExperienceLevel | ''>('')
   const [saving, setSaving] = useState(false)
+
+  // Red de seguridad, no la corrección principal (esa es la carrera
+  // onboarding-vs-sync arreglada en Login.tsx/ForgotPassword.tsx): si por
+  // lo que sea se llega acá con datos reales ya en Dexie, el formulario no
+  // debería arrancar en blanco y pedirle a la persona que los vuelva a
+  // tipear.
+  useEffect(() => {
+    if (!userId) return
+    db.profile.get(userId).then((profile) => {
+      if (!profile) return
+      if (profile.sex) setSex(profile.sex)
+      if (profile.dob) setDob(profile.dob)
+      if (profile.bodyWeightKg) setWeightKg(String(profile.bodyWeightKg))
+      if (profile.heightCm) setHeightCm(String(profile.heightCm))
+      if (profile.goal) setGoal(profile.goal)
+      if (profile.level) setLevel(profile.level)
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId])
 
   const TOTAL_STEPS = 4
 

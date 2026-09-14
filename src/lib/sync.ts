@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabaseClient'
 import { db, SYNC_ORDER } from '@/db/schema'
 import { useSyncStore } from '@/stores/syncStore'
-import type { SyncedTable } from '@/types'
+import type { LocalProfile, SyncedTable } from '@/types'
 
 /**
  * Motor de sync: push de filas `dirty` + pull incremental por cursor,
@@ -203,6 +203,28 @@ export async function pullRemoteChanges(userId: string): Promise<void> {
     const lastServerUpdatedAt = data[data.length - 1]!.server_updated_at as string
     await db.syncState.put({ key: cursorKey, value: lastServerUpdatedAt })
   }
+}
+
+/**
+ * Trae el perfil remoto de este usuario en un solo fetch puntual, sin tocar
+ * Dexie. Pensado para el momento del login: `finishAuth` (Login.tsx,
+ * ForgotPassword.tsx) necesita saber SI YA EXISTE un perfil real en el
+ * servidor antes de decidir si manda a onboarding — y no puede esperar al
+ * `runSync()` completo de las 12 tablas, que corre en paralelo desde
+ * `main.tsx` y en un dispositivo nuevo siempre llega tarde contra
+ * `ensureProfile()` (puro IndexedDB, gana la carrera siempre). `null` si no
+ * hay Supabase, no hay fila, o falla la red — best-effort, mismo criterio
+ * que el resto del motor.
+ */
+export async function pullProfile(userId: string): Promise<LocalProfile | null> {
+  if (!supabase) return null
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .maybeSingle()
+  if (error || !data) return null
+  return toLocalRow('profile', data) as unknown as LocalProfile
 }
 
 /** Punto de entrada único para los disparadores (login, reconexión,

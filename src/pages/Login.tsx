@@ -4,6 +4,7 @@ import { Dumbbell, Eye, EyeOff, Mail } from 'lucide-react'
 import { signIn, verifySignupCode, resendSignupCode, EMAIL_NOT_VERIFIED, type AuthUser } from '@/lib/supabaseAuth'
 import { db, ensureProfile } from '@/db/schema'
 import { migrateLocalUserToSupabase } from '@/db/migrateLocalUserToSupabase'
+import { pullProfile } from '@/lib/sync'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -19,9 +20,25 @@ export default function Login() {
   // El listener de onAuthStateChange en main.tsx ya deja authStore al
   // día — acá solo hace falta el perfil local y, si esta cuenta ya
   // tenía historial bajo un id local viejo, remapearlo.
+  //
+  // Bug corregido: en un dispositivo NUEVO, `ensureProfile` crea un perfil
+  // en blanco de forma sincrónica (puro IndexedDB) y le gana la carrera al
+  // `runSync()` que dispara main.tsx en paralelo (red real) — así que
+  // mandaba a onboarding aunque el usuario ya tuviera peso/nivel/etc
+  // cargados desde otro dispositivo, y de paso ese perfil en blanco podía
+  // subirse y pisar el real (dirty: 1, updatedAt más nuevo gana el
+  // last-write-wins del servidor). Se pide el perfil remoto puntual ANTES
+  // de decidir la ruta: si existe, se usa ese (sin marcarlo dirty, ya viene
+  // limpio del servidor); recién si tampoco hay nada del lado del servidor
+  // es un usuario genuinamente nuevo y corresponde `ensureProfile`.
   const finishAuth = async (user: AuthUser) => {
     await migrateLocalUserToSupabase(user.id, user.email)
-    await ensureProfile(user.id)
+    const remote = await pullProfile(user.id)
+    if (remote) {
+      await db.profile.put({ ...remote, id: user.id, dirty: 0 })
+    } else {
+      await ensureProfile(user.id)
+    }
     const profile = await db.profile.get(user.id)
     navigate(profile?.onboardingComplete === 1 ? '/' : '/onboarding', { replace: true })
   }
