@@ -60,7 +60,15 @@ public class GymTrackerLiveActivity: CAPPlugin, CAPBridgedPlugin {
             exerciseName: call.getString("exerciseName"),
             finished: false
         )
-        let content = ActivityContent(state: state, staleDate: nil)
+        // relevanceScore alto: mientras hay un descanso corriendo, siempre
+        // hay TAMBIÉN una Live Activity de entreno viva al mismo tiempo (se
+        // descansa DURANTE un entreno) — con dos Live Activities compitiendo,
+        // iOS elige una sola para el compacto de la Dynamic Island según
+        // cuál sea más "relevante" ahora, no cuál se actualizó último. Sin
+        // este puntaje, se quedaba mostrando el entreno y el descanso nunca
+        // aparecía (bug reportado). Ver relevanceScore más bajo en
+        // startWorkout/updateWorkout.
+        let content = ActivityContent(state: state, staleDate: nil, relevanceScore: 100)
 
         Task {
             // `Activity<T>.activities` puede traer más de una: dos llamadas a
@@ -124,7 +132,7 @@ public class GymTrackerLiveActivity: CAPPlugin, CAPBridgedPlugin {
                     exerciseName: exerciseName,
                     finished: true
                 )
-                await activity.update(ActivityContent(state: state, staleDate: nil))
+                await activity.update(ActivityContent(state: state, staleDate: nil, relevanceScore: 100))
             }
         }
 
@@ -161,7 +169,10 @@ public class GymTrackerLiveActivity: CAPPlugin, CAPBridgedPlugin {
         let startedAtMs = call.getDouble("startedAt") ?? Date().timeIntervalSince1970 * 1000
         let startedAt = Date(timeIntervalSince1970: startedAtMs / 1000.0)
         let state = WorkoutActivityAttributes.ContentState(exerciseName: nil, setsDone: 0, setsTotal: 0)
-        let content = ActivityContent(state: state, staleDate: nil)
+        // relevanceScore más bajo que el del descanso (100): con las dos
+        // vivas a la vez, gana el descanso mientras esté corriendo; apenas
+        // termina y se cierra, el entreno vuelve a ser la única y se ve solo.
+        let content = ActivityContent(state: state, staleDate: nil, relevanceScore: 50)
 
         Task {
             for old in Activity<WorkoutActivityAttributes>.activities {
@@ -187,7 +198,7 @@ public class GymTrackerLiveActivity: CAPPlugin, CAPBridgedPlugin {
             setsDone: call.getInt("setsDone") ?? 0,
             setsTotal: call.getInt("setsTotal") ?? 0
         )
-        let content = ActivityContent(state: state, staleDate: nil)
+        let content = ActivityContent(state: state, staleDate: nil, relevanceScore: 50)
         Task {
             for activity in Activity<WorkoutActivityAttributes>.activities {
                 await activity.update(content)
