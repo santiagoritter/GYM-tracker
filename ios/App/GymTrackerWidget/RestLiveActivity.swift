@@ -124,6 +124,16 @@ private struct RestLockScreenView: View {
             }
 
             // Número centrado de arriba a abajo, pegado a la derecha.
+            //
+            // Mismo bug que el compacto (ver comentario en compactTrailing más
+            // arriba), pero acá con un síntoma distinto: con .fixedSize() en
+            // este Text, la CARD ENTERA de la pantalla de bloqueo renderizaba
+            // angosta — se ve en la captura del usuario, el fondo oscuro corta
+            // bastante antes del borde derecho de la pantalla — porque el
+            // ZStack (la vista raíz de esta Live Activity) calculaba su ancho
+            // ideal a partir de sus hijos, y un .fixedSize() que colapsa a 0
+            // hace que todo el contenedor se achique con él. frame(minWidth:)
+            // reserva el espacio sin depender de ese cálculo.
             if !state.finished {
                 HStack {
                     Spacer()
@@ -133,7 +143,7 @@ private struct RestLockScreenView: View {
                         .foregroundStyle(gymAccent)
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
-                        .fixedSize()
+                        .frame(minWidth: 120, alignment: .trailing)
                 }
             }
         }

@@ -137,13 +137,17 @@ private struct WorkoutLockScreenView: View {
 
             HStack {
                 Spacer()
+                // frame(minWidth:) en vez de .fixedSize() — mismo bug ya
+                // confirmado en RestLiveActivity.swift: .fixedSize() acá
+                // colapsaba el ancho ideal de TODA la card de pantalla de
+                // bloqueo (ZStack raíz), no solo el número.
                 Text(timerInterval: workoutRange(context.attributes), countsDown: false, showsHours: true)
                     .font(.system(size: 40, weight: .heavy, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(gymAccent)
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
-                    .fixedSize()
+                    .frame(minWidth: 100, alignment: .trailing)
             }
         }
     }
