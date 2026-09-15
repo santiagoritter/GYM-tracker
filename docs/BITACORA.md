@@ -919,3 +919,40 @@ probando en el iPhone 14 Pro real del usuario:
 bien.** `docs/16-CAPACITOR.md` sigue con la lista de pendientes de
 verificación en dispositivo real — running/Spotify/onboarding cross-device
 todavía sin confirmar.
+
+---
+
+## 2026-09-14 (noche) — Dynamic Island: confirmada funcionando de punta a punta
+
+Cerrado con el usuario en el iPhone real, después de varias rondas de ida y
+vuelta la misma tarde. Dos causas raíz reales, ninguna era lo que parecía al
+principio:
+
+1. **La Isla se quedaba clavada en el entreno, nunca mostraba el descanso.**
+   Mientras hay un descanso corriendo, SIEMPRE hay también una Live Activity
+   de entreno viva a la vez (se descansa DURANTE un entreno) — con dos
+   compitiendo por el único espacio compacto, iOS elegía una con su propio
+   criterio interno, sin que la app le diera ninguna pista, y ganaba siempre
+   el entreno. Fix: `ActivityContent.relevanceScore` (parámetro de Apple para
+   exactamente este caso) — descanso = 100, entreno = 50. Con el descanso
+   siempre más relevante mientras corre, gana él; al cerrarse queda el
+   entreno solo.
+2. **El compacto (ícono + resto de la píldora negro, sin número) — en
+   entreno y en descanso por separado.** La hipótesis inicial (API de timer,
+   `Text(fecha, style: .timer)` vs `Text(timerInterval:)`) resultó ser solo
+   parcialmente la causa: arregló el entreno porque el fix cambió DOS cosas
+   a la vez (la API Y `.fixedSize()`) sin aislar cuál importaba. Cuando el
+   mismo bug apareció en descanso —que ya usaba la API "correcta"— quedó
+   claro que la causa real era **`.fixedSize()` en `compactTrailing`**, no
+   la API. Se reemplazó en los dos archivos por `.frame(width: 42,
+   alignment: .trailing)` + `lineLimit`/`minimumScaleFactor`.
+
+**Lección para la próxima Live Activity que se agregue** (running, cardio —
+ver `IDEAS.md`): no usar `.fixedSize()` en `compactTrailing` de un
+`DynamicIsland`, aunque en teoría sea "la forma correcta" de evitar hueco
+muerto — en este proyecto, en este SO, rendía vacío. Un `frame(width:)`
+explícito + `minimumScaleFactor` es el patrón que quedó probado.
+
+**Confirmado por el usuario en el iPhone 14 Pro real**: compacto de entreno
+✅, compacto de descanso ✅, la Isla cambia sola de una a otra según cuál
+está activa ✅.
