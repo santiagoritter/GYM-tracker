@@ -886,3 +886,36 @@ notificaciones motivacionales), `npm run build`, `xcodebuild -scheme App
   una sesión larga, mapa de running con GPS real, login de Spotify de
   punta a punta, onboarding no repitiéndose en un segundo dispositivo/
   reinstalación.
+
+---
+
+## 2026-09-14 (tarde) — Live Activities confirmadas en dispositivo real
+
+Después de la tanda de correcciones pre-demo, varias rondas de ida y vuelta
+probando en el iPhone 14 Pro real del usuario:
+
+- **Descanso**: Live Activity confirmada sin tocar en todo el día — el
+  compacto/expandido/pantalla de bloqueo quedaron bien desde la sesión
+  anterior (`438d6a4`).
+- **Entreno**: encontrado y arreglado un bug real en dispositivo —
+  `WorkoutLiveActivity.swift` usaba `Text(fecha, style: .timer)` (distinto
+  de `RestLiveActivity.swift`, que usa `Text(timerInterval:)`) y esa forma
+  renderizaba **vacía** en el compacto de la Dynamic Island: solo el ícono,
+  sin la hora, la píldora se veía negra y ancha. Confirmado que no era
+  build viejo (el usuario cerró Live Activities a mano + rebuild limpio +
+  entreno nuevo, seguía igual) — era la API. Se unificó a
+  `Text(timerInterval:countsDown:)` en los tres lugares (compacto,
+  expandido, pantalla de bloqueo) — `countsDown: false` para contar para
+  arriba, rango hasta `Date.distantFuture`.
+- **Mapa de running / "continuar entreno" durante running / doble
+  notificación de fin de descanso**: arreglados en la misma tanda, pendientes
+  de confirmación del usuario en la próxima salida a correr real.
+- **Playlists de Spotify**: sacadas de Ajustes (nunca funcionaron de forma
+  confiable — sospecha de "Development Mode" en el dashboard de Spotify, no
+  un bug de código). El resto de la integración (conectar/desconectar,
+  now-playing) sigue andando.
+
+**Confirmado por el usuario: la Dynamic Island (descanso y entreno) está
+bien.** `docs/16-CAPACITOR.md` sigue con la lista de pendientes de
+verificación en dispositivo real — running/Spotify/onboarding cross-device
+todavía sin confirmar.

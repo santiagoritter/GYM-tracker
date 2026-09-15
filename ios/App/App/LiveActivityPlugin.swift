@@ -63,8 +63,21 @@ public class GymTrackerLiveActivity: CAPPlugin, CAPBridgedPlugin {
         let content = ActivityContent(state: state, staleDate: nil)
 
         Task {
-            if let existing = Activity<RestActivityAttributes>.activities.first {
-                await existing.update(content)
+            // `Activity<T>.activities` puede traer más de una: dos llamadas a
+            // startRest muy seguidas (superserie, series rápidas) pueden pisarse
+            // en la carrera de "¿existe ya una?" antes de que la primera
+            // termine de crearla, y quedan dos activas al mismo tiempo. Con 2+
+            // Live Activities del mismo tipo vivas, iOS muestra en el compacto
+            // de la Dynamic Island una combinación rara — probablemente la
+            // causa de "se agranda y no muestra el tiempo" reportada después de
+            // varias sesiones seguidas. Se actualiza la primera y se cierran
+            // las demás, así nunca queda más de una viva.
+            let existing = Activity<RestActivityAttributes>.activities
+            if let first = existing.first {
+                await first.update(content)
+                for extra in existing.dropFirst() {
+                    await extra.end(nil, dismissalPolicy: .immediate)
+                }
             } else {
                 do {
                     _ = try Activity.request(
