@@ -64,12 +64,19 @@ struct RestLiveActivity: Widget {
                     Image(systemName: "arrow.right")
                         .foregroundStyle(gymAccent)
                 } else {
-                    // .fixedSize(): el texto usa su ancho real, sin el espacio
-                    // extra que Text(timerInterval:) reserva "por las dudas".
+                    // frame(width:) en vez de .fixedSize(): con .fixedSize() acá
+                    // este texto renderizaba VACÍO en el dispositivo real (mismo
+                    // bug ya visto y corregido en el compacto del entreno —
+                    // ahí quedó claro que .fixedSize() es lo que fallaba, no la
+                    // API de timer). Ancho fijo + alineado a la derecha logra lo
+                    // mismo que se buscaba (sin hueco muerto a la derecha) sin
+                    // ese riesgo.
                     Text(timerInterval: range, countsDown: true)
                         .monospacedDigit()
                         .foregroundStyle(gymAccent)
-                        .fixedSize()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                        .frame(width: 42, alignment: .trailing)
                 }
             } minimal: {
                 if finished {
