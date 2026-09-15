@@ -98,8 +98,10 @@ private func workoutRange(_ attributes: WorkoutActivityAttributes) -> ClosedRang
 }
 
 /// Pantalla de bloqueo / banner: texto a la izquierda (nombre del
-/// ejercicio + series), tiempo transcurrido grande y centrado verticalmente
-/// a la derecha — mismo layout que `RestLockScreenView`.
+/// ejercicio + series), tiempo transcurrido grande a la derecha — misma
+/// fila, sin superponer. Ver el comentario largo en `RestLockScreenView`
+/// (`RestLiveActivity.swift`): acá era el mismo `ZStack`-superpuesto y el
+/// mismo bug de número tapando el texto, corregido con el mismo criterio.
 private struct WorkoutLockScreenView: View {
     let context: ActivityViewContext<WorkoutActivityAttributes>
 
@@ -116,39 +118,29 @@ private struct WorkoutLockScreenView: View {
     }
 
     var body: some View {
-        ZStack {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Entreno")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                    Text(title)
-                        .font(.title3.weight(.semibold))
-                        .foregroundStyle(.primary)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.8)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text(setsLabel)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer(minLength: 84)
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Entreno")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Text(title)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.8)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(setsLabel)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
-
-            HStack {
-                Spacer()
-                // frame(minWidth:) en vez de .fixedSize() — mismo bug ya
-                // confirmado en RestLiveActivity.swift: .fixedSize() acá
-                // colapsaba el ancho ideal de TODA la card de pantalla de
-                // bloqueo (ZStack raíz), no solo el número.
-                Text(timerInterval: workoutRange(context.attributes), countsDown: false, showsHours: true)
-                    .font(.system(size: 40, weight: .heavy, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundStyle(gymAccent)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                    .frame(minWidth: 100, alignment: .trailing)
-            }
+            Spacer(minLength: 12)
+            Text(timerInterval: workoutRange(context.attributes), countsDown: false, showsHours: true)
+                .font(.system(size: 36, weight: .heavy, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(gymAccent)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+                .frame(minWidth: 84, alignment: .trailing)
         }
     }
 }

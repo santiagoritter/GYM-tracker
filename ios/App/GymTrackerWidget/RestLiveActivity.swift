@@ -95,56 +95,50 @@ struct RestLiveActivity: Widget {
     }
 }
 
-/// Pantalla de bloqueo / banner. Texto a la izquierda; el número, grande y
-/// centrado verticalmente, a la derecha. Cuando el descanso terminó no hay
-/// número: solo el próximo ejercicio.
+/// Pantalla de bloqueo / banner. Una sola fila: texto a la izquierda, número
+/// a la derecha, uno al lado del otro — NO superpuestos.
+///
+/// Antes esto era un `ZStack` con dos `HStack` independientes (uno para el
+/// texto, otro para el número) pensado para centrar el número contra el
+/// alto de TODA la card, sin importar cuántas líneas tuviera el texto. Se
+/// sacó: un `ZStack` superpone sus hijos por diseño, y sin `.fixedSize()`
+/// conteniendo el tamaño del número (ver el bug de más abajo), las dos
+/// mitades terminaban dibujándose una encima de la otra — visto en el
+/// dispositivo real: el número gigante tapando el nombre del ejercicio.
+/// Un solo `HStack` (texto, `Spacer`, número) es el layout de toda la vida:
+/// no hay forma de que se superpongan porque nunca comparten el mismo lugar.
 private struct RestLockScreenView: View {
     let state: RestActivityAttributes.ContentState
 
     private var exercise: String? { trimmed(state.exerciseName) }
 
     var body: some View {
-        ZStack {
-            // Texto a la izquierda, ocupando el ancho.
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(state.finished ? "Ahora" : "Descanso")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                    if let exercise {
-                        Text(exercise)
-                            .font(state.finished ? .title3.weight(.bold) : .title3.weight(.semibold))
-                            .foregroundStyle(state.finished ? gymAccent : .primary)
-                            .lineLimit(2)
-                            .minimumScaleFactor(0.8)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(state.finished ? "Ahora" : "Descanso")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                if let exercise {
+                    Text(exercise)
+                        .font(state.finished ? .title3.weight(.bold) : .title3.weight(.semibold))
+                        .foregroundStyle(state.finished ? gymAccent : .primary)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.8)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                Spacer(minLength: 84)
             }
-
-            // Número centrado de arriba a abajo, pegado a la derecha.
-            //
-            // Mismo bug que el compacto (ver comentario en compactTrailing más
-            // arriba), pero acá con un síntoma distinto: con .fixedSize() en
-            // este Text, la CARD ENTERA de la pantalla de bloqueo renderizaba
-            // angosta — se ve en la captura del usuario, el fondo oscuro corta
-            // bastante antes del borde derecho de la pantalla — porque el
-            // ZStack (la vista raíz de esta Live Activity) calculaba su ancho
-            // ideal a partir de sus hijos, y un .fixedSize() que colapsa a 0
-            // hace que todo el contenedor se achique con él. frame(minWidth:)
-            // reserva el espacio sin depender de ese cálculo.
+            Spacer(minLength: 12)
+            // frame(minWidth:) en vez de .fixedSize(): con .fixedSize() este
+            // Text renderizaba VACÍO en el compacto de la Dynamic Island (bug
+            // ya visto y corregido ahí) — se evita el mismo riesgo acá.
             if !state.finished {
-                HStack {
-                    Spacer()
-                    Text(timerInterval: restRange(state), countsDown: true)
-                        .font(.system(size: 54, weight: .heavy, design: .rounded))
-                        .monospacedDigit()
-                        .foregroundStyle(gymAccent)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                        .frame(minWidth: 120, alignment: .trailing)
-                }
+                Text(timerInterval: restRange(state), countsDown: true)
+                    .font(.system(size: 40, weight: .heavy, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(gymAccent)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .frame(minWidth: 84, alignment: .trailing)
             }
         }
     }
