@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ArrowDown, ArrowLeft, ArrowUp, Link2, Moon, Plus, Trash2, X } from 'lucide-react'
@@ -20,6 +20,58 @@ import type { Exercise, RoutineDay, RoutineExercise } from '@/types'
 import { cn } from '@/lib/utils'
 
 const REST_OPTIONS = [60, 90, 120, 180]
+
+/**
+ * Input numérico con borrador local en vez de escribir a Dexie en cada
+ * tecla. El anterior (`Number(e.target.value) || 1`) hacía que borrar el
+ * campo para reescribirlo guardara 1 al toque, y como el `value` viene de
+ * una `useLiveQuery`, el input se re-renderizaba con ese 1 a mitad de la
+ * edición — no se podía vaciar. Mismo criterio que `NumberStepper.tsx`
+ * (debounce + commit al blur, campo vacío se descarta sin escribir).
+ */
+function DraftNumberInput({
+  value,
+  onCommit,
+  className,
+}: {
+  value: number
+  onCommit: (n: number) => void
+  className?: string
+}) {
+  const [draft, setDraft] = useState<string | null>(null)
+  const commitTimer = useRef<number | undefined>(undefined)
+
+  useEffect(() => () => window.clearTimeout(commitTimer.current), [])
+
+  const commit = (raw: string) => {
+    window.clearTimeout(commitTimer.current)
+    setDraft(null)
+    if (raw.trim() === '') return
+    const parsed = Number(raw)
+    if (!Number.isFinite(parsed)) return
+    onCommit(parsed)
+  }
+
+  return (
+    <input
+      type="number"
+      inputMode="numeric"
+      value={draft ?? String(value)}
+      onFocus={(e) => e.target.select()}
+      onChange={(e) => {
+        const raw = e.target.value
+        setDraft(raw)
+        window.clearTimeout(commitTimer.current)
+        commitTimer.current = window.setTimeout(() => commit(raw), 600)
+      }}
+      onBlur={(e) => commit(e.currentTarget.value)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') e.currentTarget.blur()
+      }}
+      className={className}
+    />
+  )
+}
 
 export default function RoutineEditor() {
   const { routineId } = useParams<{ routineId: string }>()
@@ -250,42 +302,29 @@ function RoutineExerciseRow({
       <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-2">
         <label className="flex items-center gap-2 text-[14px] text-ink-2">
           Series
-          <input
-            type="number"
-            inputMode="numeric"
+          <DraftNumberInput
             value={entry.setsTarget}
-            onFocus={(e) => e.target.select()}
-            onChange={(e) =>
-              db.routineExercises.update(entry.id, {
-                setsTarget: Math.max(1, Number(e.target.value) || 1),
-              })
+            onCommit={(n) =>
+              db.routineExercises.update(entry.id, { setsTarget: Math.max(1, n) })
             }
             className="h-9 w-12 rounded-xs bg-surface-2 text-center font-mono font-bold tabular-nums outline-none focus:ring-1 focus:ring-accent"
           />
         </label>
         <label className="flex items-center gap-2 text-[14px] text-ink-2">
           Reps
-          <input
-            type="number"
-            inputMode="numeric"
+          <DraftNumberInput
             value={entry.repsMin}
-            onFocus={(e) => e.target.select()}
-            onChange={(e) =>
-              db.routineExercises.update(entry.id, {
-                repsMin: Math.max(1, Number(e.target.value) || 1),
-              })
+            onCommit={(n) =>
+              db.routineExercises.update(entry.id, { repsMin: Math.max(1, n) })
             }
             className="h-9 w-12 rounded-xs bg-surface-2 text-center font-mono font-bold tabular-nums outline-none focus:ring-1 focus:ring-accent"
           />
           <span className="text-ink-3">–</span>
-          <input
-            type="number"
-            inputMode="numeric"
+          <DraftNumberInput
             value={entry.repsMax}
-            onFocus={(e) => e.target.select()}
-            onChange={(e) =>
+            onCommit={(n) =>
               db.routineExercises.update(entry.id, {
-                repsMax: Math.max(entry.repsMin, Number(e.target.value) || entry.repsMin),
+                repsMax: Math.max(entry.repsMin, n),
               })
             }
             className="h-9 w-12 rounded-xs bg-surface-2 text-center font-mono font-bold tabular-nums outline-none focus:ring-1 focus:ring-accent"
