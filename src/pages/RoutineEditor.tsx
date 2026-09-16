@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ArrowDown, ArrowLeft, ArrowUp, Link2, Moon, Plus, Trash2, X } from 'lucide-react'
@@ -16,62 +16,10 @@ import {
 import { ExercisePicker } from '@/components/gym/ExercisePicker'
 import { MuscleChip } from '@/components/gym/MuscleChip'
 import { Card, Row } from '@/components/ui/Card'
+import DraftNumberInput from '@/components/ui/DraftNumberInput'
 import type { Exercise, RoutineDay, RoutineExercise } from '@/types'
 import { cn } from '@/lib/utils'
-
-const REST_OPTIONS = [60, 90, 120, 180]
-
-/**
- * Input numérico con borrador local en vez de escribir a Dexie en cada
- * tecla. El anterior (`Number(e.target.value) || 1`) hacía que borrar el
- * campo para reescribirlo guardara 1 al toque, y como el `value` viene de
- * una `useLiveQuery`, el input se re-renderizaba con ese 1 a mitad de la
- * edición — no se podía vaciar. Mismo criterio que `NumberStepper.tsx`
- * (debounce + commit al blur, campo vacío se descarta sin escribir).
- */
-function DraftNumberInput({
-  value,
-  onCommit,
-  className,
-}: {
-  value: number
-  onCommit: (n: number) => void
-  className?: string
-}) {
-  const [draft, setDraft] = useState<string | null>(null)
-  const commitTimer = useRef<number | undefined>(undefined)
-
-  useEffect(() => () => window.clearTimeout(commitTimer.current), [])
-
-  const commit = (raw: string) => {
-    window.clearTimeout(commitTimer.current)
-    setDraft(null)
-    if (raw.trim() === '') return
-    const parsed = Number(raw)
-    if (!Number.isFinite(parsed)) return
-    onCommit(parsed)
-  }
-
-  return (
-    <input
-      type="number"
-      inputMode="numeric"
-      value={draft ?? String(value)}
-      onFocus={(e) => e.target.select()}
-      onChange={(e) => {
-        const raw = e.target.value
-        setDraft(raw)
-        window.clearTimeout(commitTimer.current)
-        commitTimer.current = window.setTimeout(() => commit(raw), 600)
-      }}
-      onBlur={(e) => commit(e.currentTarget.value)}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') e.currentTarget.blur()
-      }}
-      className={className}
-    />
-  )
-}
+import { REST_OPTIONS } from '@/lib/constants'
 
 export default function RoutineEditor() {
   const { routineId } = useParams<{ routineId: string }>()
@@ -243,6 +191,8 @@ function RoutineExerciseRow({
   linkedWithPrev: boolean
 }) {
   const [notesOpen, setNotesOpen] = useState(Boolean(entry.notes))
+  const isCustomRest = !REST_OPTIONS.includes(entry.restSeconds)
+  const [restCustomOpen, setRestCustomOpen] = useState(isCustomRest)
 
   return (
     <Row className="flex-col items-stretch gap-0">
@@ -334,19 +284,45 @@ function RoutineExerciseRow({
 
       {/* Descanso y notas: antes escritos por el código (QR, defaults) pero
           invisibles para el usuario — ningún editor los mostraba. */}
-      <div className="mt-2 flex items-center gap-1.5">
+      <div className="mt-2 flex flex-wrap items-center gap-1.5">
         {REST_OPTIONS.map((s) => (
           <button
             key={s}
-            onClick={() => db.routineExercises.update(entry.id, { restSeconds: s })}
+            onClick={() => {
+              setRestCustomOpen(false)
+              db.routineExercises.update(entry.id, { restSeconds: s })
+            }}
             className={cn(
               'flex h-8 items-center rounded-xs px-2.5 font-mono text-[12px] tabular-nums',
-              entry.restSeconds === s ? 'bg-accent text-bg' : 'bg-surface-2 text-ink-3'
+              !restCustomOpen && entry.restSeconds === s
+                ? 'bg-accent text-bg'
+                : 'bg-surface-2 text-ink-3'
             )}
           >
             {s}s
           </button>
         ))}
+        <button
+          onClick={() => setRestCustomOpen((v) => !v)}
+          className={cn(
+            'flex h-8 items-center rounded-xs px-2.5 text-[12px]',
+            restCustomOpen ? 'bg-accent text-bg' : 'bg-surface-2 text-ink-3'
+          )}
+        >
+          Otro
+        </button>
+        {restCustomOpen && (
+          <span className="flex items-center gap-1">
+            <DraftNumberInput
+              value={entry.restSeconds}
+              onCommit={(n) =>
+                db.routineExercises.update(entry.id, { restSeconds: Math.max(5, n) })
+              }
+              className="h-8 w-14 rounded-xs bg-surface-2 text-center font-mono text-[12px] tabular-nums outline-none focus:ring-1 focus:ring-accent"
+            />
+            <span className="text-[12px] text-ink-3">s</span>
+          </span>
+        )}
         {!notesOpen && (
           <button
             onClick={() => setNotesOpen(true)}

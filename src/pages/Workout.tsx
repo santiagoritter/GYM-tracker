@@ -3,7 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ArrowLeft, Trash2, Trophy } from 'lucide-react'
 import { db } from '@/db/schema'
-import { workoutSetsOf, workoutsFor, personalRecordsFor } from '@/db/scoped'
+import {
+  workoutSetsOf,
+  workoutsFor,
+  personalRecordsFor,
+  routinesFor,
+  routineDaysOf,
+  routineExercisesOf,
+} from '@/db/scoped'
 import { useWorkoutStore } from '@/stores/workoutStore'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { ExercisePicker } from '@/components/gym/ExercisePicker'
@@ -64,6 +71,36 @@ export default function Workout() {
     () => (userId ? db.profile.get(userId) : undefined),
     [userId]
   )
+
+  // Descanso por ejercicio: RoutineExercise.restSeconds se configura en
+  // RoutineEditor pero Workout no guarda de qué rutina/día vino (decisión
+  // documentada en routines.ts — evitar migrar Dexie/Postgres por esa FK).
+  // Se resuelve con la misma heurística que ya usa `nextRoutineDay`: el
+  // nombre del entreno es el nombre del día (`startWorkoutFromDay` lo
+  // nombra así), así que se busca el día de la rutina activa con ese
+  // nombre y se lee restSeconds del ejercicio ahí. Si no matchea (entreno
+  // libre, rutina renombrada), cae al default global de Ajustes.
+  const activeRoutine = useLiveQuery(
+    () =>
+      userId
+        ? routinesFor(userId).filter((r) => r.isActive === 1 && r.isArchived === 0).first()
+        : undefined,
+    [userId]
+  )
+  const routineDays =
+    useLiveQuery(
+      () => (activeRoutine ? routineDaysOf(activeRoutine.id).toArray() : []),
+      [activeRoutine?.id]
+    ) ?? []
+  const matchingDay = useMemo(
+    () => routineDays.find((d) => d.name === workout?.name),
+    [routineDays, workout?.name]
+  )
+  const dayEntries =
+    useLiveQuery(
+      () => (matchingDay ? routineExercisesOf(matchingDay.id).toArray() : []),
+      [matchingDay?.id]
+    ) ?? []
 
   const exerciseMap = useMemo(
     () => new Map(exercises.map((e) => [e.id, e])),
@@ -186,7 +223,11 @@ export default function Workout() {
     const nextName =
       grouped.find((g) => g.sets.some((x) => x.id !== s.id && x.completed === 0))?.exercise?.name ??
       exerciseMap.get(s.exerciseId)?.name
-    store.startRest(profile?.restTimerDefault ?? 90, nextName)
+    const restSeconds =
+      dayEntries.find((e) => e.exerciseId === s.exerciseId)?.restSeconds ??
+      profile?.restTimerDefault ??
+      90
+    store.startRest(restSeconds, nextName)
   }
 
   // Calcula todo en memoria, sin tocar Dexie, y muestra la vista previa —

@@ -86,8 +86,10 @@ import { isSupabaseAuthConfigured } from '@/lib/supabaseAuth'
 import { runSync } from '@/lib/sync'
 import { useSyncStore } from '@/stores/syncStore'
 import { Card, Row, SectionHeader } from '@/components/ui/Card'
+import DraftNumberInput from '@/components/ui/DraftNumberInput'
 import type { LocalProfile } from '@/types'
 import { cn } from '@/lib/utils'
+import { REST_OPTIONS } from '@/lib/constants'
 import { backupNeedsPassphrase, exportBackup, importBackup } from '@/lib/backup'
 import { useCanInstallPwa, promptInstall, isStandalone } from '@/lib/pwaInstall'
 import { isNative } from '@/lib/native'
@@ -130,6 +132,7 @@ export default function Ajustes() {
   const [coachSheetOpen, setCoachSheetOpen] = useState(false)
   const [levelSheetOpen, setLevelSheetOpen] = useState(false)
   const [goalSheetOpen, setGoalSheetOpen] = useState(false)
+  const [restCustomOpen, setRestCustomOpen] = useState(false)
   const role = useAuthStore((s) => s.role)
   const isCoach = role === 'coach' || role === 'admin'
 
@@ -342,13 +345,16 @@ export default function Ajustes() {
                 Descanso por defecto
               </span>
               <div className="flex gap-2">
-                {[60, 90, 120, 180].map((s) => (
+                {REST_OPTIONS.map((s) => (
                   <button
                     key={s}
-                    onClick={() => update({ restTimerDefault: s })}
+                    onClick={() => {
+                      setRestCustomOpen(false)
+                      update({ restTimerDefault: s })
+                    }}
                     className={cn(
                       'h-11 flex-1 rounded-xs border font-mono text-sm font-semibold tabular-nums',
-                      profile.restTimerDefault === s
+                      !restCustomOpen && profile.restTimerDefault === s
                         ? 'border-accent bg-accent text-bg'
                         : 'border-line-2 text-ink-2'
                     )}
@@ -356,7 +362,26 @@ export default function Ajustes() {
                     {s}s
                   </button>
                 ))}
+                <button
+                  onClick={() => setRestCustomOpen((v) => !v)}
+                  className={cn(
+                    'h-11 flex-1 rounded-xs border text-sm font-semibold',
+                    restCustomOpen ? 'border-accent bg-accent text-bg' : 'border-line-2 text-ink-2'
+                  )}
+                >
+                  Otro
+                </button>
               </div>
+              {restCustomOpen && (
+                <div className="flex items-center gap-2">
+                  <DraftNumberInput
+                    value={profile.restTimerDefault}
+                    onCommit={(n) => update({ restTimerDefault: Math.max(5, n) })}
+                    className="h-11 w-20 rounded-xs border border-line-2 bg-transparent text-center font-mono text-sm font-semibold tabular-nums outline-none focus:border-accent"
+                  />
+                  <span className="text-sm text-ink-3">segundos</span>
+                </div>
+              )}
             </Row>
             <Row className="flex-col items-stretch gap-2">
               <span className="flex items-center gap-3 text-[15px]">
