@@ -35,7 +35,23 @@ const ITEMS: { q: string; a: React.ReactNode }[] = [
   },
   {
     q: '¿Los niveles de fuerza y los pesos sugeridos son confiables?',
-    a: 'Son orientativos. Se calculan con fórmulas y tablas estándar (Epley, estándares por edad/peso/sexo). No reemplazan a un entrenador ni a un profesional de la salud.',
+    a: 'Son orientativos. Se calculan con fórmulas y tablas estándar (Epley, estándares por edad/peso/sexo), con tu propio historial como primera fuente. No reemplazan a un entrenador ni a un profesional de la salud.',
+  },
+  {
+    q: '¿Qué es la card de "Descanso terminado" con un número que sigue sumando?',
+    a: 'Es el sobretiempo: cuánto pasó desde que terminó el descanso planeado. "Terminar descanso" lo cuenta para tus estadísticas (Progreso → Descanso); "Descartar sobretiempo" lo ignora, para cuando dejaste el teléfono de lado y el contador siguió solo. Si no tocás nada en 10 minutos, se descarta automáticamente.',
+  },
+  {
+    q: '¿Cómo se recalcula el tiempo de descanso recomendado?',
+    a: 'Con la mediana de tus últimos descansos reales por ejercicio (últimos 60 días), sacando los que marcaste como descarte y los casos raros (por ejemplo, un contador que quedó corriendo mucho más de lo normal). Si difiere bastante de lo que tenés fijado, te lo sugiere en Progreso → Descanso — nunca lo cambia solo, tenés que confirmarlo.',
+  },
+  {
+    q: '¿Qué son las notificaciones (la campana en el header)?',
+    a: 'Un aviso dentro de la app, no del sistema operativo: cuando superás un récord personal, cuando el peso recomendado para un ejercicio subió, o cuando hay un nuevo tiempo de descanso sugerido. Tocá la campana para verlas, filtrarlas por tipo, y tocar una te lleva directo al dato en Progreso.',
+  },
+  {
+    q: '¿Por qué no puedo iniciar un entreno de pesas si tengo una salida a correr o cardio activo?',
+    a: 'Solo se puede tener un entreno en curso a la vez, sea de pesas, cardio o running. El banner de "Entreno en curso" (en Inicio y en el header) te lleva de vuelta a retomarlo — terminalo o cancelalo antes de arrancar otro.',
   },
   {
     q: '¿Cómo borro mi cuenta?',
