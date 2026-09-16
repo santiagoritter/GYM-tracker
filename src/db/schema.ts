@@ -1,6 +1,7 @@
 import Dexie, { type Table } from 'dexie'
 import type {
   Achievement,
+  AppNotification,
   BodyMeasurement,
   CalorieEntry,
   EmailVerification,
@@ -42,6 +43,7 @@ export const SYNC_ORDER: readonly SyncedTable[] = [
   'exercisePhotos',
   'calorieEntries',
   'restLogs',
+  'notifications',
 ] as const
 
 export class GymTrackerDB extends Dexie {
@@ -64,6 +66,7 @@ export class GymTrackerDB extends Dexie {
   calorieEntries!: Table<CalorieEntry, string>
   runs!: Table<Run, string>
   restLogs!: Table<RestLog, string>
+  notifications!: Table<AppNotification, string>
 
   constructor() {
     super('GymTrackerDB')
@@ -297,6 +300,14 @@ export class GymTrackerDB extends Dexie {
     // sync): la migración de Postgres se escribe en el mismo bloque.
     this.version(17).stores({
       restLogs: 'id, userId, workoutId, exerciseId, dirty, [userId+exerciseId]',
+    }).upgrade(async () => {
+      // no-op: tabla nueva
+    })
+    // v18: notificaciones in-app (Notification/notifications). Tabla nueva,
+    // sin datos que migrar. Índice [userId+read] para el badge de "no
+    // leídas" del header sin escanear toda la tabla del usuario.
+    this.version(18).stores({
+      notifications: 'id, userId, read, type, dirty, [userId+read]',
     }).upgrade(async () => {
       // no-op: tabla nueva
     })

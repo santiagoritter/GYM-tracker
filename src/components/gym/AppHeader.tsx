@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Flame, Shield, Timer } from 'lucide-react'
+import { Bell, Flame, Shield, Timer } from 'lucide-react'
+import { db } from '@/db/schema'
 import { workoutsFor } from '@/db/scoped'
 import { useAuthStore } from '@/stores/authStore'
 import { useWorkoutStore } from '@/stores/workoutStore'
@@ -9,6 +11,7 @@ import { useElapsedDuration } from '@/hooks/useElapsedDuration'
 import { useCountdown } from '@/hooks/useCountdown'
 import { activeWorkoutRoute } from '@/lib/cardio'
 import CalorieHeaderBadge from '@/components/gym/CalorieHeaderBadge'
+import NotificationsSheet from '@/components/gym/NotificationsSheet'
 
 /**
  * Header sticky compartido por Layout (mobile) y LayoutDesktop — mismo
@@ -31,6 +34,17 @@ export default function AppHeader() {
   // que dispara haptics/notificación/auto-skip, esto es solo lectura.
   const restEndsAt = useWorkoutStore((s) => s.restTimer.endsAt)
   const restRemaining = useCountdown(restEndsAt)
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const unreadCount = useLiveQuery(
+    () =>
+      userId
+        ? db.notifications
+            .where('[userId+read]')
+            .equals([userId, 0])
+            .count()
+        : 0,
+    [userId]
+  ) ?? 0
 
   const initials = (name ?? 'U')
     .split(' ')
@@ -79,6 +93,16 @@ export default function AppHeader() {
           </button>
         )}
         <CalorieHeaderBadge />
+        <button
+          onClick={() => setNotificationsOpen(true)}
+          aria-label="Notificaciones"
+          className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-fill text-ink-2 active:bg-fill-2"
+        >
+          <Bell size={15} />
+          {unreadCount > 0 && (
+            <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-accent" />
+          )}
+        </button>
         {role === 'admin' && (
           <button
             onClick={() => navigate('/admin')}
@@ -88,6 +112,7 @@ export default function AppHeader() {
           </button>
         )}
       </div>
+      {notificationsOpen && <NotificationsSheet onClose={() => setNotificationsOpen(false)} />}
     </header>
   )
 }

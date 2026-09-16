@@ -48,6 +48,7 @@ const REMOTE_TABLE: Record<SyncedTable, string> = {
   exercisePhotos: 'exercise_photos',
   calorieEntries: 'calorie_entries',
   restLogs: 'rest_logs',
+  notifications: 'notifications',
 }
 
 // Postgres guarda estos campos como boolean; local los guarda 0|1 (IndexedDB
@@ -58,6 +59,7 @@ const BOOLEAN_FIELDS: Partial<Record<SyncedTable, readonly string[]>> = {
   workoutSets: ['isWarmup', 'completed'],
   profile: ['onboardingComplete', 'reminderEnabled', 'calorieTrackingEnabled'],
   restLogs: ['discarded'],
+  notifications: ['read'],
 }
 
 // Bookkeeping puramente del cliente, sin columna en Postgres: la cola de

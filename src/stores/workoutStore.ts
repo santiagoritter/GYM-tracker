@@ -5,8 +5,11 @@ import { softDelete, softDeleteMany } from '@/db/mutations'
 import type { PersonalRecord, Workout, WorkoutSet } from '@/types'
 import { nowIso, uid } from '@/lib/utils'
 import { recommend } from '@/lib/recommendation'
+import { suggestRestSeconds } from '@/lib/restRecommendation'
+import { pushNotification } from '@/lib/notifications'
 import { cancelScheduledNotifications } from '@/lib/native'
 import { computeVolumeKg, previewPRs } from '@/lib/workoutSummary'
+import { formatHms } from '@/lib/cardio'
 
 interface RestTimerState {
   endsAt: number | null // epoch ms
@@ -114,6 +117,26 @@ export const useWorkoutStore = create<WorkoutStore>()(
               dirty: 1,
               updatedAt: nowIso(),
             })
+
+            // Notificación de "nuevo descanso recomendado": recién con el
+            // registro fresco de este descanso, para que se note apenas se
+            // junta muestra suficiente, no solo cuando el usuario entra a
+            // Progreso por su cuenta.
+            const exerciseLogs = await db.restLogs
+              .where('[userId+exerciseId]')
+              .equals([workout.userId, exerciseId])
+              .toArray()
+            const suggestion = suggestRestSeconds(exerciseLogs, totalSeconds)
+            if (suggestion) {
+              const exercise = await db.exercises.get(exerciseId)
+              await pushNotification({
+                userId: workout.userId,
+                type: 'rest_recommendation',
+                title: 'Nuevo descanso recomendado',
+                body: `${exercise?.name ?? 'Este ejercicio'}: descansás ${formatHms(suggestion.medianSeconds)} en promedio, hoy está fijado en ${formatHms(suggestion.currentSeconds)}.`,
+                exerciseId,
+              })
+            }
           }
         }
         get().skipRest()
@@ -167,6 +190,23 @@ export const useWorkoutStore = create<WorkoutStore>()(
             reps: rec.repsMin,
             weightKg: rec.weightKg,
           })
+        }
+
+        // Notificación de "nuevo peso recomendado": solo cuando la
+        // sugerencia supera el mejor peso ya hecho en este ejercicio — no
+        // tiene sentido notificar la primera vez que se agrega (no hay
+        // "mejora" contra la que compararlo).
+        if (history.length > 0) {
+          const prevBestKg = Math.max(...history.map((s) => s.weightKg))
+          if (rec.weightKg > prevBestKg) {
+            await pushNotification({
+              userId: workout.userId,
+              type: 'weight_recommendation',
+              title: 'Nuevo peso recomendado',
+              body: `${exercise.name}: probá con ${rec.weightKg} kg — tu mejor marca hasta ahora es ${prevBestKg} kg.`,
+              exerciseId,
+            })
+          }
         }
       },
 
@@ -233,6 +273,15 @@ export const useWorkoutStore = create<WorkoutStore>()(
           }
           await db.personalRecords.put(pr)
           newPRs.push(pr)
+
+          const exercise = await db.exercises.get(c.exerciseId)
+          await pushNotification({
+            userId,
+            type: 'pr',
+            title: 'Nuevo récord personal',
+            body: `${exercise?.name ?? 'Ejercicio'}: ${c.weightKg} kg × ${c.reps}.`,
+            exerciseId: c.exerciseId,
+          })
         }
 
         get().skipRest()

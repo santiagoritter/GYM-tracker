@@ -334,6 +334,28 @@ export interface RestLog extends SyncFields {
   loggedAt: string
 }
 
+export type NotificationType = 'pr' | 'weight_recommendation' | 'rest_recommendation' | 'update'
+
+/**
+ * Notificación in-app: feed persistido de eventos ("superaste tu peso",
+ * "nuevo peso recomendado", "nuevo descanso recomendado"), a diferencia de
+ * `toastStore.ts` (efímero, se pierde al recargar) o de las notificaciones
+ * push/locales de `native.ts` (avisos del SO, no un feed dentro de la app).
+ *
+ * `type: 'update'` no tiene generador automático todavía — se inserta a
+ * mano al shipear una versión con novedades (ver docs/BITACORA.md).
+ */
+export interface AppNotification extends SyncFields {
+  id: string
+  userId: string
+  type: NotificationType
+  title: string
+  body: string
+  exerciseId?: string
+  read: 0 | 1
+  createdAt: string
+}
+
 /** Tablas cuyas filas se sincronizan con Postgres. */
 export type SyncedTable =
   | 'profile'
@@ -349,6 +371,7 @@ export type SyncedTable =
   | 'exercisePhotos'
   | 'calorieEntries'
   | 'restLogs'
+  | 'notifications'
 
 /**
  * Lápida de una fila borrada localmente. Existe porque el pull incremental
