@@ -19,6 +19,7 @@ import { workoutsFor, personalRecordsFor } from '@/db/scoped'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useChartColors } from '@/hooks/useChartColors'
 import { HistoryList } from '@/components/gym/HistoryList'
+import { RestAnalytics } from '@/components/gym/RestAnalytics'
 import { MonthlyStats } from '@/components/gym/MonthlyStats'
 import { StrengthLevels } from '@/components/gym/StrengthLevels'
 import { MuscleGroupLevels } from '@/components/gym/MuscleGroupLevels'
@@ -31,10 +32,19 @@ import AchievementsPanel from '@/components/gym/AchievementsPanel'
 import ExerciseSelectSheet from '@/components/gym/ExerciseSelectSheet'
 import { cn } from '@/lib/utils'
 
-type Tab = 'summary' | 'charts' | 'month' | 'levels' | 'achievements' | 'photos' | 'prs' | 'history'
+type Tab =
+  | 'summary'
+  | 'charts'
+  | 'rest'
+  | 'month'
+  | 'levels'
+  | 'achievements'
+  | 'photos'
+  | 'prs'
+  | 'history'
 
 const TABS: readonly Tab[] = [
-  'summary', 'charts', 'month', 'levels', 'achievements', 'photos', 'prs', 'history',
+  'summary', 'charts', 'rest', 'month', 'levels', 'achievements', 'photos', 'prs', 'history',
 ]
 
 export default function Progress() {
@@ -56,6 +66,7 @@ export default function Progress() {
           [
             ['summary', 'Resumen'],
             ['charts', 'Gráficos'],
+            ['rest', 'Descanso'],
             ['month', 'Mes'],
             ['levels', 'Niveles'],
             ['achievements', 'Logros'],
@@ -93,6 +104,7 @@ export default function Progress() {
         </div>
       )}
       {tab === 'charts' && <Charts />}
+      {tab === 'rest' && <RestAnalytics />}
       {tab === 'month' && <MonthlyStats />}
       {tab === 'levels' && (
         <div className="animate-fade-up space-y-6">
