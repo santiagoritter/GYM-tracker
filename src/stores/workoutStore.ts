@@ -20,7 +20,7 @@ interface WorkoutStore {
   extendRest: (seconds: number) => void
   skipRest: () => void
 
-  startWorkout: (userId: string, name: string) => Promise<string>
+  startWorkout: (userId: string, name: string, kind?: Workout['kind']) => Promise<string>
   addExercise: (workoutId: string, exerciseId: string) => Promise<void>
   addSet: (workoutId: string, exerciseId: string, template?: Partial<WorkoutSet>) => Promise<void>
   updateSet: (setId: string, patch: Partial<WorkoutSet>) => Promise<void>
@@ -64,12 +64,13 @@ export const useWorkoutStore = create<WorkoutStore>()(
 
       skipRest: () => set({ restTimer: { endsAt: null, totalSeconds: 90 } }),
 
-      startWorkout: async (userId, name) => {
+      startWorkout: async (userId, name, kind = 'strength') => {
         const workout: Workout = {
           id: uid(),
           userId,
           name,
           startedAt: nowIso(),
+          kind,
           dirty: 1,
           updatedAt: nowIso(),
         }

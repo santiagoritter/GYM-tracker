@@ -16,6 +16,7 @@ import {
   projectedDistanceKm,
 } from '@/lib/cardio'
 import { fetchPlaybackState, sendPlaybackCommand, type PlaybackResult } from '@/lib/spotifyPlayer'
+import { endRunActivity, startRunActivity, updateRunActivity } from '@/lib/liveActivity'
 import { hapticSuccess, hapticTick } from '@/lib/native'
 import { cn } from '@/lib/utils'
 import ResponsiveSheet from '@/components/ui/ResponsiveSheet'
@@ -78,6 +79,38 @@ export default function Cardio() {
       hapticSuccess()
     }
   }, [targetReached])
+
+  // Ciclo de vida de la Live Activity: mismo criterio que Run.tsx/Workout.tsx.
+  useEffect(() => {
+    if (!session) {
+      endRunActivity()
+      return
+    }
+    startRunActivity(machine.label, new Date(session.startedAt).getTime())
+    return () => void endRunActivity()
+  }, [session?.workoutId, session?.startedAt, machine.label])
+
+  // Distancia/ritmo cambian de a poco (aparatos sin velocidad ni siquiera
+  // los tienen) — se actualiza cada 10s en vez de cada segundo como el
+  // reloj de la UI, para no saturar el budget de actualizaciones de
+  // ActivityKit con algo que iOS no necesita ver tan seguido.
+  useEffect(() => {
+    if (!session) return
+    const tick = () => {
+      const s = useCardioStore.getState().session
+      if (!s) return
+      const distanceM = machine.hasSpeed
+        ? currentDistanceKm(s.distanceAtCheckpointKm, s.speedKmh, s.checkpointAt) * 1000
+        : undefined
+      updateRunActivity({
+        distanceM,
+        avgPaceSecPerKm: s.speedKmh > 0 ? 3600 / s.speedKmh : undefined,
+      })
+    }
+    tick()
+    const id = setInterval(tick, 10_000)
+    return () => clearInterval(id)
+  }, [session?.workoutId, machine.hasSpeed])
 
   const spotifyConnected = useSpotifyStore((s) => Boolean(s.accessToken))
   const [playback, setPlayback] = useState<PlaybackResult | 'loading'>('loading')

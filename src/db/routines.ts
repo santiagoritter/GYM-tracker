@@ -208,6 +208,7 @@ export async function startWorkoutFromDay(userId: string, dayId: string): Promis
     userId,
     name: day.name,
     startedAt: nowIso(),
+    kind: 'strength',
     dirty: 1,
     updatedAt: nowIso(),
   }

@@ -30,6 +30,9 @@ public class GymTrackerLiveActivity: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "startWorkout", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "updateWorkout", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "endWorkout", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "startRun", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "updateRun", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "endRun", returnType: CAPPluginReturnPromise),
     ]
 
     /// Cierra la Live Activity del descanso cuando su tiempo termina, aunque
@@ -210,6 +213,56 @@ public class GymTrackerLiveActivity: CAPPlugin, CAPBridgedPlugin {
     @objc func endWorkout(_ call: CAPPluginCall) {
         guard #available(iOS 16.2, *) else { call.resolve(); return }
         Task { await endActivities(WorkoutActivityAttributes.self) }
+        call.resolve()
+    }
+
+    // MARK: - Running / cardio
+
+    @objc func startRun(_ call: CAPPluginCall) {
+        guard #available(iOS 16.2, *), activitiesEnabled() else { call.resolve(); return }
+
+        let label = call.getString("label") ?? "Corriendo"
+        let startedAtMs = call.getDouble("startedAt") ?? Date().timeIntervalSince1970 * 1000
+        let startedAt = Date(timeIntervalSince1970: startedAtMs / 1000.0)
+        let state = RunActivityAttributes.ContentState(distanceM: nil, avgPaceSecPerKm: nil)
+        let content = ActivityContent(state: state, staleDate: nil, relevanceScore: 50)
+
+        Task {
+            for old in Activity<RunActivityAttributes>.activities {
+                await old.end(nil, dismissalPolicy: .immediate)
+            }
+            do {
+                _ = try Activity.request(
+                    attributes: RunActivityAttributes(label: label, startedAt: startedAt),
+                    content: content,
+                    pushType: nil
+                )
+            } catch {
+                CAPLog.print("⚡️ GymTrackerLiveActivity startRun: \(error)")
+            }
+        }
+        call.resolve()
+    }
+
+    @objc func updateRun(_ call: CAPPluginCall) {
+        guard #available(iOS 16.2, *) else { call.resolve(); return }
+        let hasDistance = call.getDouble("distanceM") != nil
+        let state = RunActivityAttributes.ContentState(
+            distanceM: hasDistance ? call.getDouble("distanceM") : nil,
+            avgPaceSecPerKm: call.getDouble("avgPaceSecPerKm")
+        )
+        let content = ActivityContent(state: state, staleDate: nil, relevanceScore: 50)
+        Task {
+            for activity in Activity<RunActivityAttributes>.activities {
+                await activity.update(content)
+            }
+        }
+        call.resolve()
+    }
+
+    @objc func endRun(_ call: CAPPluginCall) {
+        guard #available(iOS 16.2, *) else { call.resolve(); return }
+        Task { await endActivities(RunActivityAttributes.self) }
         call.resolve()
     }
 

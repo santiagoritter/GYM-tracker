@@ -72,6 +72,12 @@ export interface Workout extends SyncFields {
   finishedAt?: string
   notes?: string
   totalVolumeKg?: number
+  /** `undefined` en filas viejas (previas a esta columna) = 'strength' —
+   * es lo que eran todas antes de que existiera cardio/running. Reemplaza
+   * el matching implícito por workoutId contra cardioStore/runStore que
+   * usaba activeWorkoutRoute: no distinguía tipo si la sesión efímera del
+   * store ya se había perdido (app matada a mitad de una salida). */
+  kind?: 'strength' | 'cardio' | 'running'
 }
 
 export interface WorkoutSet extends SyncFields {

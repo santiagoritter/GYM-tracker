@@ -26,6 +26,9 @@ interface LiveActivityPlugin {
     setsTotal: number
   }): Promise<void>
   endWorkout(): Promise<void>
+  startRun(options: { label: string; startedAt: number }): Promise<void>
+  updateRun(options: { distanceM?: number; avgPaceSecPerKm?: number }): Promise<void>
+  endRun(): Promise<void>
 }
 
 // El nombre tiene que coincidir EXACTO con el `@objc(...)` / `jsName` de
@@ -71,3 +74,16 @@ export const updateWorkoutActivity = (state: {
 }): Promise<void> => iosOnly(() => LiveActivity.updateWorkout(state))
 
 export const endWorkoutActivity = (): Promise<void> => iosOnly(() => LiveActivity.endWorkout())
+
+/** Live Activity de running/cardio: tiempo transcurrido (lo cuenta iOS desde
+ * `startedAt`), distancia y ritmo promedio — estos dos opcionales, porque
+ * algunos aparatos de cardio no calculan distancia (sin velocidad). */
+export const startRunActivity = (label: string, startedAt: number): Promise<void> =>
+  iosOnly(() => LiveActivity.startRun({ label, startedAt }))
+
+export const updateRunActivity = (state: {
+  distanceM?: number
+  avgPaceSecPerKm?: number
+}): Promise<void> => iosOnly(() => LiveActivity.updateRun(state))
+
+export const endRunActivity = (): Promise<void> => iosOnly(() => LiveActivity.endRun())

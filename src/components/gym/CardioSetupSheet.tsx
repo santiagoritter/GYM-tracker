@@ -7,9 +7,11 @@ import { useSheetDrag } from '@/hooks/useSheetDrag'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useWorkoutStore } from '@/stores/workoutStore'
 import { useCardioStore } from '@/stores/cardioStore'
+import { workoutsFor } from '@/db/scoped'
 import {
   CARDIO_MACHINES,
   cardioMachine,
+  activeWorkoutRoute,
   projectedDistanceKm,
   type CardioMachineId,
 } from '@/lib/cardio'
@@ -42,7 +44,16 @@ export default function CardioSetupSheet({ onClose }: { onClose: () => void }) {
 
   const handleStart = async () => {
     if (!userId) return
-    const workoutId = await startWorkout(userId, `Cardio · ${machine.label}`)
+    // Red de seguridad: el tile de Inicio que abre este sheet ya redirige
+    // en vez de abrirlo si hay un entreno activo, pero se revalida acá por
+    // si el sheet quedó abierto de una sesión anterior a que eso empezara.
+    const active = await workoutsFor(userId).filter((w) => !w.finishedAt).first()
+    if (active) {
+      onClose()
+      navigate(activeWorkoutRoute(active.id, active.kind))
+      return
+    }
+    const workoutId = await startWorkout(userId, `Cardio · ${machine.label}`, 'cardio')
     startSession(workoutId, machineId, machine.hasSpeed ? speed : 0, incline, targetMin)
     onClose()
     navigate('/cardio')

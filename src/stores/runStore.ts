@@ -24,7 +24,11 @@ interface RunSession {
 
 interface RunStore {
   session: RunSession | null
-  start: (workoutId: string, target: RunTarget | null) => void
+  /** `startedAt` es opcional — por defecto "ahora". Se puede pasar explícito
+   * al reconciliar un Workout de running huérfano (Run.tsx), para que el
+   * tiempo transcurrido siga contando desde cuando arrancó de verdad y no
+   * desde que se reconstruyó la sesión. */
+  start: (workoutId: string, target: RunTarget | null, startedAt?: string) => void
   addPoint: (p: RunPoint) => void
   pause: () => void
   resume: () => void
@@ -46,11 +50,11 @@ export const useRunStore = create<RunStore>()(
     (set, get) => ({
       session: null,
 
-      start: (workoutId, target) =>
+      start: (workoutId, target, startedAt) =>
         set({
           session: {
             workoutId,
-            startedAt: nowIso(),
+            startedAt: startedAt ?? nowIso(),
             status: 'active',
             points: [],
             pausedTotalMs: 0,

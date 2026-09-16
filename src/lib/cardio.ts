@@ -22,19 +22,14 @@ export function cardioMachine(id: CardioMachineId): CardioMachine {
 
 /** A qué ruta lleva "volver al entreno en curso" — un Workout de cardio o de
  * running no tiene WorkoutSets, así que mandarlo a /entreno/:id (la pantalla
- * de pesas) lo mostraba vacío. Si el workout activo coincide con la sesión
- * de cardio o de running en curso, vuelve a /cardio o /correr en cambio.
- * Bug real reportado: Run.tsx también crea su Workout espejo al ARRANCAR
- * (no solo al terminar, ver src/pages/Run.tsx `handleStart`), así que el
- * banner "Entreno en curso" de Home.tsx lo detectaba pero mandaba a un
- * entreno de gimnasio vacío por no conocer el caso de running. */
-export function activeWorkoutRoute(
-  workoutId: string,
-  cardioWorkoutId: string | undefined,
-  runWorkoutId: string | undefined
-): string {
-  if (workoutId === cardioWorkoutId) return '/cardio'
-  if (workoutId === runWorkoutId) return '/correr'
+ * de pesas) lo mostraba vacío. Se decide por `Workout.kind`, no por matching
+ * de ID contra las sesiones efímeras de cardioStore/runStore — eso fallaba
+ * si esa sesión ya se había perdido (bug real reportado: Run.tsx crea su
+ * Workout espejo al ARRANCAR, y si `runStore.session` se pierde pero el
+ * Workout sigue activo, no había forma de saber a dónde mandar). */
+export function activeWorkoutRoute(workoutId: string, kind: 'strength' | 'cardio' | 'running' | undefined): string {
+  if (kind === 'cardio') return '/cardio'
+  if (kind === 'running') return '/correr'
   return `/entreno/${workoutId}`
 }
 

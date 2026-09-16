@@ -4,10 +4,13 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { Lock, LockOpen, MapPin, Pause, Play, Square, X } from 'lucide-react'
 import { db } from '@/db/schema'
+import { workoutsFor } from '@/db/scoped'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useWorkoutStore } from '@/stores/workoutStore'
 import { useRunStore, type RunTarget } from '@/stores/runStore'
 import { startWatch, type GeoWatch } from '@/lib/geo'
+import { activeWorkoutRoute } from '@/lib/cardio'
+import { endRunActivity, startRunActivity, updateRunActivity } from '@/lib/liveActivity'
 import {
   currentPaceSecPerKm,
   formatDistanceKm,
@@ -47,6 +50,31 @@ export default function Run() {
 
   // Si ya había una sesión (recarga a mitad de salida), entra directo a activa.
   const [phase, setPhase] = useState<Phase>(session ? 'active' : 'permission')
+
+  // Reconciliación: `runStore.session` (localStorage) puede perderse sin que
+  // se pierda el Workout en Dexie (logout, storage limpiado por el SO, kill
+  // en un momento raro) — a diferencia de pesas, que es 100% reconstruible
+  // desde Dexie, running dependía de esa sesión efímera para todo (puntos
+  // GPS, pausa). Si hay un Workout de running activo sin sesión, se
+  // reconstruye una mínima (sin los puntos previos, que se perdieron con el
+  // store) en vez de dejarlo huérfano — el watcher de más abajo arranca de
+  // nuevo y sigue sumando desde acá, con el tiempo transcurrido continuando
+  // desde `startedAt` real (no desde 0).
+  useEffect(() => {
+    if (session || !userId) return
+    let cancelled = false
+    workoutsFor(userId)
+      .filter((w) => !w.finishedAt)
+      .first()
+      .then((active) => {
+        if (cancelled || !active || active.kind !== 'running') return
+        startRun(active.id, null, active.startedAt)
+        setPhase('active')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [session, userId, startRun])
   const [hasFix, setHasFix] = useState(false)
   const [locked, setLocked] = useState(false)
   const [targetKind, setTargetKind] = useState<'none' | 'distance' | 'time'>('none')
@@ -86,6 +114,26 @@ export default function Run() {
   )
   const currentPace = useMemo(() => currentPaceSecPerKm(points), [points.length])
 
+  // Ciclo de vida de la Live Activity: mismo criterio que Workout.tsx — se
+  // arranca con la sesión activa y se cierra al salir de 'active' o al
+  // desmontar. `endRunActivity` es idempotente del lado nativo.
+  useEffect(() => {
+    if (!session || phase !== 'active') {
+      endRunActivity()
+      return
+    }
+    startRunActivity('Corriendo', new Date(session.startedAt).getTime())
+    return () => void endRunActivity()
+  }, [session?.workoutId, session?.startedAt, phase])
+
+  useEffect(() => {
+    if (!session || phase !== 'active') return
+    updateRunActivity({
+      distanceM: live.distanceM,
+      avgPaceSecPerKm: live.avgPaceSecPerKm ?? undefined,
+    })
+  }, [session, phase, live.distanceM, live.avgPaceSecPerKm])
+
   // Ticker de 1 s para el reloj (los fixes no llegan cada segundo).
   const [, setTick] = useState(0)
   useEffect(() => {
@@ -119,11 +167,19 @@ export default function Run() {
 
   const handleStart = useCallback(async () => {
     if (!userId) return
-    const workoutId = await startWorkout(userId, 'Salida a correr')
+    // Red de seguridad: si ya hay un entreno activo de otro tipo (se llegó
+    // acá sin pasar por el guard de Home.tsx, ej. deep link), se retoma ese
+    // en vez de crear un segundo Workout concurrente.
+    const active = await workoutsFor(userId).filter((w) => !w.finishedAt).first()
+    if (active) {
+      navigate(activeWorkoutRoute(active.id, active.kind), { replace: true })
+      return
+    }
+    const workoutId = await startWorkout(userId, 'Salida a correr', 'running')
     startRun(workoutId, buildTarget())
     setPhase('active')
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, startWorkout, startRun, targetKind, targetDistanceKm, targetTimeMin])
+  }, [userId, startWorkout, startRun, navigate, targetKind, targetDistanceKm, targetTimeMin])
 
   const handleFinish = async () => {
     if (!userId || !session) return

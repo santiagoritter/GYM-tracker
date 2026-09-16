@@ -280,6 +280,14 @@ export class GymTrackerDB extends Dexie {
     this.version(15).stores({}).upgrade(async () => {
       // no-op
     })
+    // v16: discriminador de tipo de entreno (`Workout.kind`, strength/
+    // cardio/running) — reemplaza el matching implícito por workoutId
+    // contra cardioStore/runStore. Campo no indexado (no se filtra por
+    // tipo en ninguna query todavía, solo se lee). Filas existentes quedan
+    // sin `kind`; se tratan como 'strength' en el código que lo lee.
+    this.version(16).stores({}).upgrade(async () => {
+      // no-op
+    })
   }
 }
 

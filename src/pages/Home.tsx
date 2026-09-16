@@ -7,8 +7,6 @@ import { routinesFor, routineDaysOf, workoutsFor } from '@/db/scoped'
 import { nextRoutineDay, startWorkoutFromDay } from '@/db/routines'
 import { useWorkoutStore } from '@/stores/workoutStore'
 import { useAuthStore } from '@/stores/authStore'
-import { useCardioStore } from '@/stores/cardioStore'
-import { useRunStore } from '@/stores/runStore'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { getQuoteForNow } from '@/lib/quotes'
 import { activeWorkoutRoute } from '@/lib/cardio'
@@ -36,8 +34,6 @@ export default function Home() {
     [userId]
   )
   const activeElapsed = useElapsedDuration(activeWorkout?.startedAt)
-  const cardioWorkoutId = useCardioStore((s) => s.session?.workoutId)
-  const runWorkoutId = useRunStore((s) => s.session?.workoutId)
   const activeRoutine = useLiveQuery(
     () =>
       userId
@@ -108,7 +104,7 @@ export default function Home() {
           grande es el CTA principal de Inicio específicamente. */}
       {activeWorkout ? (
         <button
-          onClick={() => navigate(activeWorkoutRoute(activeWorkout.id, cardioWorkoutId, runWorkoutId))}
+          onClick={() => navigate(activeWorkoutRoute(activeWorkout.id, activeWorkout.kind))}
           className="flex w-full items-center justify-between rounded-2xl border border-accent/40 bg-accent/10 p-5 text-left"
         >
           <div>
@@ -184,11 +180,18 @@ export default function Home() {
         {quote.author && <footer className="mt-1 text-[13px]">— {quote.author}</footer>}
       </blockquote>
 
-      {/* Accesos rápidos — cuadrados del mismo tamaño. */}
+      {/* Accesos rápidos — cuadrados del mismo tamaño. Si ya hay un entreno
+          activo (de cualquier tipo), llevan a retomarlo en vez de crear uno
+          nuevo — antes solo el CTA grande de arriba tenía esta protección;
+          estos tiles podían crear un segundo Workout concurrente. */}
       <div className="grid grid-cols-3 gap-3">
         <motion.button
           whileTap={{ scale: 0.96 }}
-          onClick={() => setCardioSheetOpen(true)}
+          onClick={() =>
+            activeWorkout
+              ? navigate(activeWorkoutRoute(activeWorkout.id, activeWorkout.kind))
+              : setCardioSheetOpen(true)
+          }
           className="flex aspect-square flex-col items-center justify-center gap-2 rounded-2xl bg-surface"
         >
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-accent/15">
@@ -198,7 +201,11 @@ export default function Home() {
         </motion.button>
         <motion.button
           whileTap={{ scale: 0.96 }}
-          onClick={() => navigate('/correr')}
+          onClick={() =>
+            navigate(
+              activeWorkout ? activeWorkoutRoute(activeWorkout.id, activeWorkout.kind) : '/correr'
+            )
+          }
           className="flex aspect-square flex-col items-center justify-center gap-2 rounded-2xl bg-surface"
         >
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-accent/15">

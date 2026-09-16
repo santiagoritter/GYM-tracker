@@ -37,3 +37,19 @@ struct WorkoutActivityAttributes: ActivityAttributes {
     var name: String
     var startedAt: Date
 }
+
+/// Estado de la Live Activity de running/cardio. `label` distingue "Corriendo"
+/// de un aparato de cardio ("Cinta", "Bicicleta", ...) — mismo struct para
+/// los dos, ya que comparten layout (tiempo + distancia + velocidad).
+/// `distanceM`/`avgPaceSecPerKm` son opcionales porque algunos aparatos de
+/// cardio (elíptica, "otra") no tienen velocidad y por lo tanto no calculan
+/// distancia (ver `CardioMachine.hasSpeed` en `src/lib/cardio.ts`).
+struct RunActivityAttributes: ActivityAttributes {
+    struct ContentState: Codable, Hashable {
+        var distanceM: Double?
+        var avgPaceSecPerKm: Double?
+    }
+
+    var label: String
+    var startedAt: Date
+}
