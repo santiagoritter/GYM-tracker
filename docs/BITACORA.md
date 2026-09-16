@@ -956,3 +956,50 @@ explícito + `minimumScaleFactor` es el patrón que quedó probado.
 **Confirmado por el usuario en el iPhone 14 Pro real**: compacto de entreno
 ✅, compacto de descanso ✅, la Isla cambia sola de una a otra según cuál
 está activa ✅.
+
+## 2026-09-16 — Tanda de cambios por feedback de testers reales
+
+Feedback de usuarios de prueba reales, 4 cambios grandes + una lista de
+pulidos. Ejecutado por bloques, con commit y push propio en cada uno.
+
+1. **Input de Series/Reps en RoutineEditor no se podía vaciar** — escribía a
+   Dexie en cada tecla (`Number(e.target.value) || 1`), así que borrar el
+   campo para reescribirlo guardaba `1` al toque. `DraftNumberInput`
+   (`src/components/ui/DraftNumberInput.tsx`) nuevo: borrador local, commit
+   al blur/debounce, mismo criterio que ya resolvía esto en `NumberStepper`.
+2. **`RoutineExercise.restSeconds` (descanso por ejercicio) nunca se leía**
+   — `Workout.tsx` siempre usaba el default global de Ajustes. Se conecta
+   con la misma heurística de `nextRoutineDay` (nombre del entreno = nombre
+   del día de rutina), sin agregar FK nueva a `Workout`. Se suma también
+   descanso personalizado (segundos libres) en Ajustes y RoutineEditor.
+3. **Cardio/running: exclusión mutua, reconciliación y Live Activity
+   propia.** `Workout` gana `kind` (`strength`/`cardio`/`running`) — antes
+   el tipo se inferías por matching de `workoutId` contra `cardioStore`/
+   `runStore`, y fallaba si esa sesión efímera se perdía. Los tiles rápidos
+   de Home y los `handleStart` de Cardio/Correr ahora redirigen al entreno
+   activo en vez de crear uno concurrente. `Run.tsx` reconcilia un Workout
+   de running huérfano si `runStore.session` se pierde. Nueva Live Activity
+   (`RunActivityAttributes` + `RunLiveActivity.swift`) para running/cardio:
+   tiempo, distancia y ritmo promedio — mismos criterios ya fijados para
+   Rest/Workout (ver entrada anterior) aplicados desde el arranque, sin
+   repetir el bug de `.fixedSize()`.
+4. **El flujo de "convertirme en coach" nunca funcionó** — no por un bug de
+   código: las migraciones `0010_legal_acceptance.sql` en adelante
+   (incluidas las dos de coach) **nunca se habían aplicado al proyecto real
+   de Supabase**, aunque sí estaban commiteadas en el repo hacía tiempo.
+   Confirmado consultando la REST API directo (`/rest/v1/coaches` → "no
+   existe la tabla") antes de tocar nada. `supabase migration list` mostraba
+   TODO (0001-0013) como no aplicado del lado del historial — pero 0001-0009
+   sí estaban, solo que aplicadas por fuera del tracking de la CLI en algún
+   momento anterior. Se reparó el historial (`supabase migration repair
+   --status applied 0001..0009`) y se empujaron las 4 migraciones que
+   realmente faltaban con `supabase db push`. Se desplegaron además las
+   Edge Functions `become-coach` y `admin-users`, que tampoco estaban
+   desplegadas (`supabase functions deploy`).
+
+   **Lección**: `supabase migration list` con TODO en `remote: ""` no
+   necesariamente significa que nada esté aplicado — puede ser que el
+   historial de tracking nunca se haya poblado para versiones viejas
+   aplicadas por otra vía. Antes de un `db push` a ciegas, verificar el
+   estado real (tablas/columnas vía REST, o `db diff` con Docker) para no
+   arriesgarse a reaplicar de más.

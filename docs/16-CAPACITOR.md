@@ -110,22 +110,26 @@ se rompió. Los minutos de runner macOS son caros, por eso es manual como
 
 ## Live Activities / Dynamic Island (iOS)
 
-Dos Live Activities: **descanso entre series** (cuenta regresiva) y **entreno
-en curso** (tiempo, ejercicio actual, series hechas/totales). Aparecen en la
+Tres Live Activities: **descanso entre series** (cuenta regresiva), **entreno
+en curso** (tiempo, ejercicio actual, series hechas/totales) y
+**running/cardio** (tiempo, distancia, ritmo promedio — estos dos últimos
+opcionales, algunos aparatos de cardio no calculan distancia). Aparecen en la
 pantalla de bloqueo (iOS 16.2+) y en la Dynamic Island (iPhone 14 Pro+).
 
 ### Piezas
 
 | Archivo | Target | Rol |
 |---|---|---|
-| `src/lib/liveActivity.ts` | web | Puente JS. `registerPlugin('LiveActivity')`. Todo `platform === 'ios'` + `try/catch`: sin la extensión, en Android o web es no-op. |
-| `ios/App/App/LiveActivityAttributes.swift` | **App + Widget** | Los `ActivityAttributes` compartidos (`RestActivityAttributes`, `WorkoutActivityAttributes`). |
-| `ios/App/App/LiveActivityPlugin.swift` | **App** | Plugin Capacitor embebido (`CAPBridgedPlugin`). `startRest`/`endRest`/`startWorkout`/`updateWorkout`/`endWorkout`. Cada método es no-op si iOS < 16.2 o si el usuario apagó las Live Activities. |
-| `ios/App/GymTrackerWidget/*.swift` | **Widget** | `WidgetBundle` + las dos `ActivityConfiguration` (lock screen + Dynamic Island compact/minimal/expanded). El timer lo dibuja iOS (`Text(timerInterval:)` / `.timer`), la app no actualiza cada segundo. |
+| `src/lib/liveActivity.ts` | web | Puente JS. `registerPlugin('GymTrackerLiveActivity')`. Todo `platform === 'ios'` + `try/catch`: sin la extensión, en Android o web es no-op. |
+| `ios/App/GymTrackerWidget/LiveActivityAttributes.swift` | **App + Widget** | Los `ActivityAttributes` compartidos (`RestActivityAttributes`, `WorkoutActivityAttributes`, `RunActivityAttributes`). |
+| `ios/App/App/LiveActivityPlugin.swift` | **App** | Plugin Capacitor embebido (`CAPBridgedPlugin`). `startRest`/`endRest`/`startWorkout`/`updateWorkout`/`endWorkout`/`startRun`/`updateRun`/`endRun`. Cada método es no-op si iOS < 16.2 o si el usuario apagó las Live Activities. |
+| `ios/App/GymTrackerWidget/*.swift` | **Widget** | `WidgetBundle` + las tres `ActivityConfiguration` (lock screen + Dynamic Island compact/minimal/expanded). El timer lo dibuja iOS (`Text(timerInterval:)`), la app no actualiza cada segundo. **Nunca `.fixedSize()` en `compactTrailing` ni en la raíz de la pantalla de bloqueo** — renderiza vacío/colapsa el ancho en este SO; usar `.frame(width:/minWidth:)` (ver `docs/BITACORA.md`, 2026-09-14/15). |
 
 Cableado: `RestTimer.tsx` (crea/actualiza al arrancar o extender el descanso,
-cierra al saltar / llegar a 0 / salir del entreno) y `Workout.tsx` (crea con
-la sesión, actualiza al completar series, cierra al finalizar).
+cierra al saltar / llegar a 0 / salir del entreno), `Workout.tsx` (crea con
+la sesión, actualiza al completar series, cierra al finalizar) y `Run.tsx` /
+`Cardio.tsx` (crea con la sesión, actualiza distancia/ritmo cada ~10s, cierra
+al finalizar/cancelar).
 
 ### Paso manual en Xcode (una vez)
 
