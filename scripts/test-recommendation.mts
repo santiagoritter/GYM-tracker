@@ -13,7 +13,7 @@ import {
   estimate1RMFromRelatedHistory,
   progressWeight,
 } from '../src/lib/recommendation'
-import { MIN_LOAD_KG, WEIGHT_INCREMENT, isBodyweight } from '../src/lib/loading'
+import { MIN_LOAD_KG, WEIGHT_INCREMENT, isBodyweight, roundToLoadable } from '../src/lib/loading'
 import { ROUTINE_TEMPLATES } from '../src/data/routineTemplates'
 import type { LocalProfile } from '../src/types'
 
@@ -226,6 +226,29 @@ const totalTemplateExercises = ROUTINE_TEMPLATES.reduce(
   check(
     progressWeight(100, true, 'barbell') === 100 + barbellStep,
     'progressWeight: sin pasar streak, default 1 escalón (compat)'
+  )
+
+  // Ajuste por grupo muscular (Bloque 10): atrasado = escalón más chico,
+  // adelantado = más grande, parejo = sin cambio.
+  check(
+    progressWeight(100, true, 'barbell', 1, { groupProgress: 0.9, averageProgress: 0.9 }) ===
+      100 + barbellStep,
+    'progressWeight: grupo parejo con el promedio no cambia el escalón'
+  )
+  check(
+    progressWeight(100, true, 'barbell', 1, { groupProgress: 0.2, averageProgress: 0.6 }) ===
+      roundToLoadable(100 + barbellStep * 0.5, 'barbell'),
+    'progressWeight: grupo atrasado reduce el escalón a la mitad'
+  )
+  check(
+    progressWeight(100, true, 'barbell', 1, { groupProgress: 0.8, averageProgress: 0.4 }) ===
+      roundToLoadable(100 + barbellStep * 1.5, 'barbell'),
+    'progressWeight: grupo adelantado agranda el escalón 50%'
+  )
+  check(
+    progressWeight(100, true, 'barbell', 3, { groupProgress: 0.8, averageProgress: 0.4 }) ===
+      roundToLoadable(100 + barbellStep * 2 * 1.5, 'barbell'),
+    'progressWeight: racha de 3+ y grupo adelantado se combinan'
   )
 }
 

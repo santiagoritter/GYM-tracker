@@ -433,6 +433,33 @@ export function recommend(
 }
 
 /**
+ * Cuánto pesa el progreso (0..1, escala novato→campeón, ver
+ * `StrengthResult` en `strengthStandards.ts`) del grupo muscular de ESTE
+ * ejercicio contra el promedio de los demás grupos trackeados del usuario
+ * — lo calcula el caller con `getMuscleGroupLevels` (muscleGroupStrength.ts)
+ * una sola vez para toda la rutina, no por ejercicio.
+ */
+export interface MuscleGroupAdjustment {
+  groupProgress: number
+  averageProgress: number
+}
+
+/** Umbral de diferencia (en progreso 0..1) para considerar un grupo
+ * "atrasado" o "adelantado" — por debajo, se trata como "parejo" y no
+ * cambia nada. 0.15 es deliberadamente conservador: la progresión NUNCA
+ * debe volverse agresiva por una diferencia chica, poco confiable con
+ * pocos datos. */
+const MUSCLE_GROUP_THRESHOLD = 0.15
+
+function progressionMultiplier(adjustment?: MuscleGroupAdjustment): number {
+  if (!adjustment) return 1
+  const diff = adjustment.groupProgress - adjustment.averageProgress
+  if (diff <= -MUSCLE_GROUP_THRESHOLD) return 0.5 // atrasado: paso más chico
+  if (diff >= MUSCLE_GROUP_THRESHOLD) return 1.5 // adelantado: paso más agresivo
+  return 1
+}
+
+/**
  * Progresión entre sesiones: si la última vez completaste todas las series
  * llegando al tope de repeticiones, subí un escalón del equipo. Reemplaza al
  * "+2.5 kg" fijo, que era el mismo salto para elevaciones laterales que para
@@ -444,14 +471,21 @@ export function recommend(
  * ejercicio). Una racha real de 3 o más pesa distinto que "cumplió una
  * sola vez": ahí se suben dos escalones en vez de uno. Default 1 para
  * quien no calcule la racha — mismo comportamiento de siempre.
+ *
+ * `muscleGroupAdjustment` (opcional): si el grupo muscular de este
+ * ejercicio está atrasado respecto al resto (ej. entrena mucho empuje y
+ * poco tirón), el escalón se reduce a la mitad — más conservador hasta que
+ * se empareje. Si está adelantado, se agranda 50% — puede permitirse subir
+ * más rápido ahí. Sin el parámetro, comportamiento idéntico a antes.
  */
 export function progressWeight(
   lastTopWeightKg: number,
   metTarget: boolean,
   equipment: Equipment,
-  streak = 1
+  streak = 1,
+  muscleGroupAdjustment?: MuscleGroupAdjustment
 ): number {
   if (!metTarget || lastTopWeightKg <= 0) return lastTopWeightKg
-  const steps = streak >= 3 ? 2 : 1
+  const steps = (streak >= 3 ? 2 : 1) * progressionMultiplier(muscleGroupAdjustment)
   return roundToLoadable(lastTopWeightKg + WEIGHT_INCREMENT[equipment] * steps, equipment)
 }

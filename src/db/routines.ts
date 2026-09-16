@@ -1,9 +1,11 @@
 import { db } from '@/db/schema'
 import { softDelete, softDeleteMany } from '@/db/mutations'
-import { workoutsFor } from '@/db/scoped'
+import { workoutsFor, personalRecordsFor } from '@/db/scoped'
 import type { Routine, RoutineDay, RoutineExercise, Workout, WorkoutSet } from '@/types'
 import { nowIso, uid } from '@/lib/utils'
-import { progressWeight, recommend } from '@/lib/recommendation'
+import { progressWeight, recommend, type MuscleGroupAdjustment } from '@/lib/recommendation'
+import { getMuscleGroupLevels } from '@/lib/muscleGroupStrength'
+import { ageFromDob } from '@/lib/strengthStandards'
 
 export const ROUTINE_COLORS = ['#E8FF47', '#60A5FA', '#F97316', '#EC4899', '#4ADE80', '#A855F7']
 
@@ -240,6 +242,29 @@ export async function startWorkoutFromDay(userId: string, dayId: string): Promis
     else historyByExercise.set(s.exerciseId, [s])
   }
 
+  // Nivel de fuerza por grupo muscular, calculado una sola vez para toda la
+  // rutina (no por ejercicio dentro del loop) — progressWeight() lo usa
+  // para ser más conservador en grupos atrasados y más agresivo en los
+  // adelantados. Con menos de 3 grupos con datos reales, el promedio no es
+  // confiable y se omite el ajuste (progressWeight se comporta como antes).
+  const allExercises = await db.exercises.toArray()
+  const prByExerciseId = new Map(
+    (await personalRecordsFor(userId).toArray()).map((pr) => [pr.exerciseId, pr])
+  )
+  const muscleLevels = getMuscleGroupLevels(
+    allExercises,
+    prByExerciseId,
+    profile?.bodyWeightKg ?? 70,
+    profile?.sex === 'female' ? 'female' : 'male',
+    profile?.dob ? ageFromDob(profile.dob) : 30
+  )
+  const progressByMuscle = new Map(muscleLevels.map((m) => [m.muscle, m.result.progress]))
+  const musclesWithData = muscleLevels.filter((m) => m.result.level !== 'no_data')
+  const averageProgress =
+    musclesWithData.length > 0
+      ? musclesWithData.reduce((sum, m) => sum + m.result.progress, 0) / musclesWithData.length
+      : 0
+
   const sets: WorkoutSet[] = []
   for (const entry of entries) {
     const history = historyByExercise.get(entry.exerciseId) ?? []
@@ -281,7 +306,14 @@ export async function startWorkoutFromDay(userId: string, dayId: string): Promis
         streak++
       }
 
-      suggestedKg = progressWeight(topWeight, metTarget, exercise.equipment, streak)
+      const primaryMuscle = exercise.musclePrimary[0]
+      const groupProgress = primaryMuscle ? progressByMuscle.get(primaryMuscle) : undefined
+      const adjustment: MuscleGroupAdjustment | undefined =
+        groupProgress !== undefined && musclesWithData.length >= 3
+          ? { groupProgress, averageProgress }
+          : undefined
+
+      suggestedKg = progressWeight(topWeight, metTarget, exercise.equipment, streak, adjustment)
     } else if (exercise) {
       suggestedKg = recommend(exercise, profile, [], allHistory).weightKg
     }
