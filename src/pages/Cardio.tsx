@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils'
 import ResponsiveSheet from '@/components/ui/ResponsiveSheet'
 import NumberStepper from '@/components/ui/NumberStepper'
 import HoldButton from '@/components/ui/HoldButton'
+import CalorieHeaderBadge from '@/components/gym/CalorieHeaderBadge'
 
 const SPOTIFY_POLL_MS = 5000
 
@@ -291,15 +292,18 @@ export default function Cardio() {
         >
           <X size={24} />
         </button>
-        {canAdjust && (
-          <button
-            onClick={() => setAdjustOpen(true)}
-            aria-label="Ajustar velocidad e inclinación"
-            className="flex h-11 w-11 items-center justify-center text-ink-3"
-          >
-            <Menu size={22} />
-          </button>
-        )}
+        <div className="flex items-center gap-1.5">
+          <CalorieHeaderBadge />
+          {canAdjust && (
+            <button
+              onClick={() => setAdjustOpen(true)}
+              aria-label="Ajustar velocidad e inclinación"
+              className="flex h-11 w-11 items-center justify-center text-ink-3"
+            >
+              <Menu size={22} />
+            </button>
+          )}
+        </div>
       </div>
 
       {isLandscape ? (

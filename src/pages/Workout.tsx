@@ -17,6 +17,7 @@ import { ExercisePicker } from '@/components/gym/ExercisePicker'
 import { RestTimer } from '@/components/gym/RestTimer'
 import ExerciseCard from '@/components/gym/ExerciseCard'
 import ExerciseDetailSheet from '@/components/gym/ExerciseDetailSheet'
+import CalorieHeaderBadge from '@/components/gym/CalorieHeaderBadge'
 import Confetti from '@/components/ui/Confetti'
 import AchievementIcon from '@/components/gym/AchievementIcon'
 import type { Exercise, PersonalRecord, WorkoutSet } from '@/types'
@@ -411,9 +412,12 @@ export default function Workout() {
           <p className="text-sm font-medium">{workout?.name}</p>
           <p className="font-mono text-xs text-accent">{elapsed}</p>
         </div>
-        <button onClick={handleDiscard} className="p-2 text-danger/70">
-          <Trash2 size={20} />
-        </button>
+        <div className="flex items-center gap-1.5">
+          <CalorieHeaderBadge />
+          <button onClick={handleDiscard} className="p-2 text-danger/70">
+            <Trash2 size={20} />
+          </button>
+        </div>
       </header>
 
       <div className="space-y-4 px-4 py-4">

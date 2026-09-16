@@ -26,6 +26,7 @@ import HoldButton from '@/components/ui/HoldButton'
 import NumberStepper from '@/components/ui/NumberStepper'
 import RunPermissionGate from '@/components/gym/RunPermissionGate'
 import RunSplits from '@/components/gym/RunSplits'
+import CalorieHeaderBadge from '@/components/gym/CalorieHeaderBadge'
 
 const RunMap = lazy(() => import('@/components/gym/RunMap'))
 
@@ -347,14 +348,17 @@ export default function Run() {
           {locked ? <Lock size={18} /> : <LockOpen size={18} />}
         </button>
         {!hasFix && <span className="text-[13px] text-warning">Sin señal de GPS</span>}
-        <button
-          onClick={handleCancel}
-          disabled={locked}
-          aria-label="Cancelar salida"
-          className="flex h-11 w-11 items-center justify-center text-ink-3 disabled:opacity-30"
-        >
-          <X size={22} />
-        </button>
+        <div className="flex items-center gap-1.5">
+          {!locked && <CalorieHeaderBadge />}
+          <button
+            onClick={handleCancel}
+            disabled={locked}
+            aria-label="Cancelar salida"
+            className="flex h-11 w-11 items-center justify-center text-ink-3 disabled:opacity-30"
+          >
+            <X size={22} />
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-1 flex-col items-center justify-center gap-1">
