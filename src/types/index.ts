@@ -311,6 +311,29 @@ export interface Run extends SyncFields {
   targetValue?: number // metros o segundos según targetKind
 }
 
+/**
+ * Registro de un descanso resuelto: cuánto estaba fijado vs. cuánto duró
+ * realmente (TimeCounter). Se crea cuando el usuario confirma la card de
+ * "Descanso terminado" (`RestOvertimeCard.tsx`) — nunca antes, así que no
+ * hay una fila por descanso *arrancado*, solo por descanso *resuelto*.
+ *
+ * `discarded: 1` = el usuario tocó "Descartar sobretiempo" (no tocó la app
+ * a tiempo, el contador se dejó correr de más sin querer) — estas filas no
+ * cuentan para la mediana de descanso real del Bloque 6, solo quedan de
+ * registro. `actualSeconds` en ese caso es igual a `plannedSeconds`.
+ */
+export interface RestLog extends SyncFields {
+  id: string
+  userId: string
+  workoutId: string
+  exerciseId: string
+  exerciseName?: string
+  plannedSeconds: number
+  actualSeconds: number
+  discarded: 0 | 1
+  loggedAt: string
+}
+
 /** Tablas cuyas filas se sincronizan con Postgres. */
 export type SyncedTable =
   | 'profile'
@@ -325,6 +348,7 @@ export type SyncedTable =
   | 'progressPhotos'
   | 'exercisePhotos'
   | 'calorieEntries'
+  | 'restLogs'
 
 /**
  * Lápida de una fila borrada localmente. Existe porque el pull incremental

@@ -9,6 +9,7 @@ import type {
   LocalProfile,
   PersonalRecord,
   ProgressPhoto,
+  RestLog,
   Routine,
   RoutineDay,
   RoutineExercise,
@@ -40,6 +41,7 @@ export const SYNC_ORDER: readonly SyncedTable[] = [
   'progressPhotos',
   'exercisePhotos',
   'calorieEntries',
+  'restLogs',
 ] as const
 
 export class GymTrackerDB extends Dexie {
@@ -61,6 +63,7 @@ export class GymTrackerDB extends Dexie {
   syncState!: Table<SyncStateRow, string>
   calorieEntries!: Table<CalorieEntry, string>
   runs!: Table<Run, string>
+  restLogs!: Table<RestLog, string>
 
   constructor() {
     super('GymTrackerDB')
@@ -287,6 +290,15 @@ export class GymTrackerDB extends Dexie {
     // sin `kind`; se tratan como 'strength' en el código que lo lee.
     this.version(16).stores({}).upgrade(async () => {
       // no-op
+    })
+    // v17: TimeCounter — registro de descanso real vs. planeado
+    // (RestLog/restLogs). Tabla nueva, sin datos que migrar. Entra en
+    // SYNC_ORDER desde el arranque (a diferencia de `runs`, que difirió su
+    // sync): la migración de Postgres se escribe en el mismo bloque.
+    this.version(17).stores({
+      restLogs: 'id, userId, workoutId, exerciseId, dirty, [userId+exerciseId]',
+    }).upgrade(async () => {
+      // no-op: tabla nueva
     })
   }
 }

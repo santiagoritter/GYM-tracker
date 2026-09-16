@@ -227,7 +227,7 @@ export default function Workout() {
       dayEntries.find((e) => e.exerciseId === s.exerciseId)?.restSeconds ??
       profile?.restTimerDefault ??
       90
-    store.startRest(restSeconds, nextName)
+    store.startRest(restSeconds, nextName, workoutId, s.exerciseId)
   }
 
   // Calcula todo en memoria, sin tocar Dexie, y muestra la vista previa —

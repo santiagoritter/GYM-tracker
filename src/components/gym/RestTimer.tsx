@@ -5,9 +5,17 @@ import { useCountdown } from '@/hooks/useCountdown'
 import { cancelScheduledNotifications, hapticSuccess, isNative, notify } from '@/lib/native'
 import { endRestActivity, finishRestActivity, startRestActivity } from '@/lib/liveActivity'
 import { REST_END_MESSAGES, getRandomMessage } from '@/lib/motivational'
+import RestOvertimeCard from '@/components/gym/RestOvertimeCard'
+
+// Si el usuario no confirma la card de sobretiempo (RestOvertimeCard) en
+// este tiempo, se resuelve sola como "descartar" — para no dejar el
+// entreno bloqueado indefinidamente si se dejó el teléfono de lado. Mucho
+// más laxo que el auto-dismiss de 12s que ya tiene la Live Activity para
+// su propia UI nativa (eso no se toca, es independiente de esto).
+const OVERTIME_AUTO_DISCARD_MS = 10 * 60 * 1000
 
 export function RestTimer() {
-  const { restTimer, skipRest, extendRest } = useWorkoutStore()
+  const { restTimer, extendRest, resolveRestOvertime } = useWorkoutStore()
   const endsAt = restTimer.endsAt
   const totalSeconds = restTimer.totalSeconds
   const remaining = useCountdown(endsAt)
@@ -52,8 +60,12 @@ export function RestTimer() {
 
   useEffect(() => () => void endRestActivity(), [])
 
-  // Efectos secundarios de llegar a 0 (haptic, notificación web, avanzar
-  // el store) separados del propio conteo — useCountdown es puro display.
+  // Efectos secundarios de llegar a 0 (haptic, notificación web, Live
+  // Activity) separados del propio conteo — useCountdown es puro display.
+  // Ya NO llama a skipRest() acá: antes el descanso se cerraba solo al
+  // llegar a 0, sin registrar cuánto se descansó REALMENTE — ahora queda
+  // esperando que el usuario confirme desde RestOvertimeCard (abajo), que
+  // es quien llama a resolveRestOvertime() → skipRest().
   useEffect(() => {
     if (!endsAt || remaining !== 0 || firedFor.current === endsAt) return
     firedFor.current = endsAt
@@ -71,10 +83,29 @@ export function RestTimer() {
     }
     // iOS: la Live Activity pasa a mostrar solo el próximo ejercicio.
     finishRestActivity(exerciseName)
-    skipRest()
-  }, [remaining, endsAt, skipRest, exerciseName])
+  }, [remaining, endsAt, exerciseName])
+
+  // Red de seguridad: si nadie confirma la card, se resuelve sola como
+  // "descartar" a los 10 min — mismo criterio que restEndTask en
+  // LiveActivityPlugin.swift, del lado JS.
+  useEffect(() => {
+    if (!endsAt || remaining !== 0) return
+    const timer = window.setTimeout(() => resolveRestOvertime(true), OVERTIME_AUTO_DISCARD_MS)
+    return () => window.clearTimeout(timer)
+  }, [endsAt, remaining, resolveRestOvertime])
 
   if (!endsAt) return null
+
+  if (remaining === 0) {
+    return (
+      <RestOvertimeCard
+        exerciseName={exerciseName}
+        since={endsAt}
+        onFinish={() => resolveRestOvertime(false)}
+        onDiscard={() => resolveRestOvertime(true)}
+      />
+    )
+  }
 
   const progress = restTimer.totalSeconds > 0 ? remaining / restTimer.totalSeconds : 0
   const min = Math.floor(remaining / 60)
@@ -103,7 +134,7 @@ export function RestTimer() {
             <Plus size={16} /> 30s
           </button>
           <button
-            onClick={skipRest}
+            onClick={() => resolveRestOvertime(false)}
             className="flex h-11 items-center gap-1.5 rounded-sm bg-accent px-4 text-sm font-semibold text-bg active:bg-accent-dim"
           >
             <FastForward size={16} /> Saltar

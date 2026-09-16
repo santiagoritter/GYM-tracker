@@ -12,13 +12,34 @@ interface RestTimerState {
   endsAt: number | null // epoch ms
   totalSeconds: number
   exerciseName?: string // para la Live Activity: de qué ejercicio se descansa
+  // workoutId/exerciseId: de qué serie viene este descanso — hace falta
+  // para escribir el RestLog al resolver la card de sobretiempo
+  // (RestOvertimeCard.tsx). `exerciseName` solo sirve para mostrar, no
+  // alcanza para escribir la FK.
+  workoutId?: string
+  exerciseId?: string
 }
 
 interface WorkoutStore {
   restTimer: RestTimerState
-  startRest: (seconds: number, exerciseName?: string) => void
+  startRest: (seconds: number, exerciseName?: string, workoutId?: string, exerciseId?: string) => void
   extendRest: (seconds: number) => void
   skipRest: () => void
+  /**
+   * Resuelve el descanso — ya sea saltado antes de tiempo (botón "Saltar",
+   * mientras cuenta) o desde la card de sobretiempo al llegar a 0
+   * (RestOvertimeCard.tsx) — escribiendo un RestLog con lo planeado vs. lo
+   * real, y cierra el descanso. `actualSeconds` sale de cuánto pasó desde
+   * que arrancó (`endsAt - totalSeconds*1000`) hasta ahora — funciona
+   * igual de bien si terminó antes de tiempo (menos que lo planeado) que
+   * si se pasó (más). `discarded` true = "Descartar sobretiempo": no fue
+   * una señal real del usuario (se dejó correr sin querer), se guarda como
+   * si hubiera durado lo planeado y no cuenta para la mediana del Bloque
+   * 6. No-op silencioso si falta workoutId/exerciseId (descanso arrancado
+   * antes de este cambio, o de un entreno ya borrado) — igual cierra el
+   * timer.
+   */
+  resolveRestOvertime: (discarded: boolean) => Promise<void>
 
   startWorkout: (userId: string, name: string, kind?: Workout['kind']) => Promise<string>
   addExercise: (workoutId: string, exerciseId: string) => Promise<void>
@@ -44,9 +65,15 @@ export const useWorkoutStore = create<WorkoutStore>()(
     (set, get) => ({
       restTimer: { endsAt: null, totalSeconds: 90 },
 
-      startRest: (seconds, exerciseName) =>
+      startRest: (seconds, exerciseName, workoutId, exerciseId) =>
         set({
-          restTimer: { endsAt: Date.now() + seconds * 1000, totalSeconds: seconds, exerciseName },
+          restTimer: {
+            endsAt: Date.now() + seconds * 1000,
+            totalSeconds: seconds,
+            exerciseName,
+            workoutId,
+            exerciseId,
+          },
         }),
 
       extendRest: (seconds) => {
@@ -54,15 +81,43 @@ export const useWorkoutStore = create<WorkoutStore>()(
         if (restTimer.endsAt) {
           set({
             restTimer: {
+              ...restTimer,
               endsAt: restTimer.endsAt + seconds * 1000,
               totalSeconds: restTimer.totalSeconds + seconds,
-              exerciseName: restTimer.exerciseName,
             },
           })
         }
       },
 
       skipRest: () => set({ restTimer: { endsAt: null, totalSeconds: 90 } }),
+
+      resolveRestOvertime: async (discarded) => {
+        const { restTimer } = get()
+        const { endsAt, totalSeconds, exerciseName, workoutId, exerciseId } = restTimer
+        if (endsAt && workoutId && exerciseId) {
+          const workout = await db.workouts.get(workoutId)
+          if (workout) {
+            const startedAt = endsAt - totalSeconds * 1000
+            const actualSeconds = discarded
+              ? totalSeconds
+              : Math.max(0, Math.round((Date.now() - startedAt) / 1000))
+            await db.restLogs.add({
+              id: uid(),
+              userId: workout.userId,
+              workoutId,
+              exerciseId,
+              exerciseName,
+              plannedSeconds: totalSeconds,
+              actualSeconds,
+              discarded: discarded ? 1 : 0,
+              loggedAt: nowIso(),
+              dirty: 1,
+              updatedAt: nowIso(),
+            })
+          }
+        }
+        get().skipRest()
+      },
 
       startWorkout: async (userId, name, kind = 'strength') => {
         const workout: Workout = {
