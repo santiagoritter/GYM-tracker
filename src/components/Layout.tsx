@@ -45,12 +45,13 @@ export default function Layout() {
     return () => ro.disconnect()
   }, [tabs.length])
 
-  // La pastilla necesita un índice siempre válido (0-4). En una ruta sin
-  // tab propio (ej. /ajustes, llegada desde "Yo") `activeTabIndex` da -1 —
-  // acá se mantiene el último tab que sí matcheó en vez de saltar a Home
-  // (bug reportado: "entrás a Ajustes y la pastilla se va a Hoy"). Patrón
-  // de "recordar info del render anterior" (ajustar estado durante el
-  // render, sin efecto) — https://react.dev/learn/you-might-not-need-an-effect.
+  // La pastilla necesita un índice siempre válido. En una ruta sin tab
+  // propio (ej. /perfil, /ajustes — llegadas desde el avatar del header,
+  // ya que "Yo" se sacó de la barra) `activeTabIndex` da -1 — acá se
+  // mantiene el último tab que sí matcheó en vez de saltar a Home (bug
+  // original reportado: "entrás a Ajustes y la pastilla se va a Hoy").
+  // Patrón de "recordar info del render anterior" (ajustar estado durante
+  // el render, sin efecto) — https://react.dev/learn/you-might-not-need-an-effect.
   const rawIndex = activeTabIndex(tabs, location.pathname)
   const [activeIndex, setActiveIndex] = useState(() => Math.max(rawIndex, 0))
   const [lastPathname, setLastPathname] = useState(location.pathname)

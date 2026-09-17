@@ -1,4 +1,4 @@
-import { Calendar, Dumbbell, House, TrendingUp, User, Users, type LucideIcon } from 'lucide-react'
+import { Calendar, Dumbbell, House, TrendingUp, Users, type LucideIcon } from 'lucide-react'
 import type { UserRole } from '@/types'
 
 export interface NavTab {
@@ -8,13 +8,18 @@ export interface NavTab {
 }
 
 /** Compartido entre Layout.tsx (mobile, tab bar) y LayoutDesktop.tsx
- * (sidebar) — mismas pestañas base, dos presentaciones distintas. */
+ * (sidebar) — mismas pestañas base, dos presentaciones distintas.
+ *
+ * "Yo" (perfil) se sacó a pedido explícito, para aliviar la barra — el
+ * avatar+nombre del header (AppHeader.tsx) ya navega a /perfil, así que
+ * no queda sin acceso, solo sin pestaña propia. Mismo criterio que
+ * Ajustes, Calculadora, FAQ, etc.: rutas sin tab dedicado, alcanzables
+ * desde otro lado. */
 const BASE_TABS: NavTab[] = [
   { to: '/', label: 'Hoy', icon: House },
   { to: '/rutinas', label: 'Rutinas', icon: Calendar },
   { to: '/ejercicios', label: 'Ejercicios', icon: Dumbbell },
   { to: '/progreso', label: 'Progreso', icon: TrendingUp },
-  { to: '/perfil', label: 'Yo', icon: User },
 ]
 
 /** Quien tiene el modo coach activo (`role: 'coach'`, o `admin` que puede
