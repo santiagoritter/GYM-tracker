@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { animate, motion, useMotionValue, useReducedMotion } from 'motion/react'
 import { useReminderScheduler } from '@/lib/reminders'
@@ -44,6 +44,27 @@ export default function Layout() {
     ro.observe(row)
     return () => ro.disconnect()
   }, [tabs.length])
+
+  // Alto del header, medido en vivo (mismo criterio que tabWidth arriba):
+  // hace falta para separar el contenido de abajo, ahora que el header es
+  // `fixed` (ver por qué en AppHeader.tsx) y salió del flujo normal —
+  // nada empuja a <main> hacia abajo solo, hay que decirle cuánto medir a
+  // mano. Cambia con el contenido real del header (aparece/desaparece la
+  // píldora de entreno en curso, el badge de calorías, etc.), así que se
+  // mide en vez de hardcodear un número. `useLayoutEffect`, no `useEffect`:
+  // corre antes del primer paint, así el contenido nunca arranca pegado
+  // debajo del header y "salta" hacia abajo un frame después.
+  const headerWrapRef = useRef<HTMLDivElement>(null)
+  const [headerHeight, setHeaderHeight] = useState(0)
+  useLayoutEffect(() => {
+    const el = headerWrapRef.current
+    if (!el) return
+    const measure = () => setHeaderHeight(el.getBoundingClientRect().height)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
 
   // La pastilla necesita un índice siempre válido. En una ruta sin tab
   // propio (ej. /perfil, /ajustes — llegadas desde el avatar del header,
@@ -97,14 +118,21 @@ export default function Layout() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-lg flex-col bg-bg">
-      {/* Header glass — sticky, siempre visible arriba. El aviso de entreno
+      {/* Header glass — fixed, siempre visible arriba pase lo que pase con
+          el scroll (`sticky` no se quedaba pegado en el dispositivo real,
+          ver el comentario largo en AppHeader.tsx). El aviso de entreno
           en curso vive acá adentro, a la misma altura que el avatar y las
           calorías (antes era una píldora flotante sobre la tab bar, mismo
           aviso duplicado en Home.tsx) — así se ve desde cualquier pantalla
           que use este Layout, no solo scrolleando. */}
-      <AppHeader />
+      <div ref={headerWrapRef} className="fixed top-0 left-1/2 z-30 w-full max-w-lg -translate-x-1/2">
+        <AppHeader />
+      </div>
 
-      <main className="flex-1 animate-fade-up px-4 pb-[8.5rem] pt-3">
+      <main
+        className="flex-1 animate-fade-up px-4 pb-[8.5rem]"
+        style={{ paddingTop: headerHeight + 12 }}
+      >
         <Outlet />
       </main>
 

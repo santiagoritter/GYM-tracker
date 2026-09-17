@@ -14,10 +14,18 @@ import CalorieHeaderBadge from '@/components/gym/CalorieHeaderBadge'
 import NotificationsSheet from '@/components/gym/NotificationsSheet'
 
 /**
- * Header sticky compartido por Layout (mobile) y LayoutDesktop — mismo
- * contenido en los dos: avatar, badge de entreno en curso, descanso
- * restante y calorías. Solo cambia el ancho del contenedor que lo envuelve
- * (columna angosta vs. contenedor ancho), nunca el header en sí.
+ * Header compartido por Layout (mobile) y LayoutDesktop — mismo contenido
+ * en los dos: avatar, badge de entreno en curso, descanso restante y
+ * calorías. El propio `<header>` no fija su posición (queda `relative`,
+ * solo para anclar el `.glass absolute inset-0` de acá adentro) — quien
+ * lo monta decide `fixed` o `sticky` según el layout (ver Layout.tsx /
+ * LayoutDesktop.tsx). Antes este `<header>` era `sticky top-0` directo,
+ * pero en mobile (contenedor `flex flex-col` + `min-h-screen`) no se
+ * quedaba pegado arriba al scrollear en el dispositivo real — un bug
+ * conocido de WebKit con `position: sticky` en hijos directos de un flex
+ * container en columna. La tab bar de abajo ya usaba `fixed` en vez de
+ * `sticky` por el mismo motivo; ahora el header sigue el mismo criterio
+ * en mobile.
  */
 export default function AppHeader() {
   const navigate = useNavigate()
@@ -54,7 +62,7 @@ export default function AppHeader() {
     .toUpperCase()
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between px-4 pt-[env(safe-area-inset-top)] pb-0">
+    <header className="relative z-30 flex items-center justify-between px-4 pt-[env(safe-area-inset-top)] pb-0">
       <div className="glass absolute inset-0 -z-10 border-b border-line" />
       <button onClick={() => navigate('/perfil')} className="flex min-h-11 items-center gap-2.5 py-3">
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-[11px] font-bold text-bg">

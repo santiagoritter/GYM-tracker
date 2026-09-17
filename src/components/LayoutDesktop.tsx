@@ -40,7 +40,12 @@ export default function LayoutDesktop() {
       </nav>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <AppHeader />
+        {/* AppHeader ya no trae su propia posición — acá se mantiene
+            sticky (no reportado roto en desktop, a diferencia de mobile,
+            ver Layout.tsx). */}
+        <div className="sticky top-0 z-30">
+          <AppHeader />
+        </div>
         <main className="flex-1 animate-fade-up px-8 py-6">
           <Outlet />
         </main>
