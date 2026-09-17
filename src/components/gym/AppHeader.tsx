@@ -29,7 +29,11 @@ import NotificationsSheet from '@/components/gym/NotificationsSheet'
  */
 export default function AppHeader() {
   const navigate = useNavigate()
-  const { name, role } = useAuthStore()
+  // Selectores, no destructurar el store entero (CLAUDE.md) — este header
+  // está montado en TODA la app, así que re-renderiza con cualquier campo
+  // de authStore que cambie si no se acota (sessionChecked, email…).
+  const name = useAuthStore((s) => s.name)
+  const role = useAuthStore((s) => s.role)
   const userId = useCurrentUserId()
   const activeWorkout = useLiveQuery(
     () => (userId ? workoutsFor(userId).filter((w) => !w.finishedAt).first() : undefined),

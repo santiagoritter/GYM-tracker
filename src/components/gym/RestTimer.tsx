@@ -15,7 +15,13 @@ import RestOvertimeCard from '@/components/gym/RestOvertimeCard'
 const OVERTIME_AUTO_DISCARD_MS = 10 * 60 * 1000
 
 export function RestTimer() {
-  const { restTimer, extendRest, resolveRestOvertime } = useWorkoutStore()
+  // Selectores, no destructurar el store entero (CLAUDE.md): sin esto,
+  // completar/editar cualquier serie del entreno (addSet, updateSet…)
+  // re-renderiza este componente aunque no toque restTimer para nada —
+  // justo el momento en que RestTimer no debería tener trabajo extra.
+  const restTimer = useWorkoutStore((s) => s.restTimer)
+  const extendRest = useWorkoutStore((s) => s.extendRest)
+  const resolveRestOvertime = useWorkoutStore((s) => s.resolveRestOvertime)
   const endsAt = restTimer.endsAt
   const totalSeconds = restTimer.totalSeconds
   const remaining = useCountdown(endsAt)
