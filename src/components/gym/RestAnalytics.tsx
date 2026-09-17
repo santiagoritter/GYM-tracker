@@ -63,14 +63,17 @@ export function RestAnalytics() {
   // El descanso configurado hoy para este ejercicio: cualquier
   // RoutineExercise que lo use (puede estar en varias rutinas/días — se
   // toma el primero como referencia), o el default global si no está en
-  // ninguna rutina.
-  const routineEntries = useLiveQuery(
-    () =>
-      effectiveExercise
-        ? db.routineExercises.where('exerciseId').equals(effectiveExercise).toArray()
-        : [],
-    [effectiveExercise]
-  ) ?? []
+  // ninguna rutina. Filtrado en memoria, no `.where('exerciseId')`: esa
+  // tabla nunca indexó ese campo (solo id/dayId/userId/exerciseOrder/dirty
+  // — ver schema.ts), un `.where()` sobre un keyPath no indexado tira en
+  // tiempo de ejecución ("KeyPath exerciseId on object store
+  // routineExercises..."). Es una tabla chica (rutinas de un usuario), un
+  // filtro en memoria no pesa nada.
+  const allRoutineExercises = useLiveQuery(() => db.routineExercises.toArray(), []) ?? []
+  const routineEntries = useMemo(
+    () => allRoutineExercises.filter((e) => e.exerciseId === effectiveExercise),
+    [allRoutineExercises, effectiveExercise]
+  )
   const currentSeconds = routineEntries[0]?.restSeconds ?? profile?.restTimerDefault ?? 90
 
   const suggestion = useMemo(
