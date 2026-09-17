@@ -17,12 +17,13 @@ export default function CoachHome() {
   }, [])
 
   return (
-    <div className="mx-auto min-h-screen content-width pb-24 lg:max-w-4xl">
-      <header className="glass sticky top-0 z-30 flex items-center justify-between border-b border-line px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
-        <div className="flex items-center gap-2">
-          <Users size={18} className="text-accent" />
-          <h1 className="font-semibold">Alumnos</h1>
-        </div>
+    <div className="mx-auto content-width space-y-4">
+      {/* Sin header propio sticky: esta pantalla vive dentro de AppShell
+          (pestaña "Coach" de la tab bar), el header global ya está arriba —
+          duplicar un segundo chrome fijo acá sería el mismo problema que
+          DESIGN.md ya resolvió para el resto de la app. */}
+      <header className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Alumnos</h1>
         <div className="flex items-center gap-1">
           <button
             onClick={() => navigate('/coach/invitar')}
@@ -41,7 +42,7 @@ export default function CoachHome() {
         </div>
       </header>
 
-      <div className="px-4 py-4">
+      <div>
         {state.s === 'loading' ? (
           <p className="py-12 text-center text-sm text-ink-3">Cargando…</p>
         ) : state.s === 'error' ? (

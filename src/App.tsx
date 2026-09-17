@@ -85,6 +85,17 @@ export default function App() {
           <Route path="/recordatorios" element={<Reminders />} />
           <Route path="/faq" element={<FAQ />} />
 
+          {/* Hub de coach: pestaña propia en la tab bar (navTabs.ts,
+              condicional a role) — a diferencia del resto del área de
+              coach, este vive DENTRO de AppShell para que la barra de
+              navegación siga visible acá. Las pantallas de detalle
+              (alumno, chat, invitar, perfil, plan) siguen siendo pantalla
+              completa más abajo, mismo criterio que /entreno/:workoutId
+              respecto de Home. */}
+          <Route element={<CoachRoute />}>
+            <Route path="/coach" element={<Suspense fallback={lazyFallback}><CoachHome /></Suspense>} />
+          </Route>
+
           {/* Panel admin: solo admins */}
           <Route element={<AdminRoute />}>
             <Route
@@ -116,9 +127,10 @@ export default function App() {
         {/* Chat del lado del alumno (no requiere rol coach). */}
         <Route path="/mi-coach/chat" element={<Suspense fallback={lazyFallback}><MyCoachChat /></Suspense>} />
 
-        {/* Área de coach: rol `coach` (o admin). Pantalla completa, header propio. */}
+        {/* Resto del área de coach: rol `coach` (o admin). Pantalla completa,
+            header propio — /coach (el hub) vive dentro de AppShell, más
+            arriba. */}
         <Route element={<CoachRoute />}>
-          <Route path="/coach" element={<Suspense fallback={lazyFallback}><CoachHome /></Suspense>} />
           <Route path="/coach/alumno/:id" element={<Suspense fallback={lazyFallback}><CoachClientDetail /></Suspense>} />
           <Route path="/coach/alumno/:id/chat" element={<Suspense fallback={lazyFallback}><CoachChatWithClient /></Suspense>} />
           <Route path="/coach/invitar" element={<Suspense fallback={lazyFallback}><CoachInvite /></Suspense>} />

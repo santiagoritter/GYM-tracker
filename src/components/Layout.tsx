@@ -1,29 +1,32 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { animate, motion, useMotionValue, useReducedMotion } from 'motion/react'
 import { useReminderScheduler } from '@/lib/reminders'
 import { useWorkoutActivityReconciler } from '@/hooks/useWorkoutActivityReconciler'
+import { useAuthStore } from '@/stores/authStore'
 import { cn } from '@/lib/utils'
-import { TABS } from '@/lib/navTabs'
+import { getTabs, type NavTab } from '@/lib/navTabs'
 import AppHeader from '@/components/gym/AppHeader'
 
 // Margen fijo a cada lado de la pastilla dentro de su columna — sin esto,
 // en el primer y último tab tocaba el borde de la cápsula exterior.
 const PILL_INSET = 6
 
-// -1 si la ruta actual no es ninguno de los 5 tabs — pasa en cualquier
+// -1 si la ruta actual no es ninguno de los tabs — pasa en cualquier
 // pantalla "hija" del AppShell que no tiene tab propio (Ajustes,
-// Calculadora, Recordatorios, Calorías, Entrenos pasados, FAQ, Admin,
-// Coach…). El caller decide qué hacer con -1: acá se elige no mover la
-// pastilla, no defaultear a Home (ver el bug que corrige más abajo).
-function activeTabIndex(pathname: string): number {
-  return TABS.findIndex(({ to }) => (to === '/' ? pathname === '/' : pathname.startsWith(to)))
+// Calculadora, Recordatorios, Calorías, Entrenos pasados, FAQ, Admin…). El
+// caller decide qué hacer con -1: acá se elige no mover la pastilla, no
+// defaultear a Home (ver el bug que corrige más abajo).
+function activeTabIndex(tabs: NavTab[], pathname: string): number {
+  return tabs.findIndex(({ to }) => (to === '/' ? pathname === '/' : pathname.startsWith(to)))
 }
 
 export default function Layout() {
   const navigate = useNavigate()
   const location = useLocation()
   const reduced = useReducedMotion()
+  const role = useAuthStore((s) => s.role)
+  const tabs = useMemo(() => getTabs(role), [role])
   useReminderScheduler()
   useWorkoutActivityReconciler()
 
@@ -35,12 +38,12 @@ export default function Layout() {
   useEffect(() => {
     const row = tabRowRef.current
     if (!row) return
-    const measure = () => setTabWidth(row.getBoundingClientRect().width / TABS.length)
+    const measure = () => setTabWidth(row.getBoundingClientRect().width / tabs.length)
     measure()
     const ro = new ResizeObserver(measure)
     ro.observe(row)
     return () => ro.disconnect()
-  }, [])
+  }, [tabs.length])
 
   // La pastilla necesita un índice siempre válido (0-4). En una ruta sin
   // tab propio (ej. /ajustes, llegada desde "Yo") `activeTabIndex` da -1 —
@@ -48,7 +51,7 @@ export default function Layout() {
   // (bug reportado: "entrás a Ajustes y la pastilla se va a Hoy"). Patrón
   // de "recordar info del render anterior" (ajustar estado durante el
   // render, sin efecto) — https://react.dev/learn/you-might-not-need-an-effect.
-  const rawIndex = activeTabIndex(location.pathname)
+  const rawIndex = activeTabIndex(tabs, location.pathname)
   const [activeIndex, setActiveIndex] = useState(() => Math.max(rawIndex, 0))
   const [lastPathname, setLastPathname] = useState(location.pathname)
   if (location.pathname !== lastPathname) {
@@ -86,9 +89,9 @@ export default function Layout() {
 
   const handlePillDragEnd = () => {
     if (!tabWidth) return
-    const nearest = Math.min(TABS.length - 1, Math.max(0, Math.round((x.get() - PILL_INSET) / tabWidth)))
+    const nearest = Math.min(tabs.length - 1, Math.max(0, Math.round((x.get() - PILL_INSET) / tabWidth)))
     animate(x, pillX(nearest), spring)
-    if (nearest !== activeIndex) navigate(TABS[nearest].to)
+    if (nearest !== activeIndex) navigate(tabs[nearest].to)
   }
 
   return (
@@ -109,7 +112,7 @@ export default function Layout() {
       <nav className="fixed bottom-0 left-1/2 z-40 w-full max-w-lg -translate-x-1/2 px-3 pb-[calc(0.25rem+env(safe-area-inset-bottom))]">
         <div className="glass glass-edge-top overflow-hidden rounded-full">
           <div ref={tabRowRef} className="relative flex items-stretch justify-around">
-            {TABS.map(({ to, label, icon: Icon }) => (
+            {tabs.map(({ to, label, icon: Icon }) => (
               <NavLink
                 key={to}
                 to={to}
@@ -152,7 +155,7 @@ export default function Layout() {
             {tabWidth > 0 && (
               <motion.div
                 drag="x"
-                dragConstraints={{ left: PILL_INSET, right: pillX(TABS.length - 1) }}
+                dragConstraints={{ left: PILL_INSET, right: pillX(tabs.length - 1) }}
                 dragElastic={0}
                 dragMomentum={false}
                 onDragEnd={handlePillDragEnd}

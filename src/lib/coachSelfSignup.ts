@@ -23,6 +23,23 @@ export async function becomeCoach(input: {
 }
 
 /**
+ * Baja del modo coach: llama a la Edge Function `leave-coach` (termina los
+ * vínculos activos con alumnos y vuelve el rol a `user` con la
+ * service_role) y refresca la sesión — mismo criterio que `becomeCoach`.
+ * La ficha de coach (nombre, DNI, bio) no se borra, por si vuelve a
+ * activarlo más adelante.
+ */
+export async function leaveCoach(): Promise<void> {
+  if (!supabase) throw new Error('Supabase no está configurado.')
+
+  const { data, error } = await supabase.functions.invoke('leave-coach', { body: {} })
+  if (error) throw new Error(await edgeErrorMessage(error))
+  if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error)
+
+  await supabase.auth.refreshSession()
+}
+
+/**
  * `supabase.functions.invoke` devuelve un `FunctionsHttpError` con
  * `error.message` genérico ("Edge Function returned a non-2xx status code")
  * y el cuerpo real en `error.context` (un `Response`). Esto saca el mensaje
@@ -32,7 +49,7 @@ export async function edgeErrorMessage(error: unknown): Promise<string> {
   const ctx = (error as { context?: Response }).context
   if (ctx && typeof ctx.status === 'number') {
     if (ctx.status === 404) {
-      return 'La función del servidor no está desplegada todavía (become-coach / admin-users).'
+      return 'La función del servidor no está desplegada todavía (become-coach / leave-coach / admin-users).'
     }
     try {
       const body = await ctx.clone().json()

@@ -1,6 +1,9 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Check } from 'lucide-react'
+import { ArrowLeft, Check, LogOut } from 'lucide-react'
 import { COACH_PRICE_USD, isCoachBillingEnabled } from '@/lib/coachSubscription'
+import { leaveCoach } from '@/lib/coachSelfSignup'
+import { toast } from '@/stores/toastStore'
 
 /**
  * Plan del modo coach — MAQUETA. Hoy es gratis; el botón de pago está inerte
@@ -10,6 +13,27 @@ import { COACH_PRICE_USD, isCoachBillingEnabled } from '@/lib/coachSubscription'
 export default function CoachPlan() {
   const navigate = useNavigate()
   const billing = isCoachBillingEnabled()
+  const [leaving, setLeaving] = useState(false)
+
+  const handleLeave = async () => {
+    if (
+      !confirm(
+        '¿Salir del modo coach? Termina el vínculo con todos tus alumnos — no van a poder verte como coach hasta que vuelvas a activarlo.'
+      )
+    ) {
+      return
+    }
+    setLeaving(true)
+    try {
+      await leaveCoach()
+      toast.info('Saliste del modo coach')
+      navigate('/')
+    } catch (e) {
+      toast.error('No se pudo', e instanceof Error ? e.message : 'Error')
+    } finally {
+      setLeaving(false)
+    }
+  }
 
   const perks = [
     'Alumnos ilimitados vinculados por link o QR',
@@ -58,6 +82,15 @@ export default function CoachPlan() {
             Mientras tanto el modo coach está habilitado sin costo.
           </p>
         )}
+
+        <button
+          onClick={handleLeave}
+          disabled={leaving}
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-sm border border-line-2 text-sm font-semibold text-danger disabled:opacity-50"
+        >
+          <LogOut size={16} />
+          {leaving ? 'Saliendo…' : 'Salir del modo coach'}
+        </button>
       </div>
     </div>
   )
