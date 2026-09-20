@@ -1,5 +1,11 @@
 # 21 — Modo coach / personal trainer (núcleo, B11)
 
+> **Estado actual (rama `ios-nativo`, migraciones 0012–0023).** Este documento
+> describe el núcleo (0012) y la fase 2 (0013); lo que cambió después está en la
+> sección **"Cierre del módulo (0016–0023)"** al final. Donde dice que el coach
+> asigna rutinas desde plantillas, que el pago es Mercado Pago o que
+> `isCoachBillingEnabled()` mira `VITE_COACH_BILLING`, ya no es así.
+
 **Alcance de esta versión** (decisión del usuario): cuentas de coach,
 vínculo coach↔alumno por invitación (link/QR) cortable por cualquiera de
 las dos partes, el coach ve el progreso de sus alumnos activos y les asigna
@@ -134,3 +140,51 @@ punto a tocar cuando se integre.
    - A deja una reseña 5★ → aparece en `CoachProfile` de B y en el preview de `/unirse/:code`.
    - Con el vínculo `ended`: el hilo se lee pero el envío se rechaza (RLS).
    - Cuenta C sin vínculo: no lee el hilo ni puede reseñar a B.
+
+## Cierre del módulo (0016–0023)
+
+**Seguridad (0016, 0022).** El `coach_clients_either_updates` de 0012 no restringía
+columnas: un coach podía reasignar `client_id` a cualquiera y leer su progreso, o
+reactivar un vínculo cortado. Ahora un trigger deja `coach_id`/`client_id`
+inmutables y desde el cliente solo se puede *terminar* el vínculo; el alta va por
+la RPC `accept_coach_invite(code)` (valida vencimiento y `max_uses`, idempotente) y
+la vista previa por `get_invite_preview(code)`; ya no se pueden listar códigos.
+`coach_messages`: solo el receptor marca leído y solo cambia `read_at`. `verified`
+vuelve a pendiente si cambian nombre/bio/DNI. **Prueba**: `supabase/tests/coach_rls_smoke.sql`
+(29 chequeos, transacción revertida; ver el encabezado del archivo).
+
+**Alta en 3 pasos (0019).** Ficha (nombre, DNI, experiencia, ciudad, especialidades,
+certificaciones, bio) → plan (US$5/mes, `CoachPlanCard`) → términos de coach
+(`coaches.terms_version`). No se pide foto del DNI. Con las compras activas el paso 2
+exige la suscripción (`CoachSubscribeBlock`); el servidor lo exige con
+`REQUIRE_COACH_SUBSCRIPTION=on`.
+
+**Progreso completo del alumno (0020).** `coachClientData.ts` lee en vivo (paginado,
+sin borrados): entrenos con series (al expandir), PRs, medidas, logros, descansos,
+ficha física (`coach_client_profile`). Las **calorías** solo si el alumno lo habilita
+(`client_sharing`, interruptor en "Tu coach"); las fotos de progreso nunca se
+comparten. UI: `ClientDetailPanel` (`clientId` por prop) → `ClientProgressView`
+(Resumen, Entrenos, Progreso, Medidas, Niveles, Logros, Descansos, Calorías) y
+`ClientPlanSection` (rutinas y metas).
+
+**Rutinas a medida (0021).** Constructor `/coach/alumno/:id/rutina[/:routineId]`
+(`CoachRoutineBuilder`, borrador en memoria, `coachRoutineDraft.ts` con test). Guarda
+por `coach_upsert_routine` (atómica, órdenes desde 1, solo rutinas que asignó ese
+coach, borrado lógico para que el sync del alumno propague bajas) y `coach_retire_routine`.
+La policy `for all` de 0012 sobre rutinas del alumno se cerró: el coach solo lee.
+El alumno ve la insignia "De tu coach" y una notificación al bajarla.
+
+**Moderación (0017, 0018).** `reports`, `blocks`, `block_user` (corta el vínculo),
+filtro de lenguaje, `ReportSheet`, bandeja `/admin/reportes`.
+
+**Suscripción (0023).** `subscriptions` (solo la escribe `revenuecat-webhook`);
+al vencer `coach` el usuario deja de ser coach.
+
+**Desktop.** `/coach` en ≥1024px es master-detail (`CoachHome`); detalle y chat
+standalone redirigen ahí; invitar/perfil/plan/constructor conservan el sidebar
+(`CoachDesktopShell` en `App.tsx`). Invitaciones vigentes con "revocar"; mensajes sin
+leer por alumno; el chat trae los últimos 200 mensajes.
+
+**Fuera de alcance (a `IDEAS.md`)**: notas privadas del coach por alumno, superseries
+en el constructor, compartir fotos de progreso con permiso (hoy solo viven en el
+dispositivo).

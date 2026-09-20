@@ -234,6 +234,11 @@ desktop  sin tope fijo   en Inicio, Progreso y el panel de usuarios del
                          de 1024px (`lg:`)
 ```
 
+El **modo coach** también pasa a multi-columna en desktop: `/coach` es un
+master-detail (lista de alumnos de 20rem + panel del alumno seleccionado, con su
+progreso, rutinas y mensajes), y hasta 6xl de ancho. En mobile sigue siendo lista →
+pantalla de detalle.
+
 El resto de las pantallas (listas lineales, flujos, detalle) mantiene la
 columna centrada también en desktop — forzar columnas ahí es la
 abstracción que no hace falta. El breakpoint único es 1024px: por debajo,

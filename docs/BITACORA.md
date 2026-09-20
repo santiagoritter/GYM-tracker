@@ -1003,3 +1003,36 @@ pulidos. Ejecutado por bloques, con commit y push propio en cada uno.
    aplicadas por otra vía. Antes de un `db push` a ciegas, verificar el
    estado real (tablas/columnas vía REST, o `db diff` con Docker) para no
    arriesgarse a reaplicar de más.
+
+
+## 2026-09 — Salida a la App Store: seguridad, cumplimiento, coach y cobro
+
+Barrido de errores previo al lanzamiento con la skill `apple-appstore-reviewer`.
+Detalle del estado y de lo que depende del dueño en `docs/APP-STORE-REVIEW.md`.
+
+1. **Bugs reales corregidos.** La pastilla de la tab bar tapaba "Hoy" en rutas sin
+   tab (Ajustes); saltear un descanso cancelaba *todas* las notificaciones locales;
+   el sync pisaba filas con cambios sin subir, marcaba "sincronizado" con errores y
+   no paginaba; `pullProfile` confundía un error de red con "sin perfil"; la cámara
+   del QR quedaba prendida; headers sticky de sub-pantallas tapados por el global.
+2. **Correr/Cardio.** El GPS y la Live Activity vivían en efectos de la pantalla y
+   se cortaban al salir; ahora `runTracker`/`cardioTracker` los manejan fuera de la
+   vista y `ActiveSessionKeeper` los reanuda al abrir. `cardioStore` persiste. Se
+   quitó la barra superior de ambas pantallas.
+3. **Seguridad del coach.** Ver `docs/21-COACH.md`. Encontrado con la prueba de RLS
+   contra la base real: `accept_coach_invite` fallaba al aceptar dos veces una
+   invitación de un solo uso (0022).
+4. **Cumplimiento.** Borrar cuenta desde la app, reportar/bloquear/filtrar,
+   ícono sin alfa, `PrivacyInfo.xcprivacy`, política y términos completos con
+   re-aceptación (`LEGAL_VERSION` 2), avisos de salud, modo invitado.
+5. **Corrección de un supuesto propio.** Se había dicho que el GPS se sincroniza:
+   falso, `runs` es solo local. Se corrigió la política y el manifiesto.
+6. **Cobro y anuncios** (RevenueCat, AdMob): implementados, apagados por flag, con
+   `xcodebuild` en verde; falta probarlos con cuentas reales.
+7. **Optimización.** Chunk principal 898 → 402 kB (259 → 120 kB gzip): pantallas
+   secundarias lazy y `supabase`/`dexie` en chunks propios.
+
+**Lección**: `supabase db push` de una migración con un bloque `DO` que termina en
+`RAISE EXCEPTION` es una forma de correr pruebas contra la base real sin dejar
+rastro — pero `RESET ROLE` cae al rol temporal de la CLI (sin privilegios sobre las
+tablas); hay que usar `SET LOCAL ROLE postgres`.

@@ -150,8 +150,8 @@ para no romper `DESIGN.md §4`.
 
 ## Deuda técnica anotada
 
-- **`@tanstack/react-query` está instalado y no se usa.** No hay
-  `QueryClientProvider`. O se usa para el sync con Supabase o se desinstala.
+- ~~`@tanstack/react-query` instalado y sin uso~~ — desinstalado (junto con
+  `@emailjs/browser`).
 - **`docs/01` a `docs/12` mezclan lo real con lo aspiracional.** Ya se
   corrigieron algunos; el resto sigue describiendo una arquitectura Supabase
   que nunca existió.
@@ -160,3 +160,17 @@ para no romper `DESIGN.md §4`.
 - **`RoutineExercise.notes` y `restSeconds` son write-only.** Los escribe el
   código (incluido el import por QR, que guarda ahí el peso de referencia)
   pero ningún editor los muestra. Ese dato hoy es invisible.
+
+### Del cierre pre-App Store (fuera de alcance de esa tanda)
+- **Notas privadas del coach por alumno** (tabla `coach_notes`, RLS solo el coach).
+- **Superseries en el constructor de rutinas del coach** (la RPC ya acepta `supersetGroup`).
+- **Compartir fotos de progreso con el coach, con permiso**: hoy los bytes ni salen
+  del dispositivo (la cola de Storage no está hecha).
+- **Sincronizar `runs`** (recorridos GPS): hoy son solo locales; si se sincronizan, hay
+  que actualizar la política, el manifiesto de privacidad y "App Privacy".
+- **Migración a `LazyMotion`**: el ahorro real es chico porque el drag exige `domMax`.
+- **Animar `height` en `RoutineStack`/`RoutineStackCard`** con solo `transform` (hoy
+  React Doctor lo marca): requiere rediseñar el apilado.
+- **`LogPastWorkout` con ids estables por serie** (hoy keys por índice; solo se
+  agregan/quitan al final, así que no rompe).
+- **Subir el deployment target de la app a 16.2** para igualar al widget.

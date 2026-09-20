@@ -333,3 +333,22 @@ esconde en vez de mostrar algo que no puede andar.
 - [ ] Claves VAPID generadas, secrets de la función seteados
 - [ ] `send-push-reminders` desplegada y con su cron programado
 - [ ] `VITE_VAPID_PUBLIC_KEY` en los secrets de GitHub
+
+
+## Migraciones y funciones posteriores (0016–0023)
+
+| Migración | Qué hace |
+|---|---|
+| 0016 | Seguridad del coach: vínculos inmutables, invitaciones por RPC, mensajes de solo lectura salvo `read_at`, `verified` se invalida |
+| 0017 / 0018 | Moderación: `reports`, `blocks`, `block_user`; el admin puede borrar contenido reportado |
+| 0019 | Ficha de coach ampliada (`location`, `certifications`, `terms_*`) |
+| 0020 | Progreso del alumno para el coach: `rest_logs`, `coach_client_profile`, `client_sharing` (calorías con permiso) |
+| 0021 | RPC atómicas `coach_upsert_routine` / `coach_retire_routine`; el coach solo lee rutinas del alumno |
+| 0022 | `accept_coach_invite` idempotente con invitaciones agotadas |
+| 0023 | `subscriptions` (solo la escribe la service_role) |
+
+Edge Functions nuevas: `leave-coach`, `delete-account` (con JWT) y
+`revenuecat-webhook` (**sin** JWT, autenticada por secreto:
+`supabase functions deploy revenuecat-webhook --no-verify-jwt` +
+`supabase secrets set REVENUECAT_WEBHOOK_SECRET=…`).
+Prueba de seguridad: `supabase/tests/coach_rls_smoke.sql` (instrucciones en el archivo).

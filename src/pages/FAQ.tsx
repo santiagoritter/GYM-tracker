@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ChevronDown, Mail } from 'lucide-react'
 import { SUPPORT_EMAIL } from '@/lib/legal'
+import { purchasesAvailable } from '@/lib/purchases'
 
 /**
  * Preguntas frecuentes + contacto. Acordeón con <details> nativo (sin JS de
@@ -54,10 +55,23 @@ const ITEMS: { q: string; a: React.ReactNode }[] = [
     a: 'Solo se puede tener un entreno en curso a la vez, sea de pesas, cardio o running. El banner de "Entreno en curso" (en Inicio y en el header) te lleva de vuelta a retomarlo — terminalo o cancelalo antes de arrancar otro.',
   },
   {
+    q: '¿Necesito una cuenta?',
+    a: 'No. Con "Continuar sin cuenta" usás toda la app y tus datos quedan en este teléfono. Con una cuenta se respaldan en la nube, los recuperás en otro dispositivo y podés vincularte con un coach. Si creás la cuenta después, lo que ya registraste pasa a ella.',
+  },
+  {
+    q: '¿Cómo reporto o bloqueo a alguien?',
+    a: 'En el chat, en "Tu coach" o en una reseña, tocá el ícono de bandera. Podés reportar el contenido o al usuario y bloquearlo: se termina el vínculo y no ves más lo que escriba. Los reportes los revisa el administrador; si es urgente, escribinos.',
+  },
+  {
     q: '¿Cómo borro mi cuenta?',
     a: 'Desde Ajustes → Cuenta → "Borrar mi cuenta". Te pide confirmar escribiendo BORRAR y elimina tu cuenta y todos tus datos de la nube, además de los de este dispositivo. Si tenés una suscripción, se cancela aparte desde Ajustes de tu iPhone → tu nombre → Suscripciones.',
   },
 ]
+
+const SUBSCRIPTION_ITEM: { q: string; a: React.ReactNode } = {
+  q: '¿Cómo cancelo o restauro una suscripción?',
+  a: 'Las suscripciones se administran desde Ajustes del iPhone → tu nombre → Suscripciones; ahí podés cancelarlas. Si cambiaste de teléfono, en Ajustes → Suscripciones → "Restaurar compras" recuperás la tuya. Se renuevan solas cada mes salvo que las canceles al menos 24 horas antes.',
+}
 
 export default function FAQ() {
   const navigate = useNavigate()
@@ -80,7 +94,7 @@ export default function FAQ() {
       </header>
 
       <div className="space-y-2 px-4 py-4">
-        {ITEMS.map((item) => (
+        {(purchasesAvailable() ? [...ITEMS, SUBSCRIPTION_ITEM] : ITEMS).map((item) => (
           <details key={item.q} className="group rounded-md bg-surface">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 text-[15px] font-medium [&::-webkit-details-marker]:hidden">
               {item.q}
