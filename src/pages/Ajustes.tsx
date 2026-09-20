@@ -146,6 +146,7 @@ export default function Ajustes() {
   const [goalSheetOpen, setGoalSheetOpen] = useState(false)
   const [restCustomOpen, setRestCustomOpen] = useState(false)
   const role = useAuthStore((s) => s.role)
+  const isGuest = useAuthStore((s) => s.isGuest)
   const isCoach = role === 'coach' || role === 'admin'
 
   const handleInstall = async () => {
@@ -234,7 +235,6 @@ export default function Ajustes() {
   }
 
   const supabaseConfigured = isSupabaseAuthConfigured()
-  const isGuest = useAuthStore((s) => s.isGuest)
   const syncSubtitle = isGuest
     ? 'Creá una cuenta para respaldar tus datos'
     : !supabaseConfigured
