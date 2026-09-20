@@ -1,6 +1,7 @@
-import { useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import ClientDetailPanel from '@/components/gym/ClientDetailPanel'
+import { useIsDesktop } from '@/hooks/useMediaQuery'
 
 /**
  * Detalle de un alumno en pantalla completa (mobile). Todo el contenido vive en
@@ -9,6 +10,11 @@ import ClientDetailPanel from '@/components/gym/ClientDetailPanel'
 export default function CoachClientDetail() {
   const { id: clientId = '' } = useParams()
   const navigate = useNavigate()
+  const isDesktop = useIsDesktop()
+
+  // En desktop el detalle vive en el master-detail de /coach (mismo contenido,
+  // sin salir de la lista): un enlace directo o una recarga acá redirige allá.
+  if (isDesktop) return <Navigate to={`/coach?alumno=${clientId}`} replace />
 
   return (
     <div className="mx-auto min-h-screen content-width pb-24 lg:max-w-4xl">

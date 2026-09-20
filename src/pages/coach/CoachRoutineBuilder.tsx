@@ -146,8 +146,8 @@ export default function CoachRoutineBuilder() {
   }
 
   return (
-    <div className="mx-auto min-h-screen content-width pb-32 lg:max-w-3xl">
-      <header className="glass sticky top-0 z-30 flex items-center gap-3 border-b border-line px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
+    <div className="mx-auto min-h-screen lg:min-h-0 content-width pb-32 lg:max-w-3xl">
+      <header className="glass sticky top-[var(--app-header-h,0px)] z-20 flex items-center gap-3 border-b border-line px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
         <button
           onClick={backToClient}
           aria-label="Volver"
@@ -306,7 +306,7 @@ export default function CoachRoutineBuilder() {
       )}
 
       {draft && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 lg:left-56">
           <div className="mx-auto content-width lg:max-w-3xl">
             <button
               onClick={save}

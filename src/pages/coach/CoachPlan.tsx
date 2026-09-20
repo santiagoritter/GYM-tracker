@@ -36,8 +36,8 @@ export default function CoachPlan() {
   }
 
   return (
-    <div className="mx-auto min-h-screen content-width pb-24">
-      <header className="glass sticky top-0 z-30 flex items-center gap-3 border-b border-line px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
+    <div className="mx-auto min-h-screen lg:min-h-0 content-width pb-24">
+      <header className="glass sticky top-[var(--app-header-h,0px)] z-20 flex items-center gap-3 border-b border-line px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
         <button onClick={() => navigate('/coach/perfil')} aria-label="Volver" className="flex h-11 w-11 items-center justify-center text-ink-2">
           <ArrowLeft size={22} />
         </button>

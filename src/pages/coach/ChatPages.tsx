@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { fetchMyClients, fetchMyCoach } from '@/lib/coachQueries'
 import ChatThread from '@/components/gym/ChatThread'
+import { useIsDesktop } from '@/hooks/useMediaQuery'
 
 /** Lado coach: `/coach/alumno/:id/chat`. El coach soy yo; el alumno es `:id`. */
 export function CoachChatWithClient() {
   const { id: clientId = '' } = useParams()
   const navigate = useNavigate()
   const coachId = useCurrentUserId()
+  const isDesktop = useIsDesktop()
   const [name, setName] = useState('Alumno')
 
   useEffect(() => {
@@ -20,6 +22,7 @@ export function CoachChatWithClient() {
       .catch(() => {})
   }, [clientId])
 
+  if (isDesktop) return <Navigate to={`/coach?alumno=${clientId}&chat=1`} replace />
   if (!coachId) return null
   return (
     <ChatThread

@@ -29,11 +29,14 @@ export default function ChatThread({
   clientId,
   onBack,
   title,
+  embedded = false,
 }: {
   coachId: string
   clientId: string
   onBack: () => void
   title: string
+  /** Dentro de otro panel (desktop): sin pantalla completa ni header propio. */
+  embedded?: boolean
 }) {
   const navigate = useNavigate()
   const meId = useCurrentUserId()
@@ -120,20 +123,40 @@ export default function ChatThread({
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-lg flex-col bg-bg">
-      <header className="glass sticky top-0 z-30 flex items-center gap-3 border-b border-line px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
-        <button onClick={onBack} aria-label="Volver" className="flex h-11 w-11 items-center justify-center text-ink-2">
-          <ArrowLeft size={22} />
-        </button>
-        <h1 className="min-w-0 flex-1 truncate font-semibold">{title}</h1>
-        <button
-          onClick={() => setReportOpen(true)}
-          aria-label="Reportar o bloquear"
-          className="flex h-11 w-11 shrink-0 items-center justify-center text-ink-3"
-        >
-          <Flag size={18} />
-        </button>
-      </header>
+    <div
+      className={cn(
+        'flex flex-col bg-bg',
+        embedded
+          ? 'h-[calc(100vh-15rem)] min-h-[26rem] overflow-hidden rounded-xl bg-surface'
+          : 'mx-auto min-h-screen max-w-lg'
+      )}
+    >
+      {embedded ? (
+        <div className="flex items-center justify-between border-b border-line px-4">
+          <p className="truncate py-3 text-[14px] font-semibold text-ink-2">Conversación con {title}</p>
+          <button
+            onClick={() => setReportOpen(true)}
+            aria-label="Reportar o bloquear"
+            className="flex h-11 w-11 shrink-0 items-center justify-center text-ink-3"
+          >
+            <Flag size={18} />
+          </button>
+        </div>
+      ) : (
+        <header className="glass sticky top-0 z-30 flex items-center gap-3 border-b border-line px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
+          <button onClick={onBack} aria-label="Volver" className="flex h-11 w-11 items-center justify-center text-ink-2">
+            <ArrowLeft size={22} />
+          </button>
+          <h1 className="min-w-0 flex-1 truncate font-semibold">{title}</h1>
+          <button
+            onClick={() => setReportOpen(true)}
+            aria-label="Reportar o bloquear"
+            className="flex h-11 w-11 shrink-0 items-center justify-center text-ink-3"
+          >
+            <Flag size={18} />
+          </button>
+        </header>
+      )}
 
       <div className="flex-1 space-y-2 overflow-y-auto px-4 py-4">
         {messages.length === 0 && (

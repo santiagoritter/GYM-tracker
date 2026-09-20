@@ -14,8 +14,10 @@ import { toast } from '@/stores/toastStore'
 import { cn } from '@/lib/utils'
 import ClientProgressView from '@/components/gym/ClientProgressView'
 import ClientPlanSection from '@/components/gym/ClientPlanSection'
+import ChatThread from '@/components/gym/ChatThread'
+import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 
-type Section = 'progreso' | 'plan'
+type Section = 'progreso' | 'plan' | 'mensajes'
 
 /**
  * Todo lo que el coach ve y hace con UN alumno: su progreso completo y el plan
@@ -27,12 +29,19 @@ export default function ClientDetailPanel({
   clientId,
   onOpenChat,
   onEnded,
+  inlineChat = false,
+  initialSection = 'progreso',
 }: {
   clientId: string
+  /** Mobile: abre el chat a pantalla completa. Se ignora con `inlineChat`. */
   onOpenChat: () => void
   onEnded: () => void
+  /** Desktop: el chat es una pestaña más del panel, no una pantalla aparte. */
+  inlineChat?: boolean
+  initialSection?: Section
 }) {
-  const [section, setSection] = useState<Section>('progreso')
+  const meId = useCurrentUserId()
+  const [section, setSection] = useState<Section>(initialSection)
   const [name, setName] = useState('')
   const [progress, setProgress] = useState<
     { status: 'loading' } | { status: 'error'; message: string } | { status: 'ok'; data: ClientProgress }
@@ -86,16 +95,18 @@ export default function ClientDetailPanel({
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <h2 className="min-w-0 flex-1 truncate text-lg font-bold">{name}</h2>
-        <button
-          onClick={onOpenChat}
-          className="flex h-11 shrink-0 items-center gap-2 rounded-sm bg-fill px-3.5 text-[14px] font-semibold text-ink-2 active:bg-fill-2"
-        >
-          <MessageSquare size={17} /> Mensajes
-        </button>
+        {!inlineChat && (
+          <button
+            onClick={onOpenChat}
+            className="flex h-11 shrink-0 items-center gap-2 rounded-sm bg-fill px-3.5 text-[14px] font-semibold text-ink-2 active:bg-fill-2"
+          >
+            <MessageSquare size={17} /> Mensajes
+          </button>
+        )}
       </div>
 
       <div className="flex gap-1.5 rounded-full bg-surface p-1" role="tablist" aria-label="Sección">
-        {(['progreso', 'plan'] as const).map((s) => (
+        {(inlineChat ? (['progreso', 'plan', 'mensajes'] as const) : (['progreso', 'plan'] as const)).map((s) => (
           <button
             key={s}
             role="tab"
@@ -106,7 +117,7 @@ export default function ClientDetailPanel({
               section === s ? 'bg-accent text-bg' : 'text-ink-2'
             )}
           >
-            {s === 'progreso' ? 'Progreso' : 'Rutinas y metas'}
+            {s === 'progreso' ? 'Progreso' : s === 'plan' ? 'Rutinas y metas' : 'Mensajes'}
           </button>
         ))}
       </div>
@@ -126,6 +137,16 @@ export default function ClientDetailPanel({
           )}
           {progress.status === 'ok' && <ClientProgressView clientId={clientId} data={progress.data} />}
         </>
+      )}
+
+      {section === 'mensajes' && inlineChat && meId && (
+        <ChatThread
+          embedded
+          coachId={meId}
+          clientId={clientId}
+          title={name}
+          onBack={() => setSection('progreso')}
+        />
       )}
 
       {section === 'plan' && (

@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import AppShell from '@/components/AppShell'
 import { ProtectedRoute, AdminRoute, CoachRoute } from '@/components/ProtectedRoute'
 import Home from '@/pages/Home'
@@ -25,6 +25,7 @@ import Legal from '@/pages/Legal'
 import FAQ from '@/pages/FAQ'
 import ToastContainer from '@/components/ui/Toast'
 import ActiveSessionKeeper from '@/components/ActiveSessionKeeper'
+import { useIsDesktop } from '@/hooks/useMediaQuery'
 
 // Lazy: Recharts pesa ~400KB min; solo se descarga al entrar a Progreso
 const Progress = lazy(() => import('@/pages/Progress'))
@@ -45,6 +46,14 @@ const MyCoachChat = lazy(() =>
   import('@/pages/coach/ChatPages').then((m) => ({ default: m.MyCoachChat }))
 )
 const JoinCoach = lazy(() => import('@/pages/JoinCoach'))
+
+/** Pantallas de coach que en mobile son de pantalla completa (fuera de la tab
+ * bar) pero en desktop tienen que conservar el sidebar y el header global: ahí
+ * se montan dentro de AppShell. */
+function CoachDesktopShell() {
+  const isDesktop = useIsDesktop()
+  return isDesktop ? <AppShell /> : <Outlet />
+}
 
 const lazyFallback = <p className="py-12 text-center text-sm text-ink-3">Cargando…</p>
 
@@ -145,11 +154,13 @@ export default function App() {
         <Route element={<CoachRoute />}>
           <Route path="/coach/alumno/:id" element={<Suspense fallback={lazyFallback}><CoachClientDetail /></Suspense>} />
           <Route path="/coach/alumno/:id/chat" element={<Suspense fallback={lazyFallback}><CoachChatWithClient /></Suspense>} />
-          <Route path="/coach/alumno/:id/rutina" element={<Suspense fallback={lazyFallback}><CoachRoutineBuilder /></Suspense>} />
-          <Route path="/coach/alumno/:id/rutina/:routineId" element={<Suspense fallback={lazyFallback}><CoachRoutineBuilder /></Suspense>} />
-          <Route path="/coach/invitar" element={<Suspense fallback={lazyFallback}><CoachInvite /></Suspense>} />
-          <Route path="/coach/perfil" element={<Suspense fallback={lazyFallback}><CoachProfile /></Suspense>} />
-          <Route path="/coach/plan" element={<Suspense fallback={lazyFallback}><CoachPlan /></Suspense>} />
+          <Route element={<CoachDesktopShell />}>
+            <Route path="/coach/alumno/:id/rutina" element={<Suspense fallback={lazyFallback}><CoachRoutineBuilder /></Suspense>} />
+            <Route path="/coach/alumno/:id/rutina/:routineId" element={<Suspense fallback={lazyFallback}><CoachRoutineBuilder /></Suspense>} />
+            <Route path="/coach/invitar" element={<Suspense fallback={lazyFallback}><CoachInvite /></Suspense>} />
+            <Route path="/coach/perfil" element={<Suspense fallback={lazyFallback}><CoachProfile /></Suspense>} />
+            <Route path="/coach/plan" element={<Suspense fallback={lazyFallback}><CoachPlan /></Suspense>} />
+          </Route>
         </Route>
         <Route path="/rutina/:routineId" element={<RoutineEditor />} />
         <Route path="/spotify/callback" element={<SpotifyCallback />} />
