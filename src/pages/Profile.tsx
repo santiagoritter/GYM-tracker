@@ -15,7 +15,11 @@ const dailyMsg = getDailyMessage()
 
 export default function Profile() {
   const navigate = useNavigate()
-  const { userId, name, email, role } = useAuthStore()
+  const userId = useAuthStore((s) => s.userId)
+  const name = useAuthStore((s) => s.name)
+  const email = useAuthStore((s) => s.email)
+  const role = useAuthStore((s) => s.role)
+  const isGuest = useAuthStore((s) => s.isGuest)
   const profile = useLiveQuery(
     () => (userId ? db.profile.get(userId) : undefined),
     [userId]
@@ -53,7 +57,7 @@ export default function Profile() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate font-semibold">{name}</p>
-            <p className="truncate text-sm text-ink-3">{email}</p>
+            <p className="truncate text-sm text-ink-3">{isGuest ? 'Sin cuenta · datos solo en este teléfono' : email}</p>
           </div>
           {(role === 'admin' || role === 'coach') && (
             <span className="shrink-0 rounded-xs bg-accent/15 px-2 py-1 text-xs font-bold text-accent">
@@ -75,7 +79,7 @@ export default function Profile() {
         )}
       </Card>
 
-      {userId && <MyCoachCard userId={userId} />}
+      {userId && !isGuest && <MyCoachCard userId={userId} />}
 
       {/* Datos corporales: alimentan el recomendador de cargas y los
           niveles de fuerza. Lo que es comportamiento de la app (unidades,
@@ -179,17 +183,28 @@ export default function Profile() {
         )}
       </Card>
 
-      {/* Logout */}
-      <button
-        onClick={handleLogout}
-        className="flex h-14 w-full items-center gap-3 rounded-md border border-danger/30 px-4 text-danger active:bg-danger/10"
-      >
-        <LogOut size={20} />
-        <span className="font-semibold">Cerrar sesión</span>
-      </button>
+      {/* Sesión. Un invitado no tiene sesión que cerrar (salir dejaría sus datos
+          huérfanos): se le ofrece crear la cuenta. */}
+      {isGuest ? (
+        <button
+          onClick={() => navigate('/registro')}
+          className="flex h-14 w-full items-center justify-center rounded-md bg-accent px-4 font-bold text-bg active:bg-accent-dim"
+        >
+          Crear cuenta y respaldar mis datos
+        </button>
+      ) : (
+        <button
+          onClick={handleLogout}
+          className="flex h-14 w-full items-center gap-3 rounded-md border border-danger/30 px-4 text-danger active:bg-danger/10"
+        >
+          <LogOut size={20} />
+          <span className="font-semibold">Cerrar sesión</span>
+        </button>
+      )}
 
       <p className="text-center text-xs text-ink-3">
-        GymTracker v0.1 · Modo local · Tus datos viven solo en este dispositivo
+        GymTracker v0.1 ·{' '}
+        {isGuest ? 'Tus datos viven solo en este teléfono' : 'Tus datos se respaldan en tu cuenta'}
       </p>
     </div>
   )

@@ -5,6 +5,7 @@ import { signIn, verifySignupCode, resendSignupCode, EMAIL_NOT_VERIFIED, type Au
 import { db, ensureProfile } from '@/db/schema'
 import { migrateLocalUserToSupabase } from '@/db/migrateLocalUserToSupabase'
 import { pullProfile } from '@/lib/sync'
+import { migrateGuestData, startGuestMode } from '@/lib/guest'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -33,6 +34,7 @@ export default function Login() {
   // es un usuario genuinamente nuevo y corresponde `ensureProfile`.
   const finishAuth = async (user: AuthUser) => {
     await migrateLocalUserToSupabase(user.id, user.email)
+    await migrateGuestData(user.id)
     const remote = await pullProfile(user.id)
     if (remote) {
       await db.profile.put({ ...remote, id: user.id, dirty: 0 })
@@ -61,6 +63,19 @@ export default function Login() {
         setError(err instanceof Error ? err.message : 'Error al iniciar sesión.')
       }
     } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleGuest = async () => {
+    setError('')
+    setLoading(true)
+    try {
+      const id = await startGuestMode()
+      const profile = await db.profile.get(id)
+      navigate(profile?.onboardingComplete === 1 ? '/' : '/onboarding', { replace: true })
+    } catch {
+      setError('No se pudo entrar sin cuenta. Probá de nuevo.')
       setLoading(false)
     }
   }
@@ -233,6 +248,21 @@ export default function Login() {
             Registrate
           </Link>
         </p>
+
+        <div className="space-y-2 border-t border-line pt-4">
+          <button
+            type="button"
+            onClick={handleGuest}
+            disabled={loading}
+            className="h-12 w-full rounded-sm bg-fill text-sm font-semibold text-ink-2 transition active:bg-fill-2 disabled:opacity-50"
+          >
+            Continuar sin cuenta
+          </button>
+          <p className="text-center text-[12px] leading-relaxed text-ink-3">
+            Usá GymTracker sin registrarte: tus datos quedan solo en este teléfono. Cuando quieras,
+            creás una cuenta y se guardan en la nube sin perder nada.
+          </p>
+        </div>
       </form>
     </div>
   )

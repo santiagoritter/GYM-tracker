@@ -15,6 +15,14 @@ interface AuthState {
    * `false` y `main.tsx` lo pone en `true`.
    */
   sessionChecked: boolean
+  /** Modo sin cuenta: `userId` es un id local (`guest-…`), sin sesión de Supabase. */
+  isGuest: boolean
+  /** Id de invitado que todavía tiene datos por migrar a una cuenta real. Se
+   * conserva después de registrarse/iniciar sesión hasta que `guest.ts` mueve
+   * los datos (el listener de auth pisa `userId` antes de que eso corra). */
+  guestId: string | null
+  startGuest: (guestId: string) => void
+  clearGuestId: () => void
   setSession: (userId: string, role: UserRole, name: string, email: string) => void
   clearSession: () => void
   markSessionChecked: () => void
@@ -28,15 +36,27 @@ export const useAuthStore = create<AuthState>()(
       name: null,
       email: null,
       sessionChecked: false,
+      isGuest: false,
+      guestId: null,
+      startGuest: (guestId) =>
+        set({ userId: guestId, role: 'user', name: 'Invitado', email: null, isGuest: true, guestId, sessionChecked: true }),
+      clearGuestId: () => set({ guestId: null }),
       setSession: (userId, role, name, email) =>
-        set({ userId, role, name, email, sessionChecked: true }),
+        set({ userId, role, name, email, isGuest: false, sessionChecked: true }),
       clearSession: () =>
-        set({ userId: null, role: null, name: null, email: null, sessionChecked: true }),
+        set({ userId: null, role: null, name: null, email: null, isGuest: false, sessionChecked: true }),
       markSessionChecked: () => set({ sessionChecked: true }),
     }),
     {
       name: 'gymtracker-auth',
-      partialize: (s) => ({ userId: s.userId, role: s.role, name: s.name, email: s.email }),
+      partialize: (s) => ({
+        userId: s.userId,
+        role: s.role,
+        name: s.name,
+        email: s.email,
+        isGuest: s.isGuest,
+        guestId: s.guestId,
+      }),
     }
   )
 )

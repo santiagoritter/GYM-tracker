@@ -95,6 +95,7 @@ import { REST_OPTIONS } from '@/lib/constants'
 import { backupNeedsPassphrase, exportBackup, importBackup } from '@/lib/backup'
 import { useCanInstallPwa, promptInstall, isStandalone } from '@/lib/pwaInstall'
 import { isNative } from '@/lib/native'
+import { discardGuestData } from '@/lib/guest'
 import { toast } from '@/stores/toastStore'
 
 const ANDROID_APK_URL = 'https://github.com/santiagoritter/GYM-tracker/releases/latest'
@@ -225,7 +226,10 @@ export default function Ajustes() {
   }
 
   const supabaseConfigured = isSupabaseAuthConfigured()
-  const syncSubtitle = !supabaseConfigured
+  const isGuest = useAuthStore((s) => s.isGuest)
+  const syncSubtitle = isGuest
+    ? 'Creá una cuenta para respaldar tus datos'
+    : !supabaseConfigured
     ? 'Pendiente de configurar'
     : syncStatus === 'syncing'
       ? 'Sincronizando…'
@@ -235,8 +239,20 @@ export default function Ajustes() {
           ? `Sincronizado ${timeAgo(lastSyncedAt)}`
           : 'Todavía no sincronizó'
   const handleSyncRow = () => {
+    if (isGuest) return navigate('/registro')
     if (!supabaseConfigured || !userId || syncStatus === 'syncing') return
     runSync(userId)
+  }
+
+  const handleDiscardGuest = async () => {
+    if (
+      !confirm(
+        '¿Borrar todos tus datos de este teléfono? Como no tenés cuenta, no hay copia en la nube y no se pueden recuperar.'
+      )
+    )
+      return
+    await discardGuestData()
+    window.location.reload()
   }
 
   return (
@@ -262,6 +278,33 @@ export default function Ajustes() {
       </header>
 
       <div className="space-y-5 px-4 py-4">
+        {isGuest && (
+          <div className="space-y-3 rounded-md border border-line-2 bg-surface p-4">
+            <div>
+              <p className="font-semibold">Estás usando GymTracker sin cuenta</p>
+              <p className="mt-1 text-[13px] leading-relaxed text-ink-3">
+                Tus datos están solo en este teléfono. Con una cuenta se respaldan en la nube, los
+                recuperás en otro dispositivo y podés vincularte con un coach. No perdés nada de lo que
+                ya registraste.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => navigate('/registro')}
+                className="h-11 flex-1 rounded-sm bg-accent text-sm font-bold text-bg active:bg-accent-dim"
+              >
+                Crear cuenta
+              </button>
+              <button
+                onClick={() => navigate('/login')}
+                className="h-11 flex-1 rounded-sm bg-fill text-sm font-semibold text-ink-2 active:bg-fill-2"
+              >
+                Ya tengo cuenta
+              </button>
+            </div>
+          </div>
+        )}
+
         {showAppSection && (
           <section>
             <SectionHeader title="La app" />
@@ -547,7 +590,7 @@ export default function Ajustes() {
           />
         </section>
 
-        {supabaseConfigured && (
+        {supabaseConfigured && !isGuest && (
           <section>
             <SectionHeader title="Entrenador" />
             <Card>
@@ -595,7 +638,23 @@ export default function Ajustes() {
           </Card>
         </section>
 
-        {supabaseConfigured && (
+        {isGuest && (
+          <section>
+            <SectionHeader title="Datos del teléfono" />
+            <Card>
+              <Row onClick={handleDiscardGuest}>
+                <Trash2 size={18} className="shrink-0 text-danger" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[15px] text-danger">Borrar mis datos</p>
+                  <p className="text-[13px] text-ink-3">Elimina todo lo guardado en este teléfono</p>
+                </div>
+                <ChevronRight size={16} className="shrink-0 text-ink-4" />
+              </Row>
+            </Card>
+          </section>
+        )}
+
+        {supabaseConfigured && !isGuest && (
           <section>
             <SectionHeader title="Cuenta" />
             <Card>

@@ -8,6 +8,7 @@ import { installSyncHooks, setSyncUser } from '@/db/syncHooks'
 import { useAuthStore } from '@/stores/authStore'
 import { supabase } from '@/lib/supabaseClient'
 import { runSync } from '@/lib/sync'
+import { isGuestUserId } from '@/lib/guest'
 import type { UserRole } from '@/types'
 import { initNativeShell } from '@/lib/native'
 import { initPwaUpdate } from '@/lib/pwaUpdate'
@@ -87,7 +88,7 @@ let syncInterval: ReturnType<typeof setInterval> | undefined
 
 const triggerSync = () => {
   const userId = useAuthStore.getState().userId
-  if (userId && !document.hidden && navigator.onLine) runSync(userId)
+  if (userId && !isGuestUserId(userId) && !document.hidden && navigator.onLine) runSync(userId)
 }
 
 if (supabase) {
@@ -99,6 +100,13 @@ if (supabase) {
       triggerSync()
       if (!syncInterval) syncInterval = setInterval(triggerSync, SYNC_INTERVAL_MS)
     } else {
+      // Sin sesión de Supabase pero en modo sin cuenta: NO se limpia (el evento
+      // inicial de onAuthStateChange llega con `session = null` en cada
+      // arranque y dejaba al invitado afuera).
+      if (useAuthStore.getState().isGuest) {
+        useAuthStore.getState().markSessionChecked()
+        return
+      }
       useAuthStore.getState().clearSession()
       if (syncInterval) {
         clearInterval(syncInterval)

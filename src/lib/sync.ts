@@ -308,6 +308,8 @@ let syncQueued = false
  * después, así un cambio hecho durante el sync no espera al próximo tick. */
 export async function runSync(userId: string): Promise<void> {
   if (!supabase) return
+  // El modo sin cuenta no tiene sesión de Supabase: no hay nada que sincronizar.
+  if (userId.startsWith('guest-')) return
   if (syncInFlight) {
     syncQueued = true
     return

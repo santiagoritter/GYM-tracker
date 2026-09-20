@@ -4,6 +4,7 @@ import { Dumbbell, Eye, EyeOff, Mail, RefreshCw } from 'lucide-react'
 import { signUp, verifySignupCode, resendSignupCode } from '@/lib/supabaseAuth'
 import { db, ensureProfile } from '@/db/schema'
 import { migrateLocalUserToSupabase } from '@/db/migrateLocalUserToSupabase'
+import { migrateGuestData } from '@/lib/guest'
 import { LEGAL_VERSION } from '@/lib/legal'
 import { nowIso } from '@/lib/utils'
 
@@ -77,13 +78,17 @@ export default function Registro() {
       // datos previos (si esta cuenta ya tenía historial local con un id
       // viejo, ver migrateLocalUserToSupabase.ts).
       await migrateLocalUserToSupabase(user.id, user.email)
+      // Si venía usando la app como invitado, sus datos se mueven a esta cuenta.
+      await migrateGuestData(user.id)
       await ensureProfile(user.id)
       // Sella la aceptación de términos/privacidad hecha en el paso 1.
       await db.profile.update(user.id, {
         legalAcceptedAt: nowIso(),
         legalVersion: LEGAL_VERSION,
       })
-      navigate('/onboarding', { replace: true })
+      // Un invitado que ya hizo el onboarding no tiene que repetirlo.
+      const profile = await db.profile.get(user.id)
+      navigate(profile?.onboardingComplete === 1 ? '/' : '/onboarding', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Código inválido.')
       setCode('')

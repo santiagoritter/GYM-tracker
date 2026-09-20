@@ -5,6 +5,7 @@ import { fetchInvitePreview, type CoachPublic } from '@/lib/coachQueries'
 import { fetchCoachReviews } from '@/lib/coachReviews'
 import { acceptInvite } from '@/lib/coachMutations'
 import { toast } from '@/stores/toastStore'
+import { useAuthStore } from '@/stores/authStore'
 import VerifiedBadge from '@/components/gym/VerifiedBadge'
 
 /**
@@ -15,6 +16,7 @@ import VerifiedBadge from '@/components/gym/VerifiedBadge'
 export default function JoinCoach() {
   const { code = '' } = useParams()
   const navigate = useNavigate()
+  const isGuest = useAuthStore((s) => s.isGuest)
   const [state, setState] = useState<
     { s: 'loading' } | { s: 'invalid' } | { s: 'offline' } | { s: 'ok'; coach: CoachPublic }
   >({ s: 'loading' })
@@ -22,6 +24,7 @@ export default function JoinCoach() {
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
+    if (isGuest) return
     fetchInvitePreview(code)
       .then((coach) => {
         if (!coach) return setState({ s: 'invalid' })
@@ -33,7 +36,7 @@ export default function JoinCoach() {
       // Sin señal no es lo mismo que un link vencido: no mandar al usuario a
       // pedirle otro link a su coach por un problema de conexión.
       .catch(() => setState({ s: navigator.onLine ? 'invalid' : 'offline' }))
-  }, [code])
+  }, [code, isGuest])
 
   const accept = async () => {
     setBusy(true)
@@ -45,6 +48,26 @@ export default function JoinCoach() {
       toast.error('No se pudo aceptar', e instanceof Error ? e.message : 'Error')
       setBusy(false)
     }
+  }
+
+  if (isGuest) {
+    return (
+      <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-5 px-6 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]">
+        <h1 className="text-2xl font-bold">Necesitás una cuenta</h1>
+        <p className="text-[15px] leading-relaxed text-ink-2">
+          Para vincularte con un coach hace falta una cuenta: es lo que le permite ver tu progreso con tu permiso. Creala
+          y volvé a abrir este enlace; tus datos actuales pasan a tu cuenta.
+        </p>
+        <div className="space-y-2">
+          <button onClick={() => navigate('/registro')} className="h-12 w-full rounded-sm bg-accent text-sm font-bold text-bg">
+            Crear cuenta
+          </button>
+          <button onClick={() => navigate('/')} className="h-11 w-full text-[13px] font-medium text-ink-3">
+            Ahora no
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -29,12 +29,23 @@ export async function migrateLocalUserToSupabase(newUserId: string, email: strin
   const normalized = email.toLowerCase().trim()
   const legacyUser = await db.users.where('email').equals(normalized).first()
   if (!legacyUser || legacyUser.id === newUserId) return
+  await remapUserData(legacyUser.id, newUserId)
+}
 
-  const oldUserId = legacyUser.id
+/**
+ * Pasa TODO lo que hay bajo `oldUserId` a `newUserId`: filas de todas las tablas
+ * sincronizadas (incluida la PK del perfil y las claves compuestas), tombstones
+ * pendientes y el registro local de auth del usuario viejo. Lo comparten la
+ * migración de una cuenta local vieja y la del modo invitado (`guest.ts`): en
+ * los dos casos los datos ya existen en este dispositivo bajo otro id y hay que
+ * moverlos sin perder ni duplicar nada.
+ */
+export async function remapUserData(oldUserId: string, newUserId: string): Promise<void> {
+  if (oldUserId === newUserId) return
 
   await db.transaction(
     'rw',
-    [db.users, db.emailVerifications, db.tombstones, ...SYNC_ORDER.map((t) => db.table(t))],
+    [db.users, db.emailVerifications, db.tombstones, db.runs, ...SYNC_ORDER.map((t) => db.table(t))],
     async () => {
       for (const table of SYNC_ORDER) {
         const t = db.table<SyncedRow>(table)
@@ -47,6 +58,13 @@ export async function migrateLocalUserToSupabase(newUserId: string, email: strin
           await t.delete(row.id)
           await t.put(remapOwner(table, row as unknown as Record<string, unknown>, newUserId) as never)
         }
+      }
+
+      // Las salidas a correr con su recorrido GPS son solo locales (no están en
+      // SYNC_ORDER) pero también tienen dueño: sin esto quedaban huérfanas.
+      const runs = await db.runs.where('userId').equals(oldUserId).toArray()
+      for (const run of runs) {
+        await db.runs.update(run.id, { userId: newUserId })
       }
 
       // Tombstones de borrados pendientes de propagar bajo el id viejo.
