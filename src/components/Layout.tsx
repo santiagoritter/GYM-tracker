@@ -74,12 +74,19 @@ export default function Layout() {
   // Patrón de "recordar info del render anterior" (ajustar estado durante
   // el render, sin efecto) — https://react.dev/learn/you-might-not-need-an-effect.
   const rawIndex = activeTabIndex(tabs, location.pathname)
-  const [activeIndex, setActiveIndex] = useState(() => Math.max(rawIndex, 0))
+  const [storedIndex, setActiveIndex] = useState(() => Math.max(rawIndex, 0))
   const [lastPathname, setLastPathname] = useState(location.pathname)
   if (location.pathname !== lastPathname) {
     setLastPathname(location.pathname)
     if (rawIndex !== -1) setActiveIndex(rawIndex)
   }
+  // Si el rol cambia (coach ↔ usuario) la cantidad de tabs cambia y el índice
+  // recordado puede quedar fuera de rango.
+  const activeIndex = Math.min(storedIndex, tabs.length - 1)
+  // En una ruta sin tab propio la pastilla queda oculta e inerte: si no,
+  // seguía tapando el tab recordado (`z-20 touch-none`) y comía los toques —
+  // bug reportado: en Ajustes no se podía tocar "Hoy".
+  const noTab = rawIndex === -1
   const pillX = (i: number) => i * tabWidth + PILL_INSET
 
   // Motion value propio (no el prop `animate`): así se puede comandar la
@@ -194,7 +201,10 @@ export default function Layout() {
                 // ya maneja esa transición.
                 whileDrag={{ scale: reduced ? 1 : 1.12 }}
                 style={{ x, width: tabWidth - PILL_INSET * 2 }}
-                className="absolute inset-y-1.5 left-0 z-20 touch-none rounded-full bg-accent/20 backdrop-blur-xs"
+                className={cn(
+                  'absolute inset-y-1.5 left-0 z-20 touch-none rounded-full bg-accent/20 backdrop-blur-xs transition-opacity duration-150',
+                  noTab && 'pointer-events-none opacity-0'
+                )}
               />
             )}
           </div>
