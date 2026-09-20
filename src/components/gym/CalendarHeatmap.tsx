@@ -155,8 +155,8 @@ export default function CalendarHeatmap() {
                     </span>
                   ))}
                 </div>
-                {columns.map((col, i) => (
-                  <div key={i} className="flex flex-col gap-1">
+                {columns.map((col) => (
+                  <div key={col[0]?.key} className="flex flex-col gap-1">
                     {col.map((cell) => (
                       <div
                         key={cell.key}

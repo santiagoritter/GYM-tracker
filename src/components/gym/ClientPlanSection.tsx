@@ -145,7 +145,11 @@ export default function ClientPlanSection({
                   {g.title}
                 </span>
                 <button
-                  onClick={() => updateGoalStatus(g.id, g.status === 'done' ? 'active' : 'done').then(onChanged)}
+                  onClick={() =>
+                    updateGoalStatus(g.id, g.status === 'done' ? 'active' : 'done')
+                      .then(onChanged)
+                      .catch((e: unknown) => toast.error('No se pudo', e instanceof Error ? e.message : 'Error'))
+                  }
                   className="flex h-11 shrink-0 items-center text-[13px] font-semibold text-accent"
                 >
                   {g.status === 'done' ? 'Reabrir' : 'Cumplida'}

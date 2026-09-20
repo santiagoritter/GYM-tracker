@@ -46,6 +46,7 @@ export default function JoinCoach() {
       navigate('/perfil', { replace: true })
     } catch (e) {
       toast.error('No se pudo aceptar', e instanceof Error ? e.message : 'Error')
+    } finally {
       setBusy(false)
     }
   }

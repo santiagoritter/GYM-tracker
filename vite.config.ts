@@ -107,6 +107,11 @@ export default defineConfig(({ mode }) => {
             recharts: ['recharts'],
             vendor: ['react', 'react-dom', 'react-router-dom'],
             motion: ['motion'],
+            // Librerías grandes y estables en su propio chunk: cambian mucho menos
+            // que el código de la app, así que el navegador (y el service worker)
+            // las reusa entre versiones en vez de volver a bajarlas.
+            supabase: ['@supabase/supabase-js'],
+            dexie: ['dexie', 'dexie-react-hooks'],
             // Leaflet + su CSS solo se usan en RunMap (B6), ya lazy. Chunk
             // propio para no mezclarlo con nada del bundle principal.
             leaflet: ['leaflet'],

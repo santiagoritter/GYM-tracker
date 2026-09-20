@@ -20,7 +20,7 @@ import HoldButton from '@/components/ui/HoldButton'
 export default function Home() {
   const navigate = useNavigate()
   const startWorkout = useWorkoutStore((s) => s.startWorkout)
-  const { name } = useAuthStore()
+  const name = useAuthStore((s) => s.name)
   const userId = useCurrentUserId()
   // Frase del momento del día (estoicos/filosofía, no genérica de gym).
   // Estable dentro del día — ver getQuoteForNow. Se recalcula por render sin

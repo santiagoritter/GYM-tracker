@@ -20,10 +20,13 @@ export default function RunPermissionGate({
 
   const ask = async () => {
     setBusy(true)
-    const result = await ensureLocationPermission()
-    setBusy(false)
-    if (result === 'granted') onGranted()
-    else setDenied(true)
+    try {
+      const result = await ensureLocationPermission()
+      if (result === 'granted') onGranted()
+      else setDenied(true)
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (

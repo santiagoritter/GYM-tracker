@@ -112,7 +112,8 @@ function timeAgo(iso: string): string {
 export default function Ajustes() {
   const navigate = useNavigate()
   const userId = useCurrentUserId()
-  const { theme, setTheme } = useThemeStore()
+  const theme = useThemeStore((s) => s.theme)
+  const setTheme = useThemeStore((s) => s.setTheme)
   const fileRef = useRef<HTMLInputElement>(null)
   const profile = useLiveQuery(
     () => (userId ? db.profile.get(userId) : undefined),
@@ -129,7 +130,8 @@ export default function Ajustes() {
   const spotifyDisplayName = useSpotifyStore((s) => s.displayName)
   const spotifyAccessToken = useSpotifyStore((s) => s.accessToken)
   const spotifyDisconnect = useSpotifyStore((s) => s.disconnect)
-  const { status: syncStatus, lastSyncedAt } = useSyncStore()
+  const syncStatus = useSyncStore((s) => s.status)
+  const lastSyncedAt = useSyncStore((s) => s.lastSyncedAt)
   const canInstall = useCanInstallPwa()
   const showAppSection = !isNative && !isStandalone()
   const [coachSheetOpen, setCoachSheetOpen] = useState(false)

@@ -46,6 +46,7 @@ export default function ReportSheet({
       onClose()
     } catch (e) {
       toast.error('No se pudo enviar', e instanceof Error ? e.message : 'Probá de nuevo.')
+    } finally {
       setBusy(false)
     }
   }
@@ -61,6 +62,7 @@ export default function ReportSheet({
       onClose()
     } catch (e) {
       toast.error('No se pudo bloquear', e instanceof Error ? e.message : 'Probá de nuevo.')
+    } finally {
       setBusy(false)
     }
   }

@@ -338,8 +338,8 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
                 Técnica
               </h3>
               <div className="space-y-2.5">
-                {info.tips.map((tip, i) => (
-                  <div key={i} className="flex gap-3">
+                {info.tips.map((tip) => (
+                  <div key={tip} className="flex gap-3">
                     <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-success" />
                     <p className="text-[14px] leading-snug text-ink-2">{tip}</p>
                   </div>
@@ -355,8 +355,8 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
                 Errores comunes
               </h3>
               <div className="space-y-2.5">
-                {info.commonMistakes.map((m, i) => (
-                  <div key={i} className="flex gap-3">
+                {info.commonMistakes.map((m) => (
+                  <div key={m} className="flex gap-3">
                     <AlertTriangle size={16} className="mt-0.5 shrink-0 text-warning" />
                     <p className="text-[14px] leading-snug text-ink-2">{m}</p>
                   </div>

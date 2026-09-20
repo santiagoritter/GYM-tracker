@@ -42,7 +42,7 @@ export function RoutineImportPreview({
         </p>
 
         {payload.d.map((day, i) => (
-          <div key={i} className="rounded-xl bg-surface p-4">
+          <div key={`${i}-${day.n}`} className="rounded-xl bg-surface p-4">
             <p className="font-semibold">
               {day.n}
               {day.r && <span className="ml-2 text-xs text-ink-3">descanso</span>}

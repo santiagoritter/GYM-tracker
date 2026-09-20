@@ -5,27 +5,31 @@ import { ProtectedRoute, AdminRoute, CoachRoute } from '@/components/ProtectedRo
 import Home from '@/pages/Home'
 import Workout from '@/pages/Workout'
 import Exercises from '@/pages/Exercises'
-import Profile from '@/pages/Profile'
 import Routines from '@/pages/Routines'
-import RoutineEditor from '@/pages/RoutineEditor'
 import Login from '@/pages/Login'
-import Registro from '@/pages/Registro'
-import ForgotPassword from '@/pages/ForgotPassword'
-import Onboarding from '@/pages/Onboarding'
-import Reminders from '@/pages/Reminders'
-import Ajustes from '@/pages/Ajustes'
-import Calories from '@/pages/Calories'
-import Calculator from '@/pages/Calculator'
-import LogPastWorkout from '@/pages/LogPastWorkout'
-import SpotifyCallback from '@/pages/SpotifyCallback'
-import ImportRoutine from '@/pages/ImportRoutine'
-import Cardio from '@/pages/Cardio'
-import Run from '@/pages/Run'
-import Legal from '@/pages/Legal'
-import FAQ from '@/pages/FAQ'
 import ToastContainer from '@/components/ui/Toast'
 import ActiveSessionKeeper from '@/components/ActiveSessionKeeper'
 import { useIsDesktop } from '@/hooks/useMediaQuery'
+
+// Pantallas que no hacen falta para abrir la app (registro, ajustes, cardio,
+// calculadoras, legal…): cada una en su propio chunk. El service worker los
+// precachea, así que siguen funcionando sin conexión.
+const Registro = lazy(() => import('@/pages/Registro'))
+const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'))
+const Onboarding = lazy(() => import('@/pages/Onboarding'))
+const Reminders = lazy(() => import('@/pages/Reminders'))
+const Ajustes = lazy(() => import('@/pages/Ajustes'))
+const Calories = lazy(() => import('@/pages/Calories'))
+const Calculator = lazy(() => import('@/pages/Calculator'))
+const LogPastWorkout = lazy(() => import('@/pages/LogPastWorkout'))
+const SpotifyCallback = lazy(() => import('@/pages/SpotifyCallback'))
+const ImportRoutine = lazy(() => import('@/pages/ImportRoutine'))
+const Cardio = lazy(() => import('@/pages/Cardio'))
+const Run = lazy(() => import('@/pages/Run'))
+const Legal = lazy(() => import('@/pages/Legal'))
+const FAQ = lazy(() => import('@/pages/FAQ'))
+const RoutineEditor = lazy(() => import('@/pages/RoutineEditor'))
+const Profile = lazy(() => import('@/pages/Profile'))
 
 // Lazy: Recharts pesa ~400KB min; solo se descarga al entrar a Progreso
 const Progress = lazy(() => import('@/pages/Progress'))
@@ -65,15 +69,15 @@ export default function App() {
       <Routes>
       {/* Rutas públicas */}
       <Route path="/login" element={<Login />} />
-      <Route path="/registro" element={<Registro />} />
-      <Route path="/olvide-contrasena" element={<ForgotPassword />} />
+      <Route path="/registro" element={<Suspense fallback={lazyFallback}><Registro /></Suspense>} />
+      <Route path="/olvide-contrasena" element={<Suspense fallback={lazyFallback}><ForgotPassword /></Suspense>} />
       {/* Legal: accesible también antes de loguearse (linkeado desde el registro) */}
-      <Route path="/legal" element={<Legal />} />
-      <Route path="/legal/:doc" element={<Legal />} />
+      <Route path="/legal" element={<Suspense fallback={lazyFallback}><Legal /></Suspense>} />
+      <Route path="/legal/:doc" element={<Suspense fallback={lazyFallback}><Legal /></Suspense>} />
 
       {/* Onboarding: requiere auth pero no perfil completo */}
       <Route element={<ProtectedRoute />}>
-        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/onboarding" element={<Suspense fallback={lazyFallback}><Onboarding /></Suspense>} />
       </Route>
 
       {/* App principal: requiere auth */}
@@ -90,13 +94,13 @@ export default function App() {
               </Suspense>
             }
           />
-          <Route path="/perfil" element={<Profile />} />
-          <Route path="/ajustes" element={<Ajustes />} />
-          <Route path="/calorias" element={<Calories />} />
-          <Route path="/calculadora" element={<Calculator />} />
-          <Route path="/entrenos-pasados" element={<LogPastWorkout />} />
-          <Route path="/recordatorios" element={<Reminders />} />
-          <Route path="/faq" element={<FAQ />} />
+          <Route path="/perfil" element={<Suspense fallback={lazyFallback}><Profile /></Suspense>} />
+          <Route path="/ajustes" element={<Suspense fallback={lazyFallback}><Ajustes /></Suspense>} />
+          <Route path="/calorias" element={<Suspense fallback={lazyFallback}><Calories /></Suspense>} />
+          <Route path="/calculadora" element={<Suspense fallback={lazyFallback}><Calculator /></Suspense>} />
+          <Route path="/entrenos-pasados" element={<Suspense fallback={lazyFallback}><LogPastWorkout /></Suspense>} />
+          <Route path="/recordatorios" element={<Suspense fallback={lazyFallback}><Reminders /></Suspense>} />
+          <Route path="/faq" element={<Suspense fallback={lazyFallback}><FAQ /></Suspense>} />
 
           {/* Hub de coach: pestaña propia en la tab bar (navTabs.ts,
               condicional a role) — a diferencia del resto del área de
@@ -138,8 +142,8 @@ export default function App() {
           </Route>
         </Route>
         <Route path="/entreno/:workoutId" element={<Workout />} />
-        <Route path="/cardio" element={<Cardio />} />
-        <Route path="/correr" element={<Run />} />
+        <Route path="/cardio" element={<Suspense fallback={lazyFallback}><Cardio /></Suspense>} />
+        <Route path="/correr" element={<Suspense fallback={lazyFallback}><Run /></Suspense>} />
         <Route
           path="/unirse/:code"
           element={<Suspense fallback={lazyFallback}><JoinCoach /></Suspense>}
@@ -162,9 +166,9 @@ export default function App() {
             <Route path="/coach/plan" element={<Suspense fallback={lazyFallback}><CoachPlan /></Suspense>} />
           </Route>
         </Route>
-        <Route path="/rutina/:routineId" element={<RoutineEditor />} />
-        <Route path="/spotify/callback" element={<SpotifyCallback />} />
-        <Route path="/importar/:code" element={<ImportRoutine />} />
+        <Route path="/rutina/:routineId" element={<Suspense fallback={lazyFallback}><RoutineEditor /></Suspense>} />
+        <Route path="/spotify/callback" element={<Suspense fallback={lazyFallback}><SpotifyCallback /></Suspense>} />
+        <Route path="/importar/:code" element={<Suspense fallback={lazyFallback}><ImportRoutine /></Suspense>} />
         <Route
           path="/medidas"
           element={

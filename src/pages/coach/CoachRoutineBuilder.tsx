@@ -131,6 +131,7 @@ export default function CoachRoutineBuilder() {
       backToClient()
     } catch (e) {
       toast.error('No se pudo guardar', e instanceof Error ? e.message : 'Error')
+    } finally {
       setSaving(false)
     }
   }

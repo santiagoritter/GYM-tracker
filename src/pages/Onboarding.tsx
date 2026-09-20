@@ -16,7 +16,9 @@ const WELCOME_HIGHLIGHTS: { text: string; Icon: LucideIcon }[] = [
 
 export default function Onboarding() {
   const navigate = useNavigate()
-  const { userId, name, role } = useAuthStore()
+  const userId = useAuthStore((s) => s.userId)
+  const name = useAuthStore((s) => s.name)
+  const role = useAuthStore((s) => s.role)
   const [step, setStep] = useState(0)
   const [quote] = useState(() => getRandomMessage(ONBOARDING_MESSAGES))
 

@@ -42,7 +42,7 @@ function Inline({ text }: { text: string }) {
   return (
     <>
       {text.split('**').map((chunk, i) =>
-        i % 2 === 1 ? <strong key={i}>{chunk}</strong> : <span key={i}>{chunk}</span>
+        i % 2 === 1 ? <strong key={`b-${chunk}`}>{chunk}</strong> : <span key={`t-${chunk}`}>{chunk}</span>
       )}
     </>
   )
