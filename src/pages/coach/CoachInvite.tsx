@@ -1,8 +1,8 @@
 import { publicLink } from '@/lib/publicUrl'
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Check, Copy, QrCode } from 'lucide-react'
-import { createInvite } from '@/lib/coachMutations'
+import { ArrowLeft, Check, Copy, QrCode, Trash2 } from 'lucide-react'
+import { createInvite, fetchMyInvites, revokeInvite, type MyInvite } from '@/lib/coachMutations'
 import { toast } from '@/stores/toastStore'
 
 /**
@@ -16,6 +16,12 @@ export default function CoachInvite() {
   const [qr, setQr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [invites, setInvites] = useState<MyInvite[]>([])
+
+  const loadInvites = useCallback(() => {
+    fetchMyInvites().then(setInvites).catch(() => setInvites([]))
+  }, [])
+  useEffect(loadInvites, [loadInvites])
 
   const link = code ? publicLink(`unirse/${code}`) : ''
 
@@ -24,6 +30,7 @@ export default function CoachInvite() {
     try {
       const c = await createInvite()
       setCode(c)
+      loadInvites()
       const url = publicLink(`unirse/${c}`)
       const QRCode = (await import('qrcode')).default
       setQr(
@@ -42,9 +49,27 @@ export default function CoachInvite() {
   }
 
   const copy = async () => {
-    await navigator.clipboard.writeText(link)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
+    try {
+      await navigator.clipboard.writeText(link)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      toast.error('No se pudo copiar', 'Mantené apretado el enlace para copiarlo.')
+    }
+  }
+
+  const revoke = async (invite: MyInvite) => {
+    if (!confirm('¿Revocar esta invitación? El enlace deja de funcionar.')) return
+    try {
+      await revokeInvite(invite.id)
+      if (invite.code === code) {
+        setCode(null)
+        setQr(null)
+      }
+      loadInvites()
+    } catch (e) {
+      toast.error('No se pudo revocar', e instanceof Error ? e.message : 'Error')
+    }
   }
 
   return (
@@ -94,6 +119,36 @@ export default function CoachInvite() {
           </>
         )}
       </div>
+
+      {invites.length > 0 && (
+        <section className="px-4">
+          <p className="mb-2 text-sm font-semibold text-ink-2">Invitaciones vigentes</p>
+          <ul className="divide-y divide-line rounded-md bg-surface">
+            {invites.map((inv) => (
+              <li key={inv.id} className="flex items-center gap-3 px-4">
+                <div className="min-w-0 flex-1 py-3">
+                  <p className="font-mono text-[14px] font-semibold tracking-wide">{inv.code}</p>
+                  <p className="text-[12px] text-ink-3">
+                    {inv.expiresAt
+                      ? `Vence el ${new Date(inv.expiresAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}`
+                      : 'Sin vencimiento'}
+                    {' · '}
+                    {inv.usedCount} uso{inv.usedCount === 1 ? '' : 's'}
+                    {inv.maxUses != null && ` de ${inv.maxUses}`}
+                  </p>
+                </div>
+                <button
+                  onClick={() => revoke(inv)}
+                  aria-label={`Revocar invitación ${inv.code}`}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center text-danger/80"
+                >
+                  <Trash2 size={17} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   )
 }

@@ -35,6 +35,10 @@ function mapRow(r: Record<string, unknown>): ChatMessage {
   }
 }
 
+/** Tope de mensajes que se traen por hilo (los más recientes). Antes se bajaba
+ * el historial entero: una conversación larga se volvía lenta y pesada. */
+export const THREAD_LIMIT = 200
+
 export async function fetchThread(coachId: string, clientId: string): Promise<ChatMessage[]> {
   if (!supabase) return []
   const { data, error } = await supabase
@@ -42,9 +46,31 @@ export async function fetchThread(coachId: string, clientId: string): Promise<Ch
     .select('*')
     .eq('coach_id', coachId)
     .eq('client_id', clientId)
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
+    .limit(THREAD_LIMIT)
   if (error) throw error
-  return (data ?? []).map(mapRow)
+  return (data ?? []).map(mapRow).reverse()
+}
+
+/** Mensajes sin leer que le mandaron al coach que llama, por alumno. */
+export async function fetchUnreadByClient(): Promise<Map<string, number>> {
+  const out = new Map<string, number>()
+  if (!supabase) return out
+  const { data: session } = await supabase.auth.getUser()
+  const me = session.user?.id
+  if (!me) return out
+  const { data, error } = await supabase
+    .from('coach_messages')
+    .select('client_id')
+    .eq('coach_id', me)
+    .neq('sender_id', me)
+    .is('read_at', null)
+  if (error) throw error
+  for (const r of data ?? []) {
+    const id = r.client_id as string
+    out.set(id, (out.get(id) ?? 0) + 1)
+  }
+  return out
 }
 
 export async function sendMessage(

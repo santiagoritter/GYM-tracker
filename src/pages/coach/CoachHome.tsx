@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ChevronRight, Search, Settings, UserPlus, Users } from 'lucide-react'
 import { fetchMyClients, type ClientSummary } from '@/lib/coachQueries'
+import { fetchUnreadByClient } from '@/lib/coachChat'
 import { useIsDesktop } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
 import { Card, EmptyState, Row } from '@/components/ui/Card'
@@ -22,11 +23,13 @@ export default function CoachHome() {
   const [params, setParams] = useSearchParams()
   const [state, setState] = useState<LoadState>({ s: 'loading' })
   const [query, setQuery] = useState('')
+  const [unread, setUnread] = useState<Map<string, number>>(new Map())
 
   const selectedId = params.get('alumno')
   const openChat = params.get('chat') === '1'
 
   const load = useCallback(() => {
+    fetchUnreadByClient().then(setUnread).catch(() => undefined)
     fetchMyClients()
       .then((clients) => setState({ s: 'ok', clients }))
       .catch((e: unknown) => setState({ s: 'error', m: e instanceof Error ? e.message : 'Error' }))
@@ -104,6 +107,14 @@ export default function CoachHome() {
                   <p className="truncate text-[15px] font-medium">{c.displayName || c.email}</p>
                   <p className="truncate text-[13px] text-ink-3">{c.email}</p>
                 </div>
+                {(unread.get(c.clientId) ?? 0) > 0 && (
+                  <span
+                    aria-label={`${unread.get(c.clientId)} mensajes sin leer`}
+                    className="flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-accent px-1.5 text-[12px] font-bold text-bg"
+                  >
+                    {unread.get(c.clientId)}
+                  </span>
+                )}
                 <ChevronRight size={16} className="shrink-0 text-ink-4" />
               </Row>
             ))}

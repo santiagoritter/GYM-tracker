@@ -160,3 +160,36 @@ export async function setShareCalories(share: boolean): Promise<void> {
     .upsert({ client_id: id, share_calories: share, updated_at: new Date().toISOString() })
   if (error) throw error
 }
+
+export interface MyInvite {
+  id: string
+  code: string
+  expiresAt: string | null
+  usedCount: number
+  maxUses: number | null
+}
+
+/** Invitaciones vigentes del coach que llama (RLS `coach_invites_owner`). */
+export async function fetchMyInvites(): Promise<MyInvite[]> {
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('coach_invites')
+    .select('id, code, expires_at, used_count, max_uses')
+    .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return (data ?? []).map((r) => ({
+    id: r.id as string,
+    code: r.code as string,
+    expiresAt: (r.expires_at as string | null) ?? null,
+    usedCount: (r.used_count as number) ?? 0,
+    maxUses: (r.max_uses as number | null) ?? null,
+  }))
+}
+
+/** Revoca una invitación: el link deja de funcionar al instante. */
+export async function revokeInvite(inviteId: string): Promise<void> {
+  if (!supabase) throw new Error('Supabase no está configurado.')
+  const { error } = await supabase.from('coach_invites').delete().eq('id', inviteId)
+  if (error) throw error
+}
