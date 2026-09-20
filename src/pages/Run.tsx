@@ -2,7 +2,7 @@ import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } fro
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { Lock, LockOpen, MapPin, Pause, Play, Square, X } from 'lucide-react'
+import { Lock, LockOpen, MapPin, Pause, Play, Square, Trash2, X } from 'lucide-react'
 import { db } from '@/db/schema'
 import { workoutsFor } from '@/db/scoped'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
@@ -10,7 +10,7 @@ import { useWorkoutStore } from '@/stores/workoutStore'
 import { useRunStore, type RunTarget } from '@/stores/runStore'
 import { startWatch, type GeoWatch } from '@/lib/geo'
 import { activeWorkoutRoute } from '@/lib/cardio'
-import { endRunActivity, startRunActivity, updateRunActivity } from '@/lib/liveActivity'
+import { startTracking, stopTracking, useRunSignal } from '@/lib/runTracker'
 import {
   currentPaceSecPerKm,
   formatDistanceKm,
@@ -26,7 +26,6 @@ import HoldButton from '@/components/ui/HoldButton'
 import NumberStepper from '@/components/ui/NumberStepper'
 import RunPermissionGate from '@/components/gym/RunPermissionGate'
 import RunSplits from '@/components/gym/RunSplits'
-import CalorieHeaderBadge from '@/components/gym/CalorieHeaderBadge'
 
 const RunMap = lazy(() => import('@/components/gym/RunMap'))
 
@@ -40,7 +39,6 @@ export default function Run() {
 
   const session = useRunStore((s) => s.session)
   const startRun = useRunStore((s) => s.start)
-  const addPoint = useRunStore((s) => s.addPoint)
   const pauseRun = useRunStore((s) => s.pause)
   const resumeRun = useRunStore((s) => s.resume)
   const endRun = useRunStore((s) => s.end)
@@ -70,13 +68,14 @@ export default function Run() {
       .then((active) => {
         if (cancelled || !active || active.kind !== 'running') return
         startRun(active.id, null, active.startedAt)
+        startTracking()
         setPhase('active')
       })
     return () => {
       cancelled = true
     }
   }, [session, userId, startRun])
-  const [hasFix, setHasFix] = useState(false)
+  const [setupFix, setSetupFix] = useState(false)
   const [locked, setLocked] = useState(false)
   const [targetKind, setTargetKind] = useState<'none' | 'distance' | 'time'>('none')
   const [targetDistanceKm, setTargetDistanceKm] = useState(5)
@@ -84,27 +83,25 @@ export default function Run() {
   const [savedSummary, setSavedSummary] = useState<ReturnType<typeof summarizeRun> | null>(null)
   const [savedPoints, setSavedPoints] = useState<{ lat: number; lng: number; t: number }[]>([])
 
-  const watchRef = useRef<GeoWatch | null>(null)
-
-  // Un solo watcher para setup + active. onFix guarda el fix y, si la sesión
-  // está corriendo, lo agrega al recorrido.
+  // Solo el watcher de la fase de preparación (para mostrar "Señal de GPS
+  // lista" antes de arrancar). Una vez activa, el seguimiento lo lleva
+  // `runTracker` — vive fuera de esta pantalla, así salir de acá no lo corta.
   useEffect(() => {
-    if (phase !== 'setup' && phase !== 'active') return
-    if (watchRef.current) return
+    if (phase !== 'setup') return
     let cleared = false
-    startWatch((fix) => {
-      setHasFix(true)
-      if (useRunStore.getState().session?.status === 'active') addPoint(fix)
-    }).then((w) => {
+    let watch: GeoWatch | null = null
+    startWatch(() => setSetupFix(true)).then((w) => {
       if (cleared) w.clear()
-      else watchRef.current = w
+      else watch = w
     })
     return () => {
       cleared = true
-      watchRef.current?.clear()
-      watchRef.current = null
+      watch?.clear()
     }
-  }, [phase, addPoint])
+  }, [phase])
+
+  const trackerFix = useRunSignal((s) => s.hasFix)
+  const hasFix = phase === 'active' ? trackerFix : setupFix
 
   const points = session?.points ?? []
   // Recalcula por cantidad de puntos (un fix cada 1-5 s): resumir unos miles
@@ -114,26 +111,6 @@ export default function Run() {
     [points.length, profile?.bodyWeightKg]
   )
   const currentPace = useMemo(() => currentPaceSecPerKm(points), [points.length])
-
-  // Ciclo de vida de la Live Activity: mismo criterio que Workout.tsx — se
-  // arranca con la sesión activa y se cierra al salir de 'active' o al
-  // desmontar. `endRunActivity` es idempotente del lado nativo.
-  useEffect(() => {
-    if (!session || phase !== 'active') {
-      endRunActivity()
-      return
-    }
-    startRunActivity('Corriendo', new Date(session.startedAt).getTime())
-    return () => void endRunActivity()
-  }, [session?.workoutId, session?.startedAt, phase])
-
-  useEffect(() => {
-    if (!session || phase !== 'active') return
-    updateRunActivity({
-      distanceM: live.distanceM,
-      avgPaceSecPerKm: live.avgPaceSecPerKm ?? undefined,
-    })
-  }, [session, phase, live.distanceM, live.avgPaceSecPerKm])
 
   // Ticker de 1 s para el reloj (los fixes no llegan cada segundo).
   const [, setTick] = useState(0)
@@ -178,6 +155,7 @@ export default function Run() {
     }
     const workoutId = await startWorkout(userId, 'Salida a correr', 'running')
     startRun(workoutId, buildTarget())
+    startTracking()
     setPhase('active')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, startWorkout, startRun, navigate, targetKind, targetDistanceKm, targetTimeMin])
@@ -185,8 +163,7 @@ export default function Run() {
   const handleFinish = async () => {
     if (!userId || !session) return
     const summary = summarizeRun(session.points, profile?.bodyWeightKg)
-    watchRef.current?.clear()
-    watchRef.current = null
+    stopTracking()
     await finishWorkout(userId, session.workoutId, formatRunNotes(summary))
     await db.runs.add({
       id: uid(),
@@ -217,8 +194,8 @@ export default function Run() {
   }
 
   const handleCancel = async () => {
-    watchRef.current?.clear()
-    watchRef.current = null
+    if (!confirm('¿Descartar esta salida? Se pierde el recorrido.')) return
+    stopTracking()
     if (session) await discardWorkout(session.workoutId)
     discardRun()
     navigate('/')
@@ -339,28 +316,6 @@ export default function Run() {
   const paused = session?.status === 'paused'
   return (
     <div className="relative flex min-h-screen flex-col bg-bg px-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-[calc(1.25rem+env(safe-area-inset-top))]">
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => setLocked((l) => !l)}
-          aria-label={locked ? 'Desbloquear pantalla' : 'Bloquear pantalla'}
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-fill text-ink-2 active:bg-fill-2"
-        >
-          {locked ? <Lock size={18} /> : <LockOpen size={18} />}
-        </button>
-        {!hasFix && <span className="text-[13px] text-warning">Sin señal de GPS</span>}
-        <div className="flex items-center gap-1.5">
-          {!locked && <CalorieHeaderBadge />}
-          <button
-            onClick={handleCancel}
-            disabled={locked}
-            aria-label="Cancelar salida"
-            className="flex h-11 w-11 items-center justify-center text-ink-3 disabled:opacity-30"
-          >
-            <X size={22} />
-          </button>
-        </div>
-      </div>
-
       <div className="flex flex-1 flex-col items-center justify-center gap-1">
         <AnimatePresence mode="popLayout">
           <motion.span
@@ -382,6 +337,11 @@ export default function Run() {
           {currentPace ? `${formatPace(currentPace)} /km` : '— /km'}
           {live.avgPaceSecPerKm ? ` · prom. ${formatPace(live.avgPaceSecPerKm)}` : ''}
         </p>
+        {!hasFix && (
+          <p className="flex items-center gap-1.5 text-[13px] text-warning">
+            <MapPin size={13} /> Sin señal de GPS
+          </p>
+        )}
 
         {target && (
           <div className="mt-3 w-full max-w-[280px]">
@@ -438,6 +398,29 @@ export default function Run() {
           </HoldButton>
         </div>
       )}
+
+      {/* Sin barra superior: el candado y el descarte viven abajo, donde llega
+          el pulgar. Descartar pide confirmación (no perder la salida por un
+          tap mal dado) y queda deshabilitado con la pantalla bloqueada. */}
+      <div className="mt-2 flex items-center justify-between">
+        <button
+          onClick={() => setLocked((l) => !l)}
+          aria-label={locked ? 'Desbloquear pantalla' : 'Bloquear pantalla'}
+          className="flex h-11 items-center gap-2 rounded-full px-3 text-[13px] font-medium text-ink-2 active:bg-fill"
+        >
+          {locked ? <Lock size={16} /> : <LockOpen size={16} />}
+          {locked ? 'Desbloquear' : 'Bloquear pantalla'}
+        </button>
+        {!locked && (
+          <button
+            onClick={handleCancel}
+            aria-label="Descartar salida"
+            className="flex h-11 items-center gap-2 rounded-full px-3 text-[13px] font-medium text-ink-3 active:bg-fill"
+          >
+            <Trash2 size={16} /> Descartar
+          </button>
+        )}
+      </div>
     </div>
   )
 }

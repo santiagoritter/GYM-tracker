@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import type { CardioMachineId } from '@/lib/cardio'
 import { currentDistanceKm } from '@/lib/cardio'
 import { nowIso } from '@/lib/utils'
@@ -35,58 +36,63 @@ interface CardioStore {
   endSession: () => { distanceKm: number }
 }
 
-/** Sesión de cardio en curso — no persiste entre reinicios de la app (a
- * diferencia de `restTimer` en workoutStore): si el usuario mata la app a
- * mitad de una caminata, se pierde el progreso de esa sesión puntual, igual
- * que se perdería el de un cronómetro de mano. No hay `WorkoutSet`s
- * involucrados (cardio no tiene series), así que reusa `startWorkout`/
- * `finishWorkout` de workoutStore para la fila de `Workout` en sí. */
-export const useCardioStore = create<CardioStore>()((set, get) => ({
-  session: null,
+/** Sesión de cardio en curso. Se persiste (localStorage, como `runStore`): la
+ * distancia se deriva de `checkpointAt`, no de timers, así que matar la app o
+ * salir a otra pantalla no pierde velocidad, inclinación ni distancia
+ * acumulada. No hay `WorkoutSet`s involucrados (cardio no tiene series), así
+ * que reusa `startWorkout`/`finishWorkout` de workoutStore para la fila de
+ * `Workout` en sí. */
+export const useCardioStore = create<CardioStore>()(
+  persist(
+    (set, get) => ({
+      session: null,
 
-  startSession: (workoutId, machineId, speedKmh, inclinePct, targetDurationMin) =>
-    set({
-      session: {
-        workoutId,
-        machineId,
-        startedAt: nowIso(),
-        targetDurationMin,
-        speedKmh,
-        inclinePct,
-        distanceAtCheckpointKm: 0,
-        checkpointAt: Date.now(),
+      startSession: (workoutId, machineId, speedKmh, inclinePct, targetDurationMin) =>
+        set({
+          session: {
+            workoutId,
+            machineId,
+            startedAt: nowIso(),
+            targetDurationMin,
+            speedKmh,
+            inclinePct,
+            distanceAtCheckpointKm: 0,
+            checkpointAt: Date.now(),
+          },
+        }),
+
+      setSpeed: (kmh) => {
+        const { session } = get()
+        if (!session) return
+        set({
+          session: {
+            ...session,
+            distanceAtCheckpointKm: currentDistanceKm(
+              session.distanceAtCheckpointKm,
+              session.speedKmh,
+              session.checkpointAt
+            ),
+            checkpointAt: Date.now(),
+            speedKmh: kmh,
+          },
+        })
+      },
+
+      setIncline: (pct) => {
+        const { session } = get()
+        if (!session) return
+        set({ session: { ...session, inclinePct: pct } })
+      },
+
+      endSession: () => {
+        const { session } = get()
+        const distanceKm = session
+          ? currentDistanceKm(session.distanceAtCheckpointKm, session.speedKmh, session.checkpointAt)
+          : 0
+        set({ session: null })
+        return { distanceKm }
       },
     }),
-
-  setSpeed: (kmh) => {
-    const { session } = get()
-    if (!session) return
-    set({
-      session: {
-        ...session,
-        distanceAtCheckpointKm: currentDistanceKm(
-          session.distanceAtCheckpointKm,
-          session.speedKmh,
-          session.checkpointAt
-        ),
-        checkpointAt: Date.now(),
-        speedKmh: kmh,
-      },
-    })
-  },
-
-  setIncline: (pct) => {
-    const { session } = get()
-    if (!session) return
-    set({ session: { ...session, inclinePct: pct } })
-  },
-
-  endSession: () => {
-    const { session } = get()
-    const distanceKm = session
-      ? currentDistanceKm(session.distanceAtCheckpointKm, session.speedKmh, session.checkpointAt)
-      : 0
-    set({ session: null })
-    return { distanceKm }
-  },
-}))
+    { name: 'gymtracker-cardio' }
+  )
+)

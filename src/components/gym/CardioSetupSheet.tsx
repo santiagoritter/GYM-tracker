@@ -6,6 +6,7 @@ import ResponsiveSheet from '@/components/ui/ResponsiveSheet'
 import { useSheetDrag } from '@/hooks/useSheetDrag'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useWorkoutStore } from '@/stores/workoutStore'
+import { startCardioTracking } from '@/lib/cardioTracker'
 import { useCardioStore } from '@/stores/cardioStore'
 import { workoutsFor } from '@/db/scoped'
 import {
@@ -55,6 +56,7 @@ export default function CardioSetupSheet({ onClose }: { onClose: () => void }) {
     }
     const workoutId = await startWorkout(userId, `Cardio · ${machine.label}`, 'cardio')
     startSession(workoutId, machineId, machine.hasSpeed ? speed : 0, incline, targetMin)
+    startCardioTracking()
     onClose()
     navigate('/cardio')
   }

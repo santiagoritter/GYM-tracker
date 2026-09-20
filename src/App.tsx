@@ -24,6 +24,7 @@ import Run from '@/pages/Run'
 import Legal from '@/pages/Legal'
 import FAQ from '@/pages/FAQ'
 import ToastContainer from '@/components/ui/Toast'
+import ActiveSessionKeeper from '@/components/ActiveSessionKeeper'
 
 // Lazy: Recharts pesa ~400KB min; solo se descarga al entrar a Progreso
 const Progress = lazy(() => import('@/pages/Progress'))
@@ -49,6 +50,7 @@ export default function App() {
   return (
     <>
       <ToastContainer />
+      <ActiveSessionKeeper />
       <Routes>
       {/* Rutas públicas */}
       <Route path="/login" element={<Login />} />

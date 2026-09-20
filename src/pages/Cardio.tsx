@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { Menu, Music, Pause, Play, SkipBack, SkipForward, Square, X } from 'lucide-react'
+import { Music, Pause, Play, SkipBack, SkipForward, SlidersHorizontal, Square, Trash2, X } from 'lucide-react'
 import { useElapsedDuration } from '@/hooks/useElapsedDuration'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useWorkoutStore } from '@/stores/workoutStore'
@@ -16,13 +16,12 @@ import {
   projectedDistanceKm,
 } from '@/lib/cardio'
 import { fetchPlaybackState, sendPlaybackCommand, type PlaybackResult } from '@/lib/spotifyPlayer'
-import { endRunActivity, startRunActivity, updateRunActivity } from '@/lib/liveActivity'
+import { stopCardioTracking } from '@/lib/cardioTracker'
 import { hapticSuccess, hapticTick } from '@/lib/native'
 import { cn } from '@/lib/utils'
 import ResponsiveSheet from '@/components/ui/ResponsiveSheet'
 import NumberStepper from '@/components/ui/NumberStepper'
 import HoldButton from '@/components/ui/HoldButton'
-import CalorieHeaderBadge from '@/components/gym/CalorieHeaderBadge'
 
 const SPOTIFY_POLL_MS = 5000
 
@@ -81,38 +80,6 @@ export default function Cardio() {
     }
   }, [targetReached])
 
-  // Ciclo de vida de la Live Activity: mismo criterio que Run.tsx/Workout.tsx.
-  useEffect(() => {
-    if (!session) {
-      endRunActivity()
-      return
-    }
-    startRunActivity(machine.label, new Date(session.startedAt).getTime())
-    return () => void endRunActivity()
-  }, [session?.workoutId, session?.startedAt, machine.label])
-
-  // Distancia/ritmo cambian de a poco (aparatos sin velocidad ni siquiera
-  // los tienen) — se actualiza cada 10s en vez de cada segundo como el
-  // reloj de la UI, para no saturar el budget de actualizaciones de
-  // ActivityKit con algo que iOS no necesita ver tan seguido.
-  useEffect(() => {
-    if (!session) return
-    const tick = () => {
-      const s = useCardioStore.getState().session
-      if (!s) return
-      const distanceM = machine.hasSpeed
-        ? currentDistanceKm(s.distanceAtCheckpointKm, s.speedKmh, s.checkpointAt) * 1000
-        : undefined
-      updateRunActivity({
-        distanceM,
-        avgPaceSecPerKm: s.speedKmh > 0 ? 3600 / s.speedKmh : undefined,
-      })
-    }
-    tick()
-    const id = setInterval(tick, 10_000)
-    return () => clearInterval(id)
-  }, [session?.workoutId, machine.hasSpeed])
-
   const spotifyConnected = useSpotifyStore((s) => Boolean(s.accessToken))
   const [playback, setPlayback] = useState<PlaybackResult | 'loading'>('loading')
 
@@ -139,6 +106,7 @@ export default function Cardio() {
 
   const handleFinish = async () => {
     if (!userId) return
+    stopCardioTracking()
     const { distanceKm: finalKm } = endSession()
     const durationSec = (Date.now() - new Date(session.startedAt).getTime()) / 1000
     await finishWorkout(
@@ -150,6 +118,8 @@ export default function Cardio() {
   }
 
   const handleCancel = async () => {
+    if (!confirm('¿Descartar esta sesión de cardio?')) return
+    stopCardioTracking()
     endSession()
     await discardWorkout(session.workoutId)
     navigate('/')
@@ -269,6 +239,29 @@ export default function Cardio() {
         </span>
         <span className="text-[13px] font-semibold opacity-70">Mantené presionado</span>
       </HoldButton>
+
+      {/* Sin barra superior: ajustar y descartar viven abajo, donde llega el
+          pulgar. Descartar pide confirmación (handleCancel). */}
+      <div className="flex items-center justify-between">
+        {canAdjust ? (
+          <button
+            onClick={() => setAdjustOpen(true)}
+            aria-label="Ajustar velocidad e inclinación"
+            className="flex h-11 items-center gap-2 rounded-full px-3 text-[13px] font-medium text-ink-2 active:bg-fill"
+          >
+            <SlidersHorizontal size={16} /> Ajustar
+          </button>
+        ) : (
+          <span />
+        )}
+        <button
+          onClick={handleCancel}
+          aria-label="Descartar sesión"
+          className="flex h-11 items-center gap-2 rounded-full px-3 text-[13px] font-medium text-ink-3 active:bg-fill"
+        >
+          <Trash2 size={16} /> Descartar
+        </button>
+      </div>
     </div>
   )
 
@@ -279,33 +272,6 @@ export default function Cardio() {
         isLandscape && 'flex-row items-center gap-8 px-10'
       )}
     >
-      <div
-        className={cn(
-          'flex items-center justify-between',
-          isLandscape ? 'absolute left-4 right-4 top-4' : 'w-full'
-        )}
-      >
-        <button
-          onClick={handleCancel}
-          aria-label="Cancelar sesión"
-          className="flex h-11 w-11 items-center justify-center text-ink-3"
-        >
-          <X size={24} />
-        </button>
-        <div className="flex items-center gap-1.5">
-          <CalorieHeaderBadge />
-          {canAdjust && (
-            <button
-              onClick={() => setAdjustOpen(true)}
-              aria-label="Ajustar velocidad e inclinación"
-              className="flex h-11 w-11 items-center justify-center text-ink-3"
-            >
-              <Menu size={22} />
-            </button>
-          )}
-        </div>
-      </div>
-
       {isLandscape ? (
         <>
           <div className="flex flex-1 items-center justify-center">{counter}</div>
