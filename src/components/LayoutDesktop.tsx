@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { cn } from '@/lib/utils'
 import { getTabs } from '@/lib/navTabs'
 import AppHeader from '@/components/gym/AppHeader'
+import { useElementHeight } from '@/hooks/useElementHeight'
 
 /**
  * Layout de escritorio (≥1024px): sidebar fijo en vez de tab bar inferior,
@@ -17,6 +18,7 @@ export default function LayoutDesktop() {
   const tabs = getTabs(role)
   useReminderScheduler()
   useWorkoutActivityReconciler()
+  const [headerRef, headerHeight] = useElementHeight<HTMLDivElement>()
 
   return (
     <div className="flex min-h-screen bg-bg">
@@ -39,11 +41,16 @@ export default function LayoutDesktop() {
         ))}
       </nav>
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      {/* `--app-header-h`: alto del header global, para que los headers propios
+          de cada pantalla (`sticky`) se peguen DEBAJO de él y no lo tapen. */}
+      <div
+        className="flex min-w-0 flex-1 flex-col"
+        style={{ '--app-header-h': `${headerHeight}px` } as React.CSSProperties}
+      >
         {/* AppHeader ya no trae su propia posición — acá se mantiene
             sticky (no reportado roto en desktop, a diferencia de mobile,
             ver Layout.tsx). */}
-        <div className="sticky top-0 z-30">
+        <div ref={headerRef} className="sticky top-0 z-30">
           <AppHeader />
         </div>
         <main className="flex-1 animate-fade-up px-8 py-6">

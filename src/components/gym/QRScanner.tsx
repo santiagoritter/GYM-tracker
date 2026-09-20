@@ -81,7 +81,11 @@ export function QRScanner({ onClose }: { onClose: () => void }) {
               setPayload(parsed)
               setName(parsed.n)
             } else {
-              setScanError('Ese código no es una rutina válida de GymTracker.')
+              setScanError(
+                navigator.onLine
+                  ? 'Ese código no es una rutina válida de GymTracker.'
+                  : 'No hay conexión: conectate a internet para leer este código.'
+              )
             }
           })
         }, 300)
@@ -107,7 +111,11 @@ export function QRScanner({ onClose }: { onClose: () => void }) {
         setPayload(parsed)
         setName(parsed.n)
       } else {
-        alert('El texto pegado no es una rutina válida de GymTracker')
+        alert(
+          navigator.onLine
+            ? 'El texto pegado no es una rutina válida de GymTracker'
+            : 'No hay conexión: conectate a internet para importar la rutina.'
+        )
       }
     } catch {
       setResolving(false)

@@ -20,11 +20,9 @@ interface State {
  * pantalla negra al agregar un ejercicio a una rutina desde su detalle
  * (que sigue reproduciéndose después de ese fix).
  *
- * El mensaje y el stack se muestran SIEMPRE, no solo en dev: el objetivo
- * inmediato es que la próxima vez que esto pase en un dispositivo real
- * se pueda capturar el error real (screenshot) en vez de quedar sin
- * ninguna pista, que es lo que impide diagnosticar el bug de verdad
- * desde este entorno.
+ * El mensaje y el stack solo se muestran en dev. En producción (lo que ve
+ * un usuario o el reviewer de la App Store) sería ruido técnico crudo: se
+ * muestra el aviso amable y el detalle queda en la consola.
  */
 export default class ErrorBoundary extends Component<Props, State> {
   state: State = { error: null }
@@ -63,10 +61,12 @@ export default class ErrorBoundary extends Component<Props, State> {
         >
           Reintentar
         </button>
-        <pre className="mt-2 max-h-40 w-full max-w-lg overflow-auto rounded-md bg-surface p-3 text-left text-[12px] text-danger">
-          {error.message}
-          {error.stack ? `\n${error.stack}` : ''}
-        </pre>
+        {import.meta.env.DEV && (
+          <pre className="mt-2 max-h-40 w-full max-w-lg overflow-auto rounded-md bg-surface p-3 text-left text-[12px] text-danger">
+            {error.message}
+            {error.stack ? `\n${error.stack}` : ''}
+          </pre>
+        )}
       </div>
     )
   }

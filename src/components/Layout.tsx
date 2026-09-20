@@ -124,7 +124,12 @@ export default function Layout() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-lg flex-col bg-bg">
+    <div
+      className="mx-auto flex min-h-screen max-w-lg flex-col bg-bg"
+      // Alto del header global, para que los headers propios de cada pantalla
+      // (`sticky`) se peguen debajo de él y no lo tapen al scrollear.
+      style={{ '--app-header-h': `${headerHeight}px` } as React.CSSProperties}
+    >
       {/* Header glass — fixed, siempre visible arriba pase lo que pase con
           el scroll (`sticky` no se quedaba pegado en el dispositivo real,
           ver el comentario largo en AppHeader.tsx). El aviso de entreno

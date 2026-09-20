@@ -13,6 +13,7 @@ import {
 import { db } from '@/db/schema'
 import { softDelete } from '@/db/mutations'
 import { progressPhotosFor } from '@/db/scoped'
+import Portal from '@/components/ui/Portal'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useChartColors } from '@/hooks/useChartColors'
 import { compressImage } from '@/lib/photos'
@@ -280,6 +281,7 @@ function CompareViewer({
       : null
 
   return (
+    <Portal>
     <div className="fixed inset-0 z-50 flex flex-col bg-bg">
       <div className="flex items-center justify-between px-4 py-3">
         <p className="font-semibold">Comparación</p>
@@ -322,12 +324,14 @@ function CompareViewer({
         </p>
       )}
     </div>
+    </Portal>
   )
 }
 
 function PhotoViewer({ photo, onClose }: { photo: ProgressPhoto; onClose: () => void }) {
   const url = usePhotoUrl(photo.blob)
   return (
+    <Portal>
     <div className="fixed inset-0 z-50 flex flex-col bg-bg">
       <div className="flex items-center justify-between px-4 py-3">
         <div>
@@ -364,5 +368,6 @@ function PhotoViewer({ photo, onClose }: { photo: ProgressPhoto; onClose: () => 
         {url && <img src={url} alt="" className="max-h-full max-w-full rounded-xl" />}
       </div>
     </div>
+    </Portal>
   )
 }

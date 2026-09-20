@@ -27,7 +27,11 @@ export default function ImportRoutine() {
         setPayload(result)
         setName(result.n)
       } else {
-        setError('Este link de rutina no es válido o ya expiró.')
+        setError(
+          navigator.onLine
+            ? 'Este link de rutina no es válido o ya expiró.'
+            : 'No hay conexión: conectate a internet y volvé a abrir el link.'
+        )
       }
     })
     return () => {

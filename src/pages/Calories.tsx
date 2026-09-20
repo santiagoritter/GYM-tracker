@@ -50,10 +50,10 @@ export default function Calories() {
   const summary = summarizeDay(entries ?? [], today, goalKcal)
 
   return (
-    <div className="mx-auto min-h-screen content-width pb-24">
+    <div className="mx-auto content-width pb-24">
       {/* Sin padding de safe-area: vive dentro de AppShell, el header
           global ya lo reserva — sumarlo acá duplicaba el hueco de arriba. */}
-      <header className="glass sticky top-0 z-30 flex items-center gap-3 border-b border-line px-4 pb-3 pt-3">
+      <header className="glass sticky top-[var(--app-header-h,0px)] z-20 flex items-center gap-3 border-b border-line px-4 pb-3 pt-3">
         <button
           onClick={() => navigate('/ajustes')}
           aria-label="Volver"

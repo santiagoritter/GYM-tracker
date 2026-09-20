@@ -16,7 +16,7 @@ export default function JoinCoach() {
   const { code = '' } = useParams()
   const navigate = useNavigate()
   const [state, setState] = useState<
-    { s: 'loading' } | { s: 'invalid' } | { s: 'ok'; coach: CoachPublic }
+    { s: 'loading' } | { s: 'invalid' } | { s: 'offline' } | { s: 'ok'; coach: CoachPublic }
   >({ s: 'loading' })
   const [rating, setRating] = useState<{ average: number | null; count: number }>({ average: null, count: 0 })
   const [busy, setBusy] = useState(false)
@@ -30,7 +30,9 @@ export default function JoinCoach() {
           .then((r) => setRating({ average: r.average, count: r.count }))
           .catch(() => {})
       })
-      .catch(() => setState({ s: 'invalid' }))
+      // Sin señal no es lo mismo que un link vencido: no mandar al usuario a
+      // pedirle otro link a su coach por un problema de conexión.
+      .catch(() => setState({ s: navigator.onLine ? 'invalid' : 'offline' }))
   }, [code])
 
   const accept = async () => {
@@ -49,10 +51,16 @@ export default function JoinCoach() {
     <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-5 px-6 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]">
       {state.s === 'loading' ? (
         <p className="text-center text-sm text-ink-3">Cargando…</p>
-      ) : state.s === 'invalid' ? (
+      ) : state.s === 'invalid' || state.s === 'offline' ? (
         <>
-          <h1 className="text-2xl font-bold">Invitación no válida</h1>
-          <p className="text-[15px] text-ink-2">El enlace venció o no existe. Pedile a tu coach uno nuevo.</p>
+          <h1 className="text-2xl font-bold">
+            {state.s === 'offline' ? 'Sin conexión' : 'Invitación no válida'}
+          </h1>
+          <p className="text-[15px] text-ink-2">
+            {state.s === 'offline'
+              ? 'No pudimos abrir la invitación porque no hay internet. Conectate y volvé a abrir el link.'
+              : 'El enlace venció o no existe. Pedile a tu coach uno nuevo.'}
+          </p>
           <button onClick={() => navigate('/')} className="h-12 rounded-sm border border-line-2 text-sm font-semibold text-ink-2">
             Volver
           </button>

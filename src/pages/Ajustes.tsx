@@ -237,14 +237,14 @@ export default function Ajustes() {
   }
 
   return (
-    <div className="mx-auto min-h-screen content-width pb-24">
+    <div className="mx-auto content-width pb-24">
       {/* Sin padding de safe-area acá: esta pantalla vive DENTRO de AppShell,
           debajo del header global (que ya reserva ese espacio) — sumarlo
           acá también duplicaba el hueco de arriba (bug real reportado con
           captura). Ese padding es para pantallas de pantalla completa
           (Workout.tsx, FAQ.tsx en su forma standalone, etc.) sin nada
           arriba. */}
-      <header className="glass sticky top-0 z-30 flex items-center gap-3 border-b border-line px-4 pb-3 pt-3">
+      <header className="glass sticky top-[var(--app-header-h,0px)] z-20 flex items-center gap-3 border-b border-line px-4 pb-3 pt-3">
         <button
           onClick={() => navigate('/perfil')}
           aria-label="Volver"
