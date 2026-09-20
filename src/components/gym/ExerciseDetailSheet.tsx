@@ -368,7 +368,7 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
           {/* Ejercicio sin info */}
           {!info && (
             <p className="text-[14px] text-ink-3 text-center py-4">
-              Descripción detallada próximamente.
+              Este ejercicio todavía no tiene descripción.
             </p>
           )}
         </motion.div>

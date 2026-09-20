@@ -7,6 +7,8 @@ import { useAuthStore } from '@/stores/authStore'
 import { cn } from '@/lib/utils'
 import { getTabs, type NavTab } from '@/lib/navTabs'
 import AppHeader from '@/components/gym/AppHeader'
+import AdBanner from '@/components/gym/AdBanner'
+import { BANNER_SPACE_PX, useAdsState } from '@/lib/ads'
 
 // Margen fijo a cada lado de la pastilla dentro de su columna — sin esto,
 // en el primer y último tab tocaba el borde de la cápsula exterior.
@@ -87,6 +89,8 @@ export default function Layout() {
   // seguía tapando el tab recordado (`z-20 touch-none`) y comía los toques —
   // bug reportado: en Ajustes no se podía tocar "Hoy".
   const noTab = rawIndex === -1
+  // Mientras hay un banner, el contenido suma su alto abajo para no quedar tapado.
+  const adVisible = useAdsState((s) => s.visible)
   const pillX = (i: number) => i * tabWidth + PILL_INSET
 
   // Motion value propio (no el prop `animate`): así se puede comandar la
@@ -141,9 +145,14 @@ export default function Layout() {
         <AppHeader />
       </div>
 
+      <AdBanner />
+
       <main
         className="flex-1 animate-fade-up px-4 pb-[8.5rem]"
-        style={{ paddingTop: headerHeight + 12 }}
+        style={{
+          paddingTop: headerHeight + 12,
+          paddingBottom: adVisible ? `calc(8.5rem + ${BANNER_SPACE_PX}px)` : undefined,
+        }}
       >
         <Outlet />
       </main>
