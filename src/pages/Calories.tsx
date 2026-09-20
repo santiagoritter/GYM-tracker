@@ -195,6 +195,11 @@ export default function Calories() {
             </section>
           </>
         )}
+
+        <p className="px-1 text-center text-[12px] leading-relaxed text-ink-3">
+          Las metas y estimaciones de calorías son orientativas y no constituyen consejo médico ni
+          nutricional. Consultá a un profesional antes de cambiar tu alimentación.
+        </p>
       </div>
 
       <Suspense fallback={null}>

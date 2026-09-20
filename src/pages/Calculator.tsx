@@ -137,6 +137,11 @@ export default function Calculator() {
             </Card>
           </section>
         )}
+
+        <p className="px-1 text-center text-[12px] leading-relaxed text-ink-3">
+          Estimaciones orientativas con fórmulas estándar. No reemplazan el criterio de un
+          entrenador ni de un profesional de la salud.
+        </p>
       </div>
     </div>
   )
