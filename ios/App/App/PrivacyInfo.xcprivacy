@@ -10,7 +10,8 @@
 	<array/>
 	<!-- Datos que la app envía a su backend (Supabase) al iniciar sesión.
 	     Todos vinculados a la cuenta, ninguno para seguimiento. Las fotos de
-	     progreso se quedan en el dispositivo y no figuran. -->
+	     progreso y el recorrido GPS (`runs`) se quedan en el dispositivo y no
+	     figuran: "recolectar" es sacarlos del dispositivo. -->
 	<key>NSPrivacyCollectedDataTypes</key>
 	<array>
 		<dict>
@@ -64,18 +65,6 @@
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypeHealth</string>
-			<key>NSPrivacyCollectedDataTypeLinked</key>
-			<true/>
-			<key>NSPrivacyCollectedDataTypeTracking</key>
-			<false/>
-			<key>NSPrivacyCollectedDataTypePurposes</key>
-			<array>
-				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
-			</array>
-		</dict>
-		<dict>
-			<key>NSPrivacyCollectedDataType</key>
-			<string>NSPrivacyCollectedDataTypePreciseLocation</string>
 			<key>NSPrivacyCollectedDataTypeLinked</key>
 			<true/>
 			<key>NSPrivacyCollectedDataTypeTracking</key>

@@ -2,11 +2,11 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, ChevronRight, FileText, ShieldCheck } from 'lucide-react'
 import { Card, Row } from '@/components/ui/Card'
 import { SUPPORT_EMAIL } from '@/lib/legal'
+import { LEGAL_UPDATED, PRIVACY, TERMS, visibleSections, type LegalDoc } from '@/lib/legalText'
 
 /**
- * Textos legales. Reflejan lo que la app REALMENTE hace, no un template
- * genérico: local-first, Supabase para auth + respaldo, Storage privado
- * para fotos, Spotify opcional, sin tracking publicitario, exportar/borrar.
+ * Textos legales. El contenido vive en `src/lib/legalText.ts` (fuente de verdad,
+ * refleja lo que la app REALMENTE hace); acá solo se dibuja.
  * Ruta: `/legal` (índice), `/legal/privacidad`, `/legal/terminos`.
  */
 
@@ -31,114 +31,46 @@ function Prose({ children }: { children: React.ReactNode }) {
     <div className="mx-auto content-width space-y-4 px-5 py-5 text-[15px] leading-relaxed text-ink-2 [&_h2]:mt-6 [&_h2]:text-[17px] [&_h2]:font-semibold [&_h2]:text-ink [&_strong]:text-ink">
       {children}
       <p className="pt-4 text-[13px] text-ink-3">
-        Última actualización: septiembre 2026. Dudas: {SUPPORT_EMAIL}
+        Última actualización: {LEGAL_UPDATED}. Dudas: {SUPPORT_EMAIL}
       </p>
     </div>
   )
 }
 
-function Privacidad() {
+/** `**negrita**` en línea (el resto es texto plano: sin HTML de por medio). */
+function Inline({ text }: { text: string }) {
   return (
-    <div className="min-h-screen pb-24">
-      <Header title="Política de privacidad" backTo="/legal" />
-      <Prose>
-        <p>
-          GymTracker es una app de seguimiento de entrenamientos pensada para funcionar
-          <strong> sin conexión</strong>. Tus datos viven primero en tu dispositivo.
-        </p>
-
-        <h2>Qué datos se guardan</h2>
-        <p>
-          Nombre, email y (si los cargás) fecha de nacimiento, sexo, peso corporal, altura,
-          objetivos, tus rutinas, entrenamientos, series, récords, medidas, fotos de
-          progreso, registros de calorías y salidas a correr con su recorrido GPS.
-        </p>
-
-        <h2>Dónde se guardan</h2>
-        <p>
-          En el almacenamiento local del navegador o la app (IndexedDB). Si iniciás sesión,
-          se sincronizan a <strong>Supabase</strong> (proveedor de base de datos) para que
-          puedas recuperarlos en otro dispositivo. Las fotos van a un bucket privado: solo
-          tu sesión puede leerlas. Cada usuario solo accede a sus propios datos, garantizado
-          por Row Level Security del lado del servidor.
-        </p>
-
-        <h2>Terceros</h2>
-        <p>
-          <strong>Spotify</strong> (opcional): si lo conectás, la app usa tu sesión de
-          Spotify para leer y controlar la reproducción. No guardamos tu música.
-          <strong> OpenStreetMap</strong>: provee los mapas del modo running.
-          <strong> No hay</strong> analítica de terceros, píxeles de seguimiento ni
-          publicidad.
-        </p>
-
-        <h2>Ubicación</h2>
-        <p>
-          Solo se usa el GPS mientras trackeás una salida a correr, con tu permiso explícito.
-          El recorrido se guarda con el resto de tus datos y no se comparte con nadie.
-        </p>
-
-        <h2>Tus derechos</h2>
-        <p>
-          Podés <strong>exportar</strong> todos tus datos desde Ajustes → Datos (con opción
-          de cifrarlos), y <strong>borrar tu cuenta</strong> escribiéndonos a {SUPPORT_EMAIL}.
-          Borrar la cuenta elimina tus datos del servidor.
-        </p>
-
-        <h2>Seguridad</h2>
-        <p>
-          Las contraseñas se hashean con bcrypt del lado del servidor (nunca en texto plano).
-          La conexión es siempre por HTTPS.
-        </p>
-      </Prose>
-    </div>
+    <>
+      {text.split('**').map((chunk, i) =>
+        i % 2 === 1 ? <strong key={i}>{chunk}</strong> : <span key={i}>{chunk}</span>
+      )}
+    </>
   )
 }
 
-function Terminos() {
+function DocPage({ doc }: { doc: LegalDoc }) {
+  const sections = visibleSections(doc)
   return (
     <div className="min-h-screen pb-24">
-      <Header title="Términos de uso" backTo="/legal" />
+      <Header title={doc.title} backTo="/legal" />
       <Prose>
-        <h2>Uso de la app</h2>
-        <p>
-          GymTracker se ofrece "tal cual", para uso personal. Sos responsable de la
-          información que cargás y de usar la app de forma segura durante el entrenamiento.
-        </p>
-
-        <h2>No es consejo médico ni profesional</h2>
-        <p>
-          Los niveles de fuerza, pesos sugeridos, estimaciones de 1RM, calorías y cualquier
-          recomendación son <strong>orientativos</strong> y se basan en fórmulas y tablas
-          estándar. No reemplazan el criterio de un entrenador o un profesional de la salud.
-          Consultá con un profesional antes de empezar un plan de entrenamiento.
-        </p>
-
-        <h2>Modo coach</h2>
-        <p>
-          Si te vinculás con un coach, le das acceso a leer tu progreso y a asignarte
-          rutinas y metas. Podés cortar el vínculo en cualquier momento desde tu perfil. El
-          coach es responsable de las indicaciones que te da; GymTracker solo provee la
-          herramienta.
-        </p>
-
-        <h2>Disponibilidad</h2>
-        <p>
-          La app puede tener interrupciones o cambios. La función principal (registrar
-          entrenamientos) sigue andando sin conexión aunque el servidor no esté disponible.
-        </p>
-
-        <h2>Cuenta</h2>
-        <p>
-          Una persona, una cuenta. No compartas tu contraseña. Podemos suspender cuentas que
-          hagan un uso abusivo del servicio.
-        </p>
-
-        <h2>Cambios</h2>
-        <p>
-          Si estos términos cambian de forma relevante, te vamos a pedir que los aceptes de
-          nuevo al abrir la app.
-        </p>
+        {doc.intro.map((p) => (
+          <p key={p}>
+            <Inline text={p} />
+          </p>
+        ))}
+        {sections.map((section) => (
+          <section key={section.title}>
+            <h2>{section.title}</h2>
+            <div className="space-y-3">
+              {section.body.map((p) => (
+                <p key={p}>
+                  <Inline text={p} />
+                </p>
+              ))}
+            </div>
+          </section>
+        ))}
       </Prose>
     </div>
   )
@@ -169,7 +101,7 @@ function Index() {
 
 export default function Legal() {
   const { doc } = useParams<{ doc?: string }>()
-  if (doc === 'privacidad') return <Privacidad />
-  if (doc === 'terminos') return <Terminos />
+  if (doc === 'privacidad') return <DocPage doc={PRIVACY} />
+  if (doc === 'terminos') return <DocPage doc={TERMS} />
   return <Index />
 }

@@ -1,5 +1,6 @@
 import Layout from '@/components/Layout'
 import LayoutDesktop from '@/components/LayoutDesktop'
+import LegalUpdateGate from '@/components/LegalUpdateGate'
 import { useIsDesktop } from '@/hooks/useMediaQuery'
 
 /** Elige el layout mobile (tab bar) o desktop (sidebar) según el ancho de
@@ -7,5 +8,10 @@ import { useIsDesktop } from '@/hooks/useMediaQuery'
  * cambian, solo el chrome que las envuelve. */
 export default function AppShell() {
   const isDesktop = useIsDesktop()
-  return isDesktop ? <LayoutDesktop /> : <Layout />
+  return (
+    <>
+      {isDesktop ? <LayoutDesktop /> : <Layout />}
+      <LegalUpdateGate />
+    </>
+  )
 }
