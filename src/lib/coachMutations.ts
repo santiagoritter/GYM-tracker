@@ -168,3 +168,29 @@ export async function updateGoalStatus(goalId: string, status: Goal['status']): 
   const { error } = await supabase.from('client_goals').update({ status }).eq('id', goalId)
   if (error) throw error
 }
+
+/** ¿Habilité que mi coach vea mis calorías? (`client_sharing`, migración 0020). */
+export async function fetchMyShareCalories(): Promise<boolean> {
+  if (!supabase) return false
+  const { data: session } = await supabase.auth.getUser()
+  const id = session.user?.id
+  if (!id) return false
+  const { data } = await supabase
+    .from('client_sharing')
+    .select('share_calories')
+    .eq('client_id', id)
+    .maybeSingle()
+  return data?.share_calories === true
+}
+
+/** El alumno decide si su coach ve sus calorías. Solo escribe su propia fila. */
+export async function setShareCalories(share: boolean): Promise<void> {
+  if (!supabase) throw new Error('Supabase no está configurado.')
+  const { data: session } = await supabase.auth.getUser()
+  const id = session.user?.id
+  if (!id) throw new Error('Sin sesión.')
+  const { error } = await supabase
+    .from('client_sharing')
+    .upsert({ client_id: id, share_calories: share, updated_at: new Date().toISOString() })
+  if (error) throw error
+}

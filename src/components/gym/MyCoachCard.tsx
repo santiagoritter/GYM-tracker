@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Flag, MessageSquare, Star, Unlink } from 'lucide-react'
 import { fetchMyCoach, fetchMyGoals, type CoachPublic, type Goal } from '@/lib/coachQueries'
-import { endBond } from '@/lib/coachMutations'
+import { endBond, fetchMyShareCalories, setShareCalories } from '@/lib/coachMutations'
 import { fetchMyReviewFor, submitReview } from '@/lib/coachReviews'
 import { toast } from '@/stores/toastStore'
 import { Card, Row, SectionHeader } from '@/components/ui/Card'
@@ -21,6 +21,7 @@ export default function MyCoachCard({ userId }: { userId: string }) {
   const [loaded, setLoaded] = useState(false)
   const [reviewOpen, setReviewOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
+  const [shareCalories, setShareCaloriesState] = useState(false)
   const [rating, setRating] = useState(0)
   const [comment, setComment] = useState('')
   const [hasReview, setHasReview] = useState(false)
@@ -30,8 +31,13 @@ export default function MyCoachCard({ userId }: { userId: string }) {
       .then(async (c) => {
         setCoach(c)
         if (c) {
-          const [g, mine] = await Promise.all([fetchMyGoals(userId), fetchMyReviewFor(c.coachId, userId)])
+          const [g, mine, share] = await Promise.all([
+            fetchMyGoals(userId),
+            fetchMyReviewFor(c.coachId, userId),
+            fetchMyShareCalories(),
+          ])
           setGoals(g)
+          setShareCaloriesState(share)
           if (mine) {
             setHasReview(true)
             setRating(mine.rating)
@@ -56,6 +62,18 @@ export default function MyCoachCard({ userId }: { userId: string }) {
       toast.info('Vínculo terminado')
       load()
     } catch (e) {
+      toast.error('No se pudo', e instanceof Error ? e.message : 'Error')
+    }
+  }
+
+  const toggleShareCalories = async () => {
+    const next = !shareCalories
+    setShareCaloriesState(next)
+    try {
+      await setShareCalories(next)
+      toast.success(next ? 'Tu coach ya ve tus calorías' : 'Tu coach dejó de ver tus calorías')
+    } catch (e) {
+      setShareCaloriesState(!next)
       toast.error('No se pudo', e instanceof Error ? e.message : 'Error')
     }
   }
@@ -114,6 +132,30 @@ export default function MyCoachCard({ userId }: { userId: string }) {
           <Star size={18} className="shrink-0 text-ink-3" />
           <span className="min-w-0 flex-1 text-[15px]">
             {hasReview ? 'Editar tu reseña' : 'Dejar una reseña'}
+          </span>
+        </Row>
+
+        {/* Permiso explícito: por defecto el coach NO ve las calorías. Toda la
+            fila es el objetivo táctil; el switch es solo el estado. */}
+        <Row onClick={toggleShareCalories}>
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px]">Compartir mis calorías</p>
+            <p className="text-[13px] text-ink-3">Tu coach las ve solo si lo activás</p>
+          </div>
+          <span
+            role="switch"
+            aria-checked={shareCalories}
+            className={cn(
+              'relative h-7 w-12 shrink-0 rounded-full transition-colors',
+              shareCalories ? 'bg-accent' : 'bg-surface-3'
+            )}
+          >
+            <span
+              className={cn(
+                'absolute top-1 h-5 w-5 rounded-full bg-white transition-all',
+                shareCalories ? 'left-6' : 'left-1'
+              )}
+            />
           </span>
         </Row>
 

@@ -96,7 +96,9 @@ function toRemoteRow(table: SyncedTable, row: Record<string, unknown>): Record<s
   return out
 }
 
-function toLocalRow(table: SyncedTable, row: Record<string, unknown>): Record<string, unknown> {
+/** Fila remota (snake_case, null) → modelo local (camelCase, undefined). Se usa
+ * también para leer datos de un alumno en el modo coach (`coachClientData.ts`). */
+export function toLocalRow(table: SyncedTable, row: Record<string, unknown>): Record<string, unknown> {
   const booleanFields = new Set(BOOLEAN_FIELDS[table] ?? [])
   const out: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(row)) {
