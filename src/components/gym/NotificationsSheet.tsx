@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Bell, Dumbbell, Timer, Trophy, X } from 'lucide-react'
+import { Bell, Dumbbell, Timer, Trophy, Users, X } from 'lucide-react'
 import { db } from '@/db/schema'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { cn, formatDate } from '@/lib/utils'
@@ -14,6 +14,7 @@ const TYPE_LABELS: Record<NotificationType, string> = {
   weight_recommendation: 'Pesos',
   rest_recommendation: 'Descanso',
   update: 'Novedades',
+  coach: 'Coach',
 }
 
 const TYPE_ICONS: Record<NotificationType, typeof Trophy> = {
@@ -21,6 +22,7 @@ const TYPE_ICONS: Record<NotificationType, typeof Trophy> = {
   weight_recommendation: Dumbbell,
   rest_recommendation: Timer,
   update: Bell,
+  coach: Users,
 }
 
 /** A dónde navega tocar una notificación de cada tipo — mismas pestañas de
@@ -30,6 +32,7 @@ const TYPE_ROUTE: Partial<Record<NotificationType, string>> = {
   pr: '/progreso?tab=prs',
   weight_recommendation: '/progreso?tab=charts',
   rest_recommendation: '/progreso?tab=rest',
+  coach: '/rutinas',
 }
 
 export default function NotificationsSheet({ onClose }: { onClose: () => void }) {

@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabaseClient'
 import { db, SYNC_ORDER } from '@/db/schema'
 import { useSyncStore } from '@/stores/syncStore'
+import { pushNotification } from '@/lib/notifications'
 import type { LocalProfile, SyncedTable } from '@/types'
 
 /**
@@ -246,6 +247,16 @@ export async function pullRemoteChanges(userId: string): Promise<boolean> {
             local.uploaded = 0
           }
           await t.put(local as never)
+          // Una rutina nueva armada por un coach: aviso dentro de la app.
+          if (table === 'routines' && local.sourceCoachId) {
+            await pushNotification({
+              userId,
+              type: 'coach',
+              title: 'Tu coach te asignó una rutina',
+              body: `${String(local.name ?? 'Rutina nueva')} ya está en "Mis rutinas".`,
+              exerciseId: id, // distingue una notificación por rutina
+            }).catch(() => undefined)
+          }
         }
       }
 

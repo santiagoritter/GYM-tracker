@@ -1,13 +1,12 @@
 import { supabase } from '@/lib/supabaseClient'
-import { nowIso, uid } from '@/lib/utils'
-import type { QRPayload } from '@/lib/qr'
+import { draftToRpcPayload, type RoutineDraft } from '@/lib/coachRoutineDraft'
+import { nowIso } from '@/lib/utils'
 import type { Goal } from '@/lib/coachQueries'
 
 /**
  * Escrituras del modo coach. Todo pasa por RLS: `coaches_self`,
- * `coach_invites_owner`, `coach_clients_*`, `client_goals_coach_writes` y
- * las policies `routines_coach`/`routine_days_coach`/`routine_exercises_coach`
- * (ver `supabase/migrations/0012_coach.sql`). El servidor resuelve la
+ * `coach_invites_owner`, `coach_clients_*` y `client_goals_coach_writes`
+ * (0012); las rutinas del alumno se escriben solo por las RPC de 0021. El servidor resuelve la
  * identidad del `auth.uid()`; acá nunca se manda un id para "autorizar".
  */
 
@@ -81,67 +80,34 @@ export async function endBond(bondId: string): Promise<void> {
 }
 
 /**
- * Empuja una COPIA de una rutina (formato payload del QR) a las rutinas del
- * alumno. El alumno la posee (`user_id = clientId`) y la puede editar; queda
- * marcada con `source_coach_id`. Escribe directo en Supabase; el dispositivo
- * del alumno la baja en el próximo sync.
+ * Crea o edita una rutina para un alumno, en una sola transacción del lado del
+ * servidor (`coach_upsert_routine`, migración 0021). `routineId = null` crea;
+ * con un id edita una rutina que ESTE coach ya le asignó. El alumno la posee
+ * (`user_id = alumno`) y la baja en su próximo sync. Devuelve el id.
  */
-export async function assignRoutineToClient(
+export async function saveCoachRoutine(
   clientId: string,
-  payload: QRPayload
-): Promise<void> {
+  routineId: string | null,
+  draft: RoutineDraft
+): Promise<string> {
   if (!supabase) throw new Error('Supabase no está configurado.')
-  const { data: session } = await supabase.auth.getUser()
-  const coachId = session.user?.id
-  if (!coachId) throw new Error('Sin sesión.')
-
-  const now = nowIso()
-  const routineId = uid()
-  const { error: rErr } = await supabase.from('routines').insert({
-    id: routineId,
-    user_id: clientId,
-    name: payload.n,
-    is_active: false,
-    is_archived: false,
-    source_coach_id: coachId,
-    updated_at: now,
+  const { data, error } = await supabase.rpc('coach_upsert_routine', {
+    p_client: clientId,
+    p_routine_id: routineId,
+    p_payload: draftToRpcPayload(draft),
   })
-  if (rErr) throw rErr
+  if (error) throw new Error(error.message)
+  return data as string
+}
 
-  const days = payload.d ?? []
-  for (let di = 0; di < days.length; di++) {
-    const d = days[di]
-    const dayId = uid()
-    const { error: dErr } = await supabase.from('routine_days').insert({
-      id: dayId,
-      user_id: clientId,
-      routine_id: routineId,
-      name: d.n,
-      day_order: di,
-      is_rest: Boolean(d.r),
-      updated_at: now,
-    })
-    if (dErr) throw dErr
-
-    const exercises = d.e ?? []
-    for (let ei = 0; ei < exercises.length; ei++) {
-      const e = exercises[ei]
-      const { error: eErr } = await supabase.from('routine_exercises').insert({
-        id: uid(),
-        user_id: clientId,
-        day_id: dayId,
-        exercise_id: e.id,
-        exercise_order: ei,
-        sets_target: e.s,
-        reps_min: e.r[0],
-        reps_max: e.r[1],
-        rest_seconds: e.rs ?? 90,
-        notes: null,
-        updated_at: now,
-      })
-      if (eErr) throw eErr
-    }
-  }
+/** Retira (borra para el alumno) una rutina que este coach le asignó. */
+export async function retireCoachRoutine(clientId: string, routineId: string): Promise<void> {
+  if (!supabase) throw new Error('Supabase no está configurado.')
+  const { error } = await supabase.rpc('coach_retire_routine', {
+    p_client: clientId,
+    p_routine_id: routineId,
+  })
+  if (error) throw new Error(error.message)
 }
 
 export async function setClientGoal(

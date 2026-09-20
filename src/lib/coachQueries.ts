@@ -1,4 +1,6 @@
 import { supabase } from '@/lib/supabaseClient'
+import type { RoutineDraft } from '@/lib/coachRoutineDraft'
+import { uid } from '@/lib/utils'
 
 /**
  * Lecturas del modo coach — TODO en vivo contra Supabase (como
@@ -234,5 +236,69 @@ export async function fetchMyCoachProfile(userId: string): Promise<{
     specialties: data.specialties ?? [],
     location: data.location ?? '',
     certifications: data.certifications ?? '',
+  }
+}
+
+/**
+ * Una rutina del alumno como borrador editable (con los ids del servidor, para
+ * que guardar edite en vez de duplicar). Solo sirve para las que asignó este
+ * coach: la RPC de guardado lo vuelve a verificar del lado del servidor.
+ */
+export async function fetchClientRoutineDraft(
+  clientId: string,
+  routineId: string
+): Promise<RoutineDraft | null> {
+  if (!supabase) return null
+  const { data: routine, error } = await supabase
+    .from('routines')
+    .select('id, name, source_coach_id')
+    .eq('id', routineId)
+    .eq('user_id', clientId)
+    .is('deleted_at', null)
+    .maybeSingle()
+  if (error) throw error
+  if (!routine) return null
+
+  const { data: days, error: dErr } = await supabase
+    .from('routine_days')
+    .select('id, name, day_order, is_rest')
+    .eq('routine_id', routineId)
+    .eq('user_id', clientId)
+    .is('deleted_at', null)
+    .order('day_order', { ascending: true })
+  if (dErr) throw dErr
+
+  const dayIds = (days ?? []).map((d) => d.id as string)
+  const { data: exercises, error: eErr } = dayIds.length
+    ? await supabase
+        .from('routine_exercises')
+        .select('id, day_id, exercise_id, exercise_order, sets_target, reps_min, reps_max, rest_seconds, notes')
+        .eq('user_id', clientId)
+        .in('day_id', dayIds)
+        .is('deleted_at', null)
+        .order('exercise_order', { ascending: true })
+    : { data: [], error: null }
+  if (eErr) throw eErr
+
+  return {
+    name: routine.name as string,
+    days: (days ?? []).map((d) => ({
+      key: uid(),
+      id: d.id as string,
+      name: d.name as string,
+      isRest: Boolean(d.is_rest),
+      exercises: (exercises ?? [])
+        .filter((e) => e.day_id === d.id)
+        .map((e) => ({
+          key: uid(),
+          id: e.id as string,
+          exerciseId: e.exercise_id as string,
+          sets: e.sets_target as number,
+          repsMin: e.reps_min as number,
+          repsMax: e.reps_max as number,
+          restSeconds: e.rest_seconds as number,
+          notes: (e.notes as string | null) ?? '',
+        })),
+    })),
   }
 }

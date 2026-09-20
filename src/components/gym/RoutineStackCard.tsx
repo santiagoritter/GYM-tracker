@@ -143,6 +143,11 @@ export default function RoutineStackCard({
                   style={{ backgroundColor: routine.color }}
                 />
                 <span className="truncate text-xl font-semibold">{routine.name}</span>
+                {routine.sourceCoachId && (
+                  <span className="shrink-0 rounded-xs bg-accent/15 px-1.5 py-0.5 text-[10px] font-bold text-accent">
+                    De tu coach
+                  </span>
+                )}
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 {routine.isActive === 1 && (
@@ -192,6 +197,11 @@ export default function RoutineStackCard({
                   style={{ backgroundColor: routine.color }}
                 />
                 <span className="truncate font-semibold">{routine.name}</span>
+                {routine.sourceCoachId && (
+                  <span className="shrink-0 rounded-xs bg-accent/15 px-1.5 py-0.5 text-[10px] font-bold text-accent">
+                    De tu coach
+                  </span>
+                )}
               </button>
               <div className="flex shrink-0">
                 <button

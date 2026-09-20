@@ -1,15 +1,17 @@
 import { useState } from 'react'
-import { ClipboardList, Target } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { useCurrentUserId } from '@/hooks/useCurrentUserId'
+import { Pencil, Plus, Target, Trash2 } from 'lucide-react'
 import type { ClientRoutine, Goal } from '@/lib/coachQueries'
-import { assignRoutineToClient, setClientGoal, updateGoalStatus } from '@/lib/coachMutations'
-import { ROUTINE_TEMPLATES } from '@/data/routineTemplates'
+import { retireCoachRoutine, setClientGoal, updateGoalStatus } from '@/lib/coachMutations'
 import { toast } from '@/stores/toastStore'
 import { Card, Row, SectionHeader } from '@/components/ui/Card'
 
 /**
  * Rutinas y metas del alumno (lo que el coach le ASIGNA), aparte de su
- * progreso. Las rutinas hoy se asignan desde plantillas; el constructor propio
- * (Bloque 8) reemplaza ese selector.
+ * progreso. Las rutinas se arman en el constructor (`CoachRoutineBuilder`); las
+ * que asignó este coach se pueden editar o retirar, las propias del alumno solo
+ * se ven.
  */
 export default function ClientPlanSection({
   clientId,
@@ -22,24 +24,23 @@ export default function ClientPlanSection({
   goals: Goal[]
   onChanged: () => void
 }) {
-  const [assigning, setAssigning] = useState(false)
+  const navigate = useNavigate()
+  const meId = useCurrentUserId()
   const [goalTitle, setGoalTitle] = useState('')
   const [showGoalForm, setShowGoalForm] = useState(false)
-  const [showTemplates, setShowTemplates] = useState(false)
+  const [retiringId, setRetiringId] = useState<string | null>(null)
 
-  const handleAssign = async (templateId: string) => {
-    const tpl = ROUTINE_TEMPLATES.find((t) => t.id === templateId)
-    if (!tpl) return
-    setAssigning(true)
+  const handleRetire = async (routine: ClientRoutine) => {
+    if (!confirm(`¿Retirar "${routine.name}"? El alumno deja de verla en sus rutinas.`)) return
+    setRetiringId(routine.id)
     try {
-      await assignRoutineToClient(clientId, tpl.payload)
-      toast.success('Rutina asignada', `${tpl.name} — la va a ver en "Mis rutinas"`)
-      setShowTemplates(false)
+      await retireCoachRoutine(clientId, routine.id)
+      toast.info('Rutina retirada')
       onChanged()
     } catch (e) {
-      toast.error('No se pudo asignar', e instanceof Error ? e.message : 'Error')
+      toast.error('No se pudo retirar', e instanceof Error ? e.message : 'Error')
     } finally {
-      setAssigning(false)
+      setRetiringId(null)
     }
   }
 
@@ -61,26 +62,16 @@ export default function ClientPlanSection({
         <div className="mb-2 flex items-center justify-between">
           <SectionHeader title="Rutinas" />
           <button
-            onClick={() => setShowTemplates((s) => !s)}
+            onClick={() => navigate(`/coach/alumno/${clientId}/rutina`)}
             className="flex h-11 items-center gap-1.5 text-[13px] font-semibold text-accent"
           >
-            <ClipboardList size={15} /> Asignar
+            <Plus size={15} /> Nueva rutina
           </button>
         </div>
-        {showTemplates && (
-          <Card className="mb-2">
-            {ROUTINE_TEMPLATES.map((t) => (
-              <Row key={t.id} onClick={() => !assigning && handleAssign(t.id)}>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[15px] font-medium">{t.name}</p>
-                  <p className="text-[13px] text-ink-3">{t.subtitle} · {t.level}</p>
-                </div>
-              </Row>
-            ))}
-          </Card>
-        )}
         {routines.length === 0 ? (
-          <p className="rounded-md bg-surface px-4 py-6 text-center text-sm text-ink-3">Sin rutinas todavía.</p>
+          <p className="rounded-md bg-surface px-4 py-6 text-center text-sm text-ink-3">
+            Sin rutinas todavía. Armá la primera con "Nueva rutina".
+          </p>
         ) : (
           <Card>
             {routines.map((r) => (
@@ -89,9 +80,32 @@ export default function ClientPlanSection({
                   <p className="truncate text-[15px]">{r.name}</p>
                   <p className="text-[12px] text-ink-3">
                     {r.isActive && 'Activa · '}
-                    {r.sourceCoachId ? 'asignada por vos' : 'propia del alumno'}
+                    {r.sourceCoachId === meId
+                      ? 'asignada por vos'
+                      : r.sourceCoachId
+                        ? 'asignada por otro coach'
+                        : 'propia del alumno'}
                   </p>
                 </div>
+                {r.sourceCoachId === meId && (
+                  <>
+                    <button
+                      onClick={() => navigate(`/coach/alumno/${clientId}/rutina/${r.id}`)}
+                      aria-label={`Editar ${r.name}`}
+                      className="flex h-11 w-11 shrink-0 items-center justify-center text-ink-2"
+                    >
+                      <Pencil size={17} />
+                    </button>
+                    <button
+                      onClick={() => handleRetire(r)}
+                      disabled={retiringId === r.id}
+                      aria-label={`Retirar ${r.name}`}
+                      className="flex h-11 w-11 shrink-0 items-center justify-center text-danger/80 disabled:opacity-40"
+                    >
+                      <Trash2 size={17} />
+                    </button>
+                  </>
+                )}
               </Row>
             ))}
           </Card>

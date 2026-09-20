@@ -112,6 +112,9 @@ export interface Routine extends SyncFields {
   color: string
   isActive: 0 | 1
   isArchived: 0 | 1
+  /** Si la armó un coach para este usuario: id del coach (viene del servidor;
+   * el alumno no lo escribe). `undefined` = propia. */
+  sourceCoachId?: string | null
 }
 
 export interface RoutineDay extends SyncFields {
@@ -334,7 +337,12 @@ export interface RestLog extends SyncFields {
   loggedAt: string
 }
 
-export type NotificationType = 'pr' | 'weight_recommendation' | 'rest_recommendation' | 'update'
+export type NotificationType =
+  | 'pr'
+  | 'weight_recommendation'
+  | 'rest_recommendation'
+  | 'update'
+  | 'coach'
 
 /**
  * Notificación in-app: feed persistido de eventos ("superaste tu peso",

@@ -34,6 +34,7 @@ const AdminReports = lazy(() => import('@/pages/AdminReports'))
 const Measurements = lazy(() => import('@/pages/Measurements'))
 const CoachHome = lazy(() => import('@/pages/coach/CoachHome'))
 const CoachClientDetail = lazy(() => import('@/pages/coach/CoachClientDetail'))
+const CoachRoutineBuilder = lazy(() => import('@/pages/coach/CoachRoutineBuilder'))
 const CoachInvite = lazy(() => import('@/pages/coach/CoachInvite'))
 const CoachProfile = lazy(() => import('@/pages/coach/CoachProfile'))
 const CoachPlan = lazy(() => import('@/pages/coach/CoachPlan'))
@@ -144,6 +145,8 @@ export default function App() {
         <Route element={<CoachRoute />}>
           <Route path="/coach/alumno/:id" element={<Suspense fallback={lazyFallback}><CoachClientDetail /></Suspense>} />
           <Route path="/coach/alumno/:id/chat" element={<Suspense fallback={lazyFallback}><CoachChatWithClient /></Suspense>} />
+          <Route path="/coach/alumno/:id/rutina" element={<Suspense fallback={lazyFallback}><CoachRoutineBuilder /></Suspense>} />
+          <Route path="/coach/alumno/:id/rutina/:routineId" element={<Suspense fallback={lazyFallback}><CoachRoutineBuilder /></Suspense>} />
           <Route path="/coach/invitar" element={<Suspense fallback={lazyFallback}><CoachInvite /></Suspense>} />
           <Route path="/coach/perfil" element={<Suspense fallback={lazyFallback}><CoachProfile /></Suspense>} />
           <Route path="/coach/plan" element={<Suspense fallback={lazyFallback}><CoachPlan /></Suspense>} />

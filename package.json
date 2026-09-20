@@ -25,9 +25,10 @@
     "test:filter": "esbuild scripts/test-content-filter.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/filter.mjs --log-level=error && node node_modules/.tmp/filter.mjs",
     "docs:legal": "esbuild scripts/gen-legal-docs.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/gen-legal.mjs --log-level=error && node node_modules/.tmp/gen-legal.mjs",
     "test:legal": "esbuild scripts/gen-legal-docs.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/gen-legal.mjs --log-level=error && node node_modules/.tmp/gen-legal.mjs --check",
+    "test:coach-draft": "esbuild scripts/test-coach-routine-draft.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/coach-draft.mjs --log-level=error && node node_modules/.tmp/coach-draft.mjs",
     "test:crypto": "esbuild scripts/test-crypto.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/crypto.mjs --log-level=error && node node_modules/.tmp/crypto.mjs",
     "test:rest-rec": "esbuild scripts/test-rest-recommendation.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/rest-rec.mjs --log-level=error && node node_modules/.tmp/rest-rec.mjs",
-    "test": "npm run test:style && npm run test:db && npm run test:rec && npm run test:levels && npm run test:backup && npm run test:user-id-remap && npm run test:workout && npm run test:past && npm run test:quotes && npm run test:run && npm run test:session && npm run test:filter && npm run test:legal && npm run test:crypto && npm run test:rest-rec"
+    "test": "npm run test:style && npm run test:db && npm run test:rec && npm run test:levels && npm run test:backup && npm run test:user-id-remap && npm run test:workout && npm run test:past && npm run test:quotes && npm run test:run && npm run test:session && npm run test:filter && npm run test:legal && npm run test:coach-draft && npm run test:crypto && npm run test:rest-rec"
   },
   "dependencies": {
     "@capacitor-community/background-geolocation": "^1.2.26",
