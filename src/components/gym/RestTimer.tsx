@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { FastForward, Plus } from 'lucide-react'
 import { useWorkoutStore } from '@/stores/workoutStore'
 import { useCountdown } from '@/hooks/useCountdown'
-import { cancelScheduledNotifications, hapticSuccess, isNative, notify } from '@/lib/native'
+import { cancelRestNotification, REST_NOTIFICATION_ID, hapticSuccess, isNative, notify } from '@/lib/native'
 import { endRestActivity, finishRestActivity, startRestActivity } from '@/lib/liveActivity'
 import { REST_END_MESSAGES, getRandomMessage } from '@/lib/motivational'
 import RestOvertimeCard from '@/components/gym/RestOvertimeCard'
@@ -38,14 +38,14 @@ export function RestTimer() {
    */
   useEffect(() => {
     if (!endsAt) {
-      cancelScheduledNotifications()
+      cancelRestNotification()
       return
     }
     const seconds = Math.max(0, Math.round((endsAt - Date.now()) / 1000))
     const message = getRandomMessage(REST_END_MESSAGES)
-    notify('Descanso terminado', message.text, seconds)
+    notify('Descanso terminado', message.text, seconds, REST_NOTIFICATION_ID)
     return () => {
-      cancelScheduledNotifications()
+      cancelRestNotification()
     }
   }, [endsAt])
 

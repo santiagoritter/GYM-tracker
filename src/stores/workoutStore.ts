@@ -7,7 +7,7 @@ import { nowIso, uid } from '@/lib/utils'
 import { recommend } from '@/lib/recommendation'
 import { suggestRestSeconds } from '@/lib/restRecommendation'
 import { pushNotification } from '@/lib/notifications'
-import { cancelScheduledNotifications } from '@/lib/native'
+import { cancelRestNotification } from '@/lib/native'
 import { computeVolumeKg, previewPRs } from '@/lib/workoutSummary'
 import { formatHms } from '@/lib/cardio'
 
@@ -97,13 +97,19 @@ export const useWorkoutStore = create<WorkoutStore>()(
       resolveRestOvertime: async (discarded) => {
         const { restTimer } = get()
         const { endsAt, totalSeconds, exerciseName, workoutId, exerciseId } = restTimer
-        if (endsAt && workoutId && exerciseId) {
+        // Se cierra el descanso ANTES de los awaits: así un doble tap no lo
+        // registra dos veces, y un descanso nuevo que arranque mientras se
+        // guarda este no queda cancelado por el skipRest() de más abajo.
+        const actualSeconds = discarded
+          ? totalSeconds
+          : endsAt
+            ? Math.max(0, Math.round((Date.now() - (endsAt - totalSeconds * 1000)) / 1000))
+            : 0
+        get().skipRest()
+        if (!endsAt || !workoutId || !exerciseId) return
+        try {
           const workout = await db.workouts.get(workoutId)
           if (workout) {
-            const startedAt = endsAt - totalSeconds * 1000
-            const actualSeconds = discarded
-              ? totalSeconds
-              : Math.max(0, Math.round((Date.now() - startedAt) / 1000))
             await db.restLogs.add({
               id: uid(),
               userId: workout.userId,
@@ -138,8 +144,9 @@ export const useWorkoutStore = create<WorkoutStore>()(
               })
             }
           }
+        } catch {
+          // el registro de analítica no debe romper el flujo del entreno
         }
-        get().skipRest()
       },
 
       startWorkout: async (userId, name, kind = 'strength') => {
@@ -312,7 +319,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
         const { endsAt } = state.restTimer
         if (!endsAt) return
         if (endsAt > Date.now()) {
-          cancelScheduledNotifications()
+          cancelRestNotification()
         } else {
           state.restTimer = { endsAt: null, totalSeconds: 90 }
         }

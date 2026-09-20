@@ -39,13 +39,22 @@ export function QRScanner({ onClose }: { onClose: () => void }) {
 
     ;(async () => {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
+        const acquired = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'environment' },
         })
+        // Si el efecto ya se limpió mientras se pedía la cámara (cerrar el
+        // modal rápido, pasar al preview), el cleanup vio `stream === null`
+        // y no la apagó: se apaga acá o la cámara queda prendida.
+        if (cancelled) {
+          acquired.getTracks().forEach((t) => t.stop())
+          return
+        }
+        stream = acquired
         const video = videoRef.current
         if (!video) return
         video.srcObject = stream
         await video.play()
+        if (cancelled) return
 
         interval = setInterval(() => {
           // Ya hay una resolución en curso (código de Supabase, red de por
@@ -77,7 +86,7 @@ export function QRScanner({ onClose }: { onClose: () => void }) {
           })
         }, 300)
       } catch {
-        setCameraError(true)
+        if (!cancelled) setCameraError(true)
       }
     })()
 

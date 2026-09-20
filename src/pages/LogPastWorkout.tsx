@@ -159,8 +159,16 @@ export default function LogPastWorkout() {
       sets: ex.sets.map((s) => ({ reps: s.reps, weightKg: s.weightKg })),
     }))
 
-    const { newPRs } = await logPastWorkout(userId, finalName, dateIso, payload)
-    setSaving(false)
+    let newPRs: Awaited<ReturnType<typeof logPastWorkout>>['newPRs']
+    try {
+      ;({ newPRs } = await logPastWorkout(userId, finalName, dateIso, payload))
+    } catch {
+      // Sin esto `saving` quedaba en true para siempre y el botón muerto.
+      toast.error('No se pudo guardar', 'Probá de nuevo.')
+      return
+    } finally {
+      setSaving(false)
+    }
     toast.success(
       'Entreno cargado',
       newPRs.length > 0

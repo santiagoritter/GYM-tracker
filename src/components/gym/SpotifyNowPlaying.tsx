@@ -46,6 +46,7 @@ export default function SpotifyNowPlaying() {
   const [resumeDevice, setResumeDevice] = useState<SpotifyDevice | null>(null)
   const [playerSheetOpen, setPlayerSheetOpen] = useState(false)
   const noDeviceStreak = useRef(0)
+  const hadPlayback = useRef(false)
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -77,21 +78,22 @@ export default function SpotifyNowPlaying() {
     if (result === 'error') return
     if (result !== 'no-device') {
       noDeviceStreak.current = 0
+      hadPlayback.current = isPlaybackState(result)
       setResumeDevice(null)
       setState(result)
       return
     }
     noDeviceStreak.current += 1
-    let justLostDevice = false
-    setState((prev) => {
-      if (isPlaybackState(prev) && noDeviceStreak.current < NO_DEVICE_CONFIRM_THRESHOLD) return prev
-      justLostDevice = true
-      return 'no-device'
-    })
-    if (justLostDevice) {
-      const devices = await fetchAvailableDevices()
-      setResumeDevice(devices?.find((d) => !d.isActive) ?? devices?.[0] ?? null)
-    }
+    // Un solo "sin dispositivo" no alcanza si venía sonando (ver
+    // NO_DEVICE_CONFIRM_THRESHOLD). Se decide con un ref, no dentro del
+    // updater de setState: el updater tiene que ser puro (React puede
+    // correrlo dos veces) y, además, corre después — la bandera que se
+    // seteaba adentro todavía era `false` cuando se la miraba abajo.
+    if (hadPlayback.current && noDeviceStreak.current < NO_DEVICE_CONFIRM_THRESHOLD) return
+    hadPlayback.current = false
+    setState('no-device')
+    const devices = await fetchAvailableDevices()
+    setResumeDevice(devices?.find((d) => !d.isActive) ?? devices?.[0] ?? null)
   }, [])
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, KeyRound, RefreshCw } from 'lucide-react'
 import { requestPasswordReset, confirmPasswordReset } from '@/lib/supabaseAuth'
@@ -23,6 +23,15 @@ export default function ForgotPassword() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
+
+  // Cuenta regresiva del reenvío: un timeout por segundo con cleanup (antes
+  // era un setInterval suelto que seguía corriendo al desmontar y llamaba a
+  // clearInterval dentro de un updater de setState).
+  useEffect(() => {
+    if (resendCooldown <= 0) return
+    const id = setTimeout(() => setResendCooldown((n) => n - 1), 1000)
+    return () => clearTimeout(id)
+  }, [resendCooldown])
 
   const handleRequest = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -76,9 +85,6 @@ export default function ForgotPassword() {
     try {
       await requestPasswordReset(email)
       setResendCooldown(60)
-      const interval = setInterval(() => {
-        setResendCooldown((s) => { if (s <= 1) { clearInterval(interval); return 0 } return s - 1 })
-      }, 1000)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al reenviar.')
     } finally {

@@ -55,7 +55,8 @@ export async function hapticSuccess(): Promise<void> {
 export async function notify(
   title: string,
   body: string,
-  atSeconds?: number
+  atSeconds?: number,
+  id?: number
 ): Promise<void> {
   if (isNative) {
     try {
@@ -68,7 +69,7 @@ export async function notify(
       await LocalNotifications.schedule({
         notifications: [
           {
-            id: Date.now() % 2147483647,
+            id: id ?? Date.now() % 2147483647,
             title,
             body,
             schedule: atSeconds ? { at: new Date(Date.now() + atSeconds * 1000) } : undefined,
@@ -88,15 +89,20 @@ export async function notify(
   new Notification(title, { body, silent: false })
 }
 
-/** Cancela las notificaciones programadas (ej: saltar el descanso). */
-export async function cancelScheduledNotifications(): Promise<void> {
+/** Id fijo de la notificación de fin de descanso. Rango propio: no pisa
+ * `REMINDER_ID_BASE` (4_200_000) ni `MOTIV_ID_BASE` (4_300_000). */
+export const REST_NOTIFICATION_ID = 4_100_000
+
+/**
+ * Cancela SOLO el aviso de fin de descanso (ej: al saltarlo). Antes cancelaba
+ * todas las notificaciones pendientes — se llevaba puestos los recordatorios
+ * diarios y las frases motivacionales cada vez que se salteaba un descanso.
+ */
+export async function cancelRestNotification(): Promise<void> {
   if (!isNative) return
   try {
     const { LocalNotifications } = await import('@capacitor/local-notifications')
-    const pending = await LocalNotifications.getPending()
-    if (pending.notifications.length > 0) {
-      await LocalNotifications.cancel({ notifications: pending.notifications })
-    }
+    await LocalNotifications.cancel({ notifications: [{ id: REST_NOTIFICATION_ID }] })
   } catch {
     // sin plugin, nada que cancelar
   }

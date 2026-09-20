@@ -39,7 +39,15 @@ type WorkoutScreen =
 export default function Workout() {
   const { workoutId } = useParams<{ workoutId: string }>()
   const navigate = useNavigate()
-  const store = useWorkoutStore()
+  // Selectores, no el store entero (CLAUDE.md): esta pantalla re-renderizaba
+  // con cada tick del descanso.
+  const updateSet = useWorkoutStore((st) => st.updateSet)
+  const addExercise = useWorkoutStore((st) => st.addExercise)
+  const addSet = useWorkoutStore((st) => st.addSet)
+  const removeSet = useWorkoutStore((st) => st.removeSet)
+  const startRest = useWorkoutStore((st) => st.startRest)
+  const finishWorkout = useWorkoutStore((st) => st.finishWorkout)
+  const discardWorkout = useWorkoutStore((st) => st.discardWorkout)
   const userId = useCurrentUserId()
   const [pickerOpen, setPickerOpen] = useState(false)
   // Mismo sheet de detalle que Exercises.tsx (técnica, músculos, foto de
@@ -145,7 +153,7 @@ export default function Workout() {
     for (const s of rest) {
       if (s.completed === 1) continue
       if (s.reps === first.reps && s.weightKg === first.weightKg) continue
-      store.updateSet(s.id, { reps: first.reps, weightKg: first.weightKg })
+      updateSet(s.id, { reps: first.reps, weightKg: first.weightKg })
     }
   }
 
@@ -168,15 +176,17 @@ export default function Workout() {
   }, [grouped])
 
   // Ciclo de vida de la Live Activity: se arranca con el entreno activo y se
-  // cierra al finalizar (screen deja de ser 'active') o al salir de la
-  // pantalla (unmount). `startWorkoutActivity` es idempotente del lado nativo.
+  // cierra al pasar a la revisión/finalizar o al descartar (handleDiscard).
+  // NO se cierra al salir de la pantalla: el entreno sigue en curso (banner
+  // del header) y la Dynamic Island tiene que seguir. `startWorkoutActivity`
+  // es idempotente del lado nativo, así que volver no la duplica.
   useEffect(() => {
-    if (!workout || screen.kind !== 'active') {
+    if (!workout) return
+    if (screen.kind !== 'active') {
       endWorkoutActivity()
       return
     }
     startWorkoutActivity(workout.name, Date.parse(workout.startedAt))
-    return () => void endWorkoutActivity()
   }, [workout?.id, workout?.name, workout?.startedAt, screen.kind])
 
   useEffect(() => {
@@ -187,7 +197,7 @@ export default function Workout() {
   if (!workoutId) return null
 
   const handleSelectExercise = (exercise: Exercise) => {
-    store.addExercise(workoutId, exercise.id)
+    addExercise(workoutId, exercise.id)
     setPickerOpen(false)
   }
 
@@ -199,7 +209,7 @@ export default function Workout() {
     setActiveUnitKey(unitKeyForExercise(exerciseUnits, s.exerciseId) ?? s.exerciseId)
 
     const next = s.completed === 1 ? 0 : 1
-    store.updateSet(s.id, { completed: next as 0 | 1 })
+    updateSet(s.id, { completed: next as 0 | 1 })
     if (next !== 1) return
     hapticTick()
 
@@ -228,7 +238,7 @@ export default function Workout() {
       dayEntries.find((e) => e.exerciseId === s.exerciseId)?.restSeconds ??
       profile?.restTimerDefault ??
       90
-    store.startRest(restSeconds, nextName, workoutId, s.exerciseId)
+    startRest(restSeconds, nextName, workoutId, s.exerciseId)
   }
 
   // Calcula todo en memoria, sin tocar Dexie, y muestra la vista previa —
@@ -243,17 +253,26 @@ export default function Workout() {
   const handleConfirmFinish = async () => {
     if (!userId || isFinishing) return
     setIsFinishing(true)
-    const prs = await store.finishWorkout(userId, workoutId)
-    hapticSuccess()
+    let prs: PersonalRecord[]
+    let unlocked: AchievementDef[]
+    try {
+      prs = await finishWorkout(userId, workoutId)
+      hapticSuccess()
 
-    const [workouts, prCount] = await Promise.all([
-      workoutsFor(userId).toArray(),
-      personalRecordsFor(userId).count(),
-    ])
-    const stats = computeStats(workouts)
-    const unlocked = await syncAchievements(userId, { stats, prCount })
-    setScreen({ kind: 'results', prs, achievements: unlocked })
-    setIsFinishing(false)
+      const [workouts, prCount] = await Promise.all([
+        workoutsFor(userId).toArray(),
+        personalRecordsFor(userId).count(),
+      ])
+      const stats = computeStats(workouts)
+      unlocked = await syncAchievements(userId, { stats, prCount })
+      setScreen({ kind: 'results', prs, achievements: unlocked })
+    } catch {
+      // Sin esto `isFinishing` quedaba en true y el botón de finalizar muerto.
+      toast.error('No se pudo terminar el entreno', 'Probá de nuevo.')
+      return
+    } finally {
+      setIsFinishing(false)
+    }
 
     const msg = getRandomMessage(WORKOUT_COMPLETE_MESSAGES)
     toast.success('¡Entreno completado!', msg.text)
@@ -269,7 +288,8 @@ export default function Workout() {
 
   const handleDiscard = async () => {
     if (confirm('¿Descartar este entreno? Se pierden todos los sets.')) {
-      await store.discardWorkout(workoutId)
+      await discardWorkout(workoutId)
+      void endWorkoutActivity()
       navigate('/')
     }
   }
@@ -434,9 +454,9 @@ export default function Workout() {
               editingSetId={editingSetId}
               onEditSet={setEditingSetId}
               onCompleteSet={handleCompleteSet}
-              onUpdateSet={(setId, patch) => store.updateSet(setId, patch)}
-              onAddSet={() => store.addSet(workoutId, m.exercise!.id)}
-              onRemoveSet={() => store.removeSet(m.sets[m.sets.length - 1].id)}
+              onUpdateSet={(setId, patch) => updateSet(setId, patch)}
+              onAddSet={() => addSet(workoutId, m.exercise!.id)}
+              onRemoveSet={() => removeSet(m.sets[m.sets.length - 1].id)}
               onEqualizeSets={() => applyFirstSetToRest(m.sets)}
               onShowInfo={() => m.exercise && setInfoExercise(m.exercise)}
             />

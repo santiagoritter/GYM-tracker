@@ -111,13 +111,21 @@ function toLocalRow(table: SyncedTable, row: Record<string, unknown>): Record<st
 interface RowWithId {
   id: string
   dirty?: 0 | 1
+  updatedAt?: string
 }
+
+/** Filas por página al bajar cambios: PostgREST corta en 1000 por defecto y
+ * sin paginar un usuario con más historial quedaba con datos sin bajar. */
+const PULL_PAGE_SIZE = 1000
 
 /** Empuja todo lo `dirty` del usuario actual, tabla por tabla en el orden
  * de dependencia de SYNC_ORDER (el padre tiene que llegar antes que la
- * FK compuesta de la hija lo acepte). */
-export async function pushDirtyRows(userId: string): Promise<void> {
-  if (!supabase) return
+ * FK compuesta de la hija lo acepte). Devuelve `true` si algo falló (se
+ * reintenta en el próximo sync) — `runSync` lo usa para no decir
+ * "sincronizado" cuando no lo está. */
+export async function pushDirtyRows(userId: string): Promise<boolean> {
+  if (!supabase) return false
+  let hadError = false
 
   for (const table of SYNC_ORDER) {
     const t = db.table<RowWithId>(table)
@@ -134,10 +142,22 @@ export async function pushDirtyRows(userId: string): Promise<void> {
 
     const remoteRows = dirtyRows.map((r) => toRemoteRow(table, r as unknown as Record<string, unknown>))
     const { error } = await supabase.from(REMOTE_TABLE[table]).upsert(remoteRows)
-    if (error) continue // best-effort: se reintenta en el próximo sync
+    if (error) {
+      hadError = true // best-effort: se reintenta en el próximo sync
+      continue
+    }
 
+    // Solo se marca limpia la fila que sigue igual a la que se mandó: si el
+    // usuario la editó mientras viajaba el upsert, su `updatedAt` cambió y
+    // tiene que volver a subirse — antes se marcaba limpia igual y el
+    // cambio nuevo quedaba sin sincronizar.
     for (const row of dirtyRows) {
-      await t.update(row.id, { dirty: 0 } as never)
+      await db.transaction('rw', t, async () => {
+        const current = await t.get(row.id)
+        if (current && current.updatedAt === row.updatedAt) {
+          await t.update(row.id, { dirty: 0 } as never)
+        }
+      })
     }
   }
 
@@ -154,16 +174,20 @@ export async function pushDirtyRows(userId: string): Promise<void> {
       .from(REMOTE_TABLE[tomb.tableName])
       .update({ deleted_at: tomb.deletedAt })
       .eq('id', tomb.id)
-    if (!error) await db.tombstones.delete(tomb.id)
+    if (error) hadError = true
+    else await db.tombstones.delete(tomb.id)
   }
+
+  return hadError
 }
 
 /** Baja lo que cambió del lado del servidor desde el último cursor guardado
  * (`db.syncState`, una fila por tabla). Las filas con `deleted_at` seteado
  * se traducen en un borrado físico local — así se propaga un borrado hecho
  * en otro dispositivo. */
-export async function pullRemoteChanges(userId: string): Promise<void> {
-  if (!supabase) return
+export async function pullRemoteChanges(userId: string): Promise<boolean> {
+  if (!supabase) return false
+  let hadError = false
 
   for (const table of SYNC_ORDER) {
     const cursorKey = `pull_${table}`
@@ -171,42 +195,68 @@ export async function pullRemoteChanges(userId: string): Promise<void> {
     const cursor = cursorRow?.value ?? '1970-01-01T00:00:00Z'
 
     const filterColumn = table === 'profile' ? 'id' : 'user_id'
-    const { data, error } = await supabase
-      .from(REMOTE_TABLE[table])
-      .select('*')
-      .eq(filterColumn, userId)
-      .gt('server_updated_at', cursor)
-      .order('server_updated_at', { ascending: true })
-
-    if (error || !data || data.length === 0) continue
-
     const t = db.table<RowWithId>(table)
-    for (const remoteRow of data as Record<string, unknown>[]) {
-      const id = remoteRow.id as string
-      if (remoteRow.deleted_at) {
-        await t.delete(id)
-        continue
+    let lastServerUpdatedAt: string | null = null
+
+    // Paginado con el cursor fijo: las páginas se piden por `range` sobre un
+    // orden estable (server_updated_at, id) — así un lote de filas con el
+    // mismo timestamp (un upsert masivo comparte `now()`) no se parte ni se
+    // pierde en el borde de la página.
+    for (let from = 0; ; from += PULL_PAGE_SIZE) {
+      const { data, error } = await supabase
+        .from(REMOTE_TABLE[table])
+        .select('*')
+        .eq(filterColumn, userId)
+        .gt('server_updated_at', cursor)
+        .order('server_updated_at', { ascending: true })
+        .order('id', { ascending: true })
+        .range(from, from + PULL_PAGE_SIZE - 1)
+
+      if (error) {
+        hadError = true
+        lastServerUpdatedAt = null // no se avanza el cursor con una página incompleta
+        break
+      }
+      if (!data || data.length === 0) break
+
+      for (const remoteRow of data as Record<string, unknown>[]) {
+        const id = remoteRow.id as string
+        if (remoteRow.deleted_at) {
+          await t.delete(id)
+          continue
+        }
+
+        const existing = await t.get(id)
+        // Una edición local todavía sin subir gana sobre lo que bajó: si se
+        // pisara acá, el cambio del usuario se perdía en silencio (el push
+        // corre antes, pero puede haber fallado o haberse editado después).
+        if (existing?.dirty === 1) continue
+
+        const local = toLocalRow(table, remoteRow)
+        local.dirty = 0
+        if (existing) {
+          // update() en vez de put(): en progressPhotos/exercisePhotos NO
+          // pisa blob/uploaded, que no vienen del servidor (ver nota de
+          // Storage arriba) — perderíamos una foto ya descargada local.
+          await t.update(id, local as never)
+        } else {
+          if (table === 'progressPhotos' || table === 'exercisePhotos') {
+            local.uploaded = 0
+          }
+          await t.put(local as never)
+        }
       }
 
-      const local = toLocalRow(table, remoteRow)
-      local.dirty = 0
-      const existing = await t.get(id)
-      if (existing) {
-        // update() en vez de put(): en progressPhotos/exercisePhotos NO
-        // pisa blob/uploaded, que no vienen del servidor (ver nota de
-        // Storage arriba) — perderíamos una foto ya descargada local.
-        await t.update(id, local as never)
-      } else {
-        if (table === 'progressPhotos' || table === 'exercisePhotos') {
-          local.uploaded = 0
-        }
-        await t.put(local as never)
-      }
+      lastServerUpdatedAt = data[data.length - 1]!.server_updated_at as string
+      if (data.length < PULL_PAGE_SIZE) break
     }
 
-    const lastServerUpdatedAt = data[data.length - 1]!.server_updated_at as string
-    await db.syncState.put({ key: cursorKey, value: lastServerUpdatedAt })
+    if (lastServerUpdatedAt) {
+      await db.syncState.put({ key: cursorKey, value: lastServerUpdatedAt })
+    }
   }
+
+  return hadError
 }
 
 /**
@@ -217,8 +267,7 @@ export async function pullRemoteChanges(userId: string): Promise<void> {
  * `runSync()` completo de las 12 tablas, que corre en paralelo desde
  * `main.tsx` y en un dispositivo nuevo siempre llega tarde contra
  * `ensureProfile()` (puro IndexedDB, gana la carrera siempre). `null` si no
- * hay Supabase, no hay fila, o falla la red — best-effort, mismo criterio
- * que el resto del motor.
+ * hay Supabase o no hay fila. Si falla la red, tira (ver abajo).
  */
 export async function pullProfile(userId: string): Promise<LocalProfile | null> {
   if (!supabase) return null
@@ -227,21 +276,44 @@ export async function pullProfile(userId: string): Promise<LocalProfile | null> 
     .select('*')
     .eq('id', userId)
     .maybeSingle()
-  if (error || !data) return null
+  // Un error de red NO es "no hay perfil": devolver null acá hacía que el
+  // login creara un perfil en blanco (y lo mandara a onboarding) aunque el
+  // usuario ya tuviera uno en el servidor.
+  if (error) throw new Error('No pudimos traer tu perfil. Revisá tu conexión e intentá de nuevo.')
+  if (!data) return null
   return toLocalRow('profile', data) as unknown as LocalProfile
 }
 
+let syncInFlight = false
+let syncQueued = false
+
 /** Punto de entrada único para los disparadores (login, reconexión,
  * foreground, intervalo — ver main.tsx). Nunca deja escapar una excepción:
- * un fallo de red acá no puede tumbar nada de la UI. */
+ * un fallo de red acá no puede tumbar nada de la UI. Si ya hay un sync en
+ * curso no arranca otro en paralelo (dos push simultáneos duplicaban
+ * trabajo y pisaban el marcado de `dirty`); queda encolado uno más para
+ * después, así un cambio hecho durante el sync no espera al próximo tick. */
 export async function runSync(userId: string): Promise<void> {
   if (!supabase) return
-  useSyncStore.getState().setSyncing()
+  if (syncInFlight) {
+    syncQueued = true
+    return
+  }
+  syncInFlight = true
   try {
-    await pushDirtyRows(userId)
-    await pullRemoteChanges(userId)
-    useSyncStore.getState().setSynced()
-  } catch {
-    useSyncStore.getState().setError()
+    do {
+      syncQueued = false
+      useSyncStore.getState().setSyncing()
+      try {
+        const pushFailed = await pushDirtyRows(userId)
+        const pullFailed = await pullRemoteChanges(userId)
+        if (pushFailed || pullFailed) useSyncStore.getState().setError()
+        else useSyncStore.getState().setSynced()
+      } catch {
+        useSyncStore.getState().setError()
+      }
+    } while (syncQueued)
+  } finally {
+    syncInFlight = false
   }
 }
