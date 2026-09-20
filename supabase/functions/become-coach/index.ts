@@ -46,10 +46,18 @@ Deno.serve(async (req) => {
     return json({ error: 'Body inválido.' }, 400)
   }
 
-  const displayName = (payload.displayName ?? '').trim()
+  const displayName = (payload.displayName ?? '').trim().slice(0, 80)
   const dni = (payload.dni ?? '').replace(/\D/g, '')
+  const bio = (payload.bio ?? '').trim().slice(0, 600) || null
+  const experienceYears =
+    typeof payload.experienceYears === 'number' &&
+    Number.isFinite(payload.experienceYears) &&
+    payload.experienceYears >= 0 &&
+    payload.experienceYears <= 80
+      ? Math.round(payload.experienceYears)
+      : null
   if (!displayName) return json({ error: 'Falta el nombre.' }, 400)
-  if (dni.length < 7) return json({ error: 'DNI inválido.' }, 400)
+  if (dni.length < 7 || dni.length > 9) return json({ error: 'DNI inválido.' }, 400)
 
   try {
     // 1. DNI único entre cuentas de coach.
@@ -61,27 +69,53 @@ Deno.serve(async (req) => {
       .maybeSingle()
     if (dupe) return json({ error: 'Ese DNI ya está registrado en otra cuenta de coach.' }, 409)
 
-    // 2. Rol: `coach`, salvo que ya sea `admin` (que no se degrada — un admin
-    //    ya tiene acceso al área de coach).
-    const nextRole = currentRole === 'admin' ? 'admin' : 'coach'
-    const { error: roleErr } = await admin.auth.admin.updateUserById(userId, {
-      app_metadata: { role: nextRole },
-    })
-    if (roleErr) throw roleErr
+    // 2. Ficha + DNI. Si ya había una ficha verificada y cambió lo que el
+    //    admin cotejó (nombre/bio/DNI), vuelve a "pendiente": este camino usa
+    //    la service_role y por eso esquiva el trigger `coaches_guard_verified`
+    //    (que solo frena al rol `authenticated`), así que se resuelve acá.
+    const { data: prev } = await admin
+      .from('coaches')
+      .select('display_name, bio, verified')
+      .eq('id', userId)
+      .maybeSingle()
+    const { data: prevIdentity } = await admin
+      .from('coach_identity')
+      .select('dni')
+      .eq('coach_id', userId)
+      .maybeSingle()
+    const changed =
+      !!prev &&
+      (prev.display_name !== displayName || (prev.bio ?? null) !== bio || prevIdentity?.dni !== dni)
 
-    // 3. Ficha + DNI.
     const { error: cErr } = await admin.from('coaches').upsert({
       id: userId,
       display_name: displayName,
-      bio: (payload.bio ?? '').trim() || null,
-      experience_years: payload.experienceYears ?? null,
+      bio,
+      experience_years: experienceYears,
+      ...(changed ? { verified: false, verified_at: null } : {}),
     })
     if (cErr) throw cErr
 
     const { error: iErr } = await admin
       .from('coach_identity')
       .upsert({ coach_id: userId, dni }, { onConflict: 'coach_id' })
-    if (iErr) throw iErr
+    if (iErr) {
+      // Carrera con otro alta del mismo DNI: el índice único gana.
+      if ((iErr as { code?: string }).code === '23505') {
+        return json({ error: 'Ese DNI ya está registrado en otra cuenta de coach.' }, 409)
+      }
+      throw iErr
+    }
+
+    // 3. Rol (al final, cuando ficha y DNI ya quedaron guardados — si el DNI chocaba
+    //    con otra alta simultánea no queda una cuenta con rol coach sin identidad):
+    //    `coach`, salvo que ya sea `admin` (que no se degrada — un admin
+    //    ya tiene acceso al área de coach).
+    const nextRole = currentRole === 'admin' ? 'admin' : 'coach'
+    const { error: roleErr } = await admin.auth.admin.updateUserById(userId, {
+      app_metadata: { role: nextRole },
+    })
+    if (roleErr) throw roleErr
 
     // Auditoría best-effort: si `admin_audit` (0011) todavía no existe, no
     // debe tumbar el alta.

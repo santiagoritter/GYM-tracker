@@ -56,31 +56,13 @@ export async function createInvite(expiresInDays = 30): Promise<string> {
   return code
 }
 
-/** El alumno acepta un vínculo a partir de un código. */
+/** El alumno acepta un vínculo a partir de un código. Va por una RPC
+ * (`accept_coach_invite`, migración 0016): valida código, vencimiento y usos, y
+ * crea o reactiva el vínculo. Ya no se escribe `coach_clients` directo. */
 export async function acceptInvite(code: string): Promise<void> {
   if (!supabase) throw new Error('Supabase no está configurado.')
-  const { data: session } = await supabase.auth.getUser()
-  const clientId = session.user?.id
-  if (!clientId) throw new Error('Sin sesión.')
-  const { data: invite, error: iErr } = await supabase
-    .from('coach_invites')
-    .select('coach_id')
-    .eq('code', code)
-    .maybeSingle()
-  if (iErr || !invite) throw new Error('Código inválido o vencido.')
-  if (invite.coach_id === clientId) throw new Error('No podés ser tu propio coach.')
-  const { error } = await supabase.from('coach_clients').upsert(
-    {
-      coach_id: invite.coach_id,
-      client_id: clientId,
-      status: 'active',
-      invited_via: 'link',
-      ended_at: null,
-      ended_by: null,
-    },
-    { onConflict: 'coach_id,client_id' }
-  )
-  if (error) throw error
+  const { error } = await supabase.rpc('accept_coach_invite', { invite_code: code })
+  if (error) throw new Error(error.message)
 }
 
 /** Corta el vínculo (cualquiera de las dos partes). */

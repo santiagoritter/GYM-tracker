@@ -66,8 +66,13 @@ export async function fetchClientOverview(clientId: string): Promise<ClientOverv
       .from('workouts')
       .select('total_volume_kg, finished_at')
       .eq('user_id', clientId)
+      .is('deleted_at', null)
       .not('finished_at', 'is', null),
-    supabase.from('personal_records').select('id', { count: 'exact', head: true }).eq('user_id', clientId),
+    supabase
+      .from('personal_records')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', clientId)
+      .is('deleted_at', null),
   ])
   if (wErr) throw wErr
   if (pErr) throw pErr
@@ -99,6 +104,7 @@ export async function fetchClientRoutines(clientId: string): Promise<ClientRouti
     .select('id, name, is_active, is_archived, source_coach_id')
     .eq('user_id', clientId)
     .eq('is_archived', false)
+    .is('deleted_at', null)
   if (error) throw error
   return (data ?? []).map((r) => ({
     id: r.id,
@@ -168,20 +174,22 @@ export async function fetchMyCoach(
 /** Previsualización de un coach a partir de un código de invitación. */
 export async function fetchInvitePreview(code: string): Promise<CoachPublic | null> {
   if (!supabase) return null
-  const { data: invite } = await supabase
-    .from('coach_invites')
-    .select('coach_id')
-    .eq('code', code)
-    .maybeSingle()
-  if (!invite) return null
-  const { data: coach } = await supabase
-    .from('coaches')
-    .select('id, display_name, bio, experience_years, verified')
-    .eq('id', invite.coach_id)
-    .maybeSingle()
+  // RPC `get_invite_preview` (migración 0016): solo devuelve la ficha pública
+  // del coach dueño de un código vigente; la tabla de invitaciones no se lee.
+  const { data, error } = await supabase.rpc('get_invite_preview', { invite_code: code })
+  if (error) throw error
+  const coach = (data ?? [])[0] as
+    | {
+        coach_id: string
+        display_name: string | null
+        bio: string | null
+        experience_years: number | null
+        verified: boolean
+      }
+    | undefined
   if (!coach) return null
   return {
-    coachId: coach.id,
+    coachId: coach.coach_id,
     displayName: coach.display_name,
     bio: coach.bio,
     experienceYears: coach.experience_years,
