@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabaseClient'
+import { maskProfanity } from '@/lib/contentFilter'
 
 /**
  * Reseñas de alumnos a un coach. Una por alumno por coach
@@ -72,7 +73,7 @@ export async function submitReview(
       coach_id: coachId,
       client_id: clientId,
       rating: input.rating,
-      comment: input.comment.trim() || null,
+      comment: maskProfanity(input.comment.trim()).slice(0, 500) || null,
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'coach_id,client_id' }

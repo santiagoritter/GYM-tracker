@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabaseClient'
+import { maskProfanity } from '@/lib/contentFilter'
 
 /**
  * Chat coach↔alumno. El hilo es el par `(coachId, clientId)`; `senderId`
@@ -59,7 +60,7 @@ export async function sendMessage(
     coach_id: coachId,
     client_id: clientId,
     sender_id: senderId,
-    body: input.body.trim(),
+    body: maskProfanity(input.body.trim()).slice(0, 2000),
     attachment_kind: input.attachmentKind ?? null,
     attachment_ref: input.attachmentRef ?? null,
   })

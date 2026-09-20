@@ -30,6 +30,7 @@ import ActiveSessionKeeper from '@/components/ActiveSessionKeeper'
 const Progress = lazy(() => import('@/pages/Progress'))
 const Admin = lazy(() => import('@/pages/Admin'))
 const AdminUsers = lazy(() => import('@/pages/AdminUsers'))
+const AdminReports = lazy(() => import('@/pages/AdminReports'))
 const Measurements = lazy(() => import('@/pages/Measurements'))
 const CoachHome = lazy(() => import('@/pages/coach/CoachHome'))
 const CoachClientDetail = lazy(() => import('@/pages/coach/CoachClientDetail'))
@@ -105,6 +106,14 @@ export default function App() {
               element={
                 <Suspense fallback={<p className="py-12 text-center text-sm text-ink-3">Cargando…</p>}>
                   <Admin />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/admin/reportes"
+              element={
+                <Suspense fallback={<p className="py-12 text-center text-sm text-ink-3">Cargando…</p>}>
+                  <AdminReports />
                 </Suspense>
               }
             />

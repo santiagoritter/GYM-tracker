@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ArrowLeft, Dumbbell, ListChecks, Paperclip, Send, X } from 'lucide-react'
+import { ArrowLeft, Dumbbell, Flag, ListChecks, Paperclip, Send, X } from 'lucide-react'
 import { db } from '@/db/schema'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import {
@@ -15,6 +15,7 @@ import { ROUTINE_TEMPLATES } from '@/data/routineTemplates'
 import { importPayload } from '@/lib/qr'
 import { toast } from '@/stores/toastStore'
 import ResponsiveSheet from '@/components/ui/ResponsiveSheet'
+import ReportSheet from '@/components/gym/ReportSheet'
 import { cn } from '@/lib/utils'
 
 /**
@@ -40,6 +41,9 @@ export default function ChatThread({
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
   const [attachOpen, setAttachOpen] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
+  // La otra parte de la conversación: a quien se reporta o bloquea.
+  const otherId = meId === coachId ? clientId : coachId
   const [attachMode, setAttachMode] = useState<'menu' | 'exercise' | 'routine'>('menu')
   const [exerciseQuery, setExerciseQuery] = useState('')
   const endRef = useRef<HTMLDivElement>(null)
@@ -121,7 +125,14 @@ export default function ChatThread({
         <button onClick={onBack} aria-label="Volver" className="flex h-11 w-11 items-center justify-center text-ink-2">
           <ArrowLeft size={22} />
         </button>
-        <h1 className="truncate font-semibold">{title}</h1>
+        <h1 className="min-w-0 flex-1 truncate font-semibold">{title}</h1>
+        <button
+          onClick={() => setReportOpen(true)}
+          aria-label="Reportar o bloquear"
+          className="flex h-11 w-11 shrink-0 items-center justify-center text-ink-3"
+        >
+          <Flag size={18} />
+        </button>
       </header>
 
       <div className="flex-1 space-y-2 overflow-y-auto px-4 py-4">
@@ -210,6 +221,17 @@ export default function ChatThread({
           <Send size={18} />
         </button>
       </div>
+
+      {reportOpen && (
+        <ReportSheet
+          targetUserId={otherId}
+          targetName={title}
+          kind="message"
+          targetRef={[...messages].reverse().find((m) => m.senderId === otherId)?.id}
+          onClose={() => setReportOpen(false)}
+          onBlocked={onBack}
+        />
+      )}
 
       {attachOpen && (
         <ResponsiveSheet onClose={() => setAttachOpen(false)}>

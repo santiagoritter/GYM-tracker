@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ChevronRight, ExternalLink, Shield, Users } from 'lucide-react'
+import { ChevronRight, ExternalLink, Flag, Shield, Users } from 'lucide-react'
 import { db } from '@/db/schema'
 import { Card, Row, SectionHeader } from '@/components/ui/Card'
 
@@ -57,6 +57,17 @@ export default function Admin() {
               <p className="text-[13px] text-ink-3">
                 Actividad en vivo + crear cuentas, cambiar rol/email, resetear contraseña,
                 deshabilitar. Todo con registro de acciones.
+              </p>
+            </div>
+            <ChevronRight size={16} className="shrink-0 text-ink-4" />
+          </Row>
+          <Row onClick={() => navigate('/admin/reportes')}>
+            <div className="min-w-0 flex-1">
+              <p className="flex items-center gap-2 text-[15px]">
+                <Flag size={16} className="shrink-0 text-ink-3" /> Reportes
+              </p>
+              <p className="text-[13px] text-ink-3">
+                Mensajes, reseñas y perfiles reportados: descartar, borrar contenido o suspender.
               </p>
             </div>
             <ChevronRight size={16} className="shrink-0 text-ink-4" />

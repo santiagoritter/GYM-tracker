@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, ChevronRight, Star } from 'lucide-react'
+import { ArrowLeft, ChevronRight, Flag, Star } from 'lucide-react'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { fetchMyCoachProfile } from '@/lib/coachQueries'
 import { saveCoachProfile } from '@/lib/coachMutations'
@@ -9,6 +9,7 @@ import { fetchCoachReviews, type CoachRatingSummary } from '@/lib/coachReviews'
 import { toast } from '@/stores/toastStore'
 import { Card, Row } from '@/components/ui/Card'
 import VerifiedBadge from '@/components/gym/VerifiedBadge'
+import ReportSheet from '@/components/gym/ReportSheet'
 
 /**
  * Ficha de coach: la primera vez actúa de onboarding (nombre + DNI + bio +
@@ -27,6 +28,7 @@ export default function CoachProfile() {
   const [busy, setBusy] = useState(false)
   const [isNew, setIsNew] = useState(true)
   const [reviews, setReviews] = useState<CoachRatingSummary | null>(null)
+  const [reportReview, setReportReview] = useState<{ id: string; clientId: string } | null>(null)
 
   useEffect(() => {
     if (!userId) return
@@ -170,13 +172,22 @@ export default function CoachProfile() {
                 </p>
                 <Card>
                   {reviews.reviews.slice(0, 10).map((r) => (
-                    <Row key={r.id} className="flex-col items-stretch gap-0.5">
-                      <span className="flex text-warning">
-                        {Array.from({ length: r.rating }).map((_, i) => (
-                          <Star key={i} size={13} fill="currentColor" />
-                        ))}
-                      </span>
-                      {r.comment && <p className="text-[14px] text-ink-2">{r.comment}</p>}
+                    <Row key={r.id} className="items-start gap-2">
+                      <div className="min-w-0 flex-1 space-y-0.5">
+                        <span className="flex text-warning">
+                          {Array.from({ length: r.rating }).map((_, i) => (
+                            <Star key={i} size={13} fill="currentColor" />
+                          ))}
+                        </span>
+                        {r.comment && <p className="text-[14px] text-ink-2">{r.comment}</p>}
+                      </div>
+                      <button
+                        onClick={() => setReportReview({ id: r.id, clientId: r.clientId })}
+                        aria-label="Reportar reseña"
+                        className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center text-ink-4"
+                      >
+                        <Flag size={15} />
+                      </button>
                     </Row>
                   ))}
                 </Card>
@@ -185,6 +196,16 @@ export default function CoachProfile() {
           </>
         )}
       </div>
+      {reportReview && (
+        <ReportSheet
+          targetUserId={reportReview.clientId}
+          targetName="quien escribió la reseña"
+          kind="review"
+          targetRef={reportReview.id}
+          onClose={() => setReportReview(null)}
+          onBlocked={() => userId && fetchCoachReviews(userId).then(setReviews).catch(() => {})}
+        />
+      )}
     </div>
   )
 }

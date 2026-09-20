@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MessageSquare, Star, Unlink } from 'lucide-react'
+import { Flag, MessageSquare, Star, Unlink } from 'lucide-react'
 import { fetchMyCoach, fetchMyGoals, type CoachPublic, type Goal } from '@/lib/coachQueries'
 import { endBond } from '@/lib/coachMutations'
 import { fetchMyReviewFor, submitReview } from '@/lib/coachReviews'
@@ -8,6 +8,7 @@ import { toast } from '@/stores/toastStore'
 import { Card, Row, SectionHeader } from '@/components/ui/Card'
 import { cn } from '@/lib/utils'
 import VerifiedBadge from '@/components/gym/VerifiedBadge'
+import ReportSheet from '@/components/gym/ReportSheet'
 
 /**
  * "Tu coach" en el perfil del alumno: quién es, sus metas, chat, reseña, y
@@ -19,6 +20,7 @@ export default function MyCoachCard({ userId }: { userId: string }) {
   const [goals, setGoals] = useState<Goal[]>([])
   const [loaded, setLoaded] = useState(false)
   const [reviewOpen, setReviewOpen] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
   const [rating, setRating] = useState(0)
   const [comment, setComment] = useState('')
   const [hasReview, setHasReview] = useState(false)
@@ -115,6 +117,11 @@ export default function MyCoachCard({ userId }: { userId: string }) {
           </span>
         </Row>
 
+        <Row onClick={() => setReportOpen(true)}>
+          <Flag size={18} className="shrink-0 text-ink-3" />
+          <span className="min-w-0 flex-1 text-[15px]">Reportar o bloquear</span>
+        </Row>
+
         {reviewOpen && (
           <Row className="flex-col items-stretch gap-2">
             <div className="flex gap-1">
@@ -146,6 +153,15 @@ export default function MyCoachCard({ userId }: { userId: string }) {
           </Row>
         )}
       </Card>
+      {reportOpen && (
+        <ReportSheet
+          targetUserId={coach.coachId}
+          targetName={coach.displayName || 'tu coach'}
+          kind="profile"
+          onClose={() => setReportOpen(false)}
+          onBlocked={load}
+        />
+      )}
     </section>
   )
 }
