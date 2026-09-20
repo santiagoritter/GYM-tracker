@@ -46,6 +46,9 @@ export interface CoachPublic {
   bio: string | null
   experienceYears: number | null
   verified: boolean
+  specialties: string[]
+  location: string | null
+  certifications: string | null
 }
 
 /** Alumnos activos del coach que llama (RPC `security definer`). */
@@ -158,7 +161,7 @@ export async function fetchMyCoach(
   if (error || !bond) return null
   const { data: coach } = await supabase
     .from('coaches')
-    .select('id, display_name, bio, experience_years, verified')
+    .select('id, display_name, bio, experience_years, verified, specialties, location, certifications')
     .eq('id', bond.coach_id)
     .maybeSingle()
   return {
@@ -168,6 +171,9 @@ export async function fetchMyCoach(
     bio: coach?.bio ?? null,
     experienceYears: coach?.experience_years ?? null,
     verified: coach?.verified ?? false,
+    specialties: coach?.specialties ?? [],
+    location: coach?.location ?? null,
+    certifications: coach?.certifications ?? null,
   }
 }
 
@@ -185,6 +191,9 @@ export async function fetchInvitePreview(code: string): Promise<CoachPublic | nu
         bio: string | null
         experience_years: number | null
         verified: boolean
+        specialties: string[] | null
+        location: string | null
+        certifications: string | null
       }
     | undefined
   if (!coach) return null
@@ -194,6 +203,9 @@ export async function fetchInvitePreview(code: string): Promise<CoachPublic | nu
     bio: coach.bio,
     experienceYears: coach.experience_years,
     verified: coach.verified,
+    specialties: coach.specialties ?? [],
+    location: coach.location,
+    certifications: coach.certifications,
   }
 }
 
@@ -203,11 +215,14 @@ export async function fetchMyCoachProfile(userId: string): Promise<{
   bio: string
   experienceYears: number | null
   verified: boolean
+  specialties: string[]
+  location: string
+  certifications: string
 } | null> {
   if (!supabase) return null
   const { data } = await supabase
     .from('coaches')
-    .select('display_name, bio, experience_years, verified')
+    .select('display_name, bio, experience_years, verified, specialties, location, certifications')
     .eq('id', userId)
     .maybeSingle()
   if (!data) return null
@@ -216,5 +231,8 @@ export async function fetchMyCoachProfile(userId: string): Promise<{
     bio: data.bio ?? '',
     experienceYears: data.experience_years ?? null,
     verified: data.verified ?? false,
+    specialties: data.specialties ?? [],
+    location: data.location ?? '',
+    certifications: data.certifications ?? '',
   }
 }

@@ -39,7 +39,16 @@ Deno.serve(async (req) => {
   const userId = caller.user.id
   const currentRole = (caller.user.app_metadata as Record<string, unknown>)?.role as string | undefined
 
-  let payload: { displayName?: string; dni?: string; bio?: string; experienceYears?: number | null }
+  let payload: {
+    displayName?: string
+    dni?: string
+    bio?: string
+    experienceYears?: number | null
+    specialties?: unknown
+    location?: string
+    certifications?: string
+    coachTermsVersion?: number
+  }
   try {
     payload = await req.json()
   } catch {
@@ -56,6 +65,15 @@ Deno.serve(async (req) => {
     payload.experienceYears <= 80
       ? Math.round(payload.experienceYears)
       : null
+  const location = (payload.location ?? '').trim().slice(0, 80) || null
+  const certifications = (payload.certifications ?? '').trim().slice(0, 400) || null
+  const specialties = Array.isArray(payload.specialties)
+    ? [...new Set(payload.specialties.filter((x): x is string => typeof x === 'string').map((x) => x.trim().slice(0, 30)).filter(Boolean))].slice(0, 6)
+    : []
+  // Los términos de coach hay que aceptarlos para activar el modo (el cliente
+  // manda la versión que vio; la función solo exige que sea una versión válida).
+  const termsVersion = Number.isInteger(payload.coachTermsVersion) ? (payload.coachTermsVersion as number) : 0
+  if (termsVersion < 1) return json({ error: 'Tenés que aceptar los términos para coaches.' }, 400)
   if (!displayName) return json({ error: 'Falta el nombre.' }, 400)
   if (dni.length < 7 || dni.length > 9) return json({ error: 'DNI inválido.' }, 400)
 
@@ -92,6 +110,11 @@ Deno.serve(async (req) => {
       display_name: displayName,
       bio,
       experience_years: experienceYears,
+      specialties,
+      location,
+      certifications,
+      terms_version: termsVersion,
+      terms_accepted_at: new Date().toISOString(),
       ...(changed ? { verified: false, verified_at: null } : {}),
     })
     if (cErr) throw cErr

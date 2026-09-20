@@ -15,7 +15,9 @@ export async function saveCoachProfile(input: {
   displayName: string
   bio: string
   experienceYears: number | null
-  specialties?: string[]
+  specialties: string[]
+  location: string
+  certifications: string
 }): Promise<void> {
   if (!supabase) throw new Error('Supabase no está configurado.')
   const { data: session } = await supabase.auth.getUser()
@@ -26,7 +28,9 @@ export async function saveCoachProfile(input: {
     display_name: input.displayName.trim(),
     bio: input.bio.trim() || null,
     experience_years: input.experienceYears,
-    specialties: input.specialties ?? [],
+    specialties: input.specialties,
+    location: input.location.trim() || null,
+    certifications: input.certifications.trim() || null,
   })
   if (error) throw error
 }

@@ -10,6 +10,8 @@ import { toast } from '@/stores/toastStore'
 import { Card, Row } from '@/components/ui/Card'
 import VerifiedBadge from '@/components/gym/VerifiedBadge'
 import ReportSheet from '@/components/gym/ReportSheet'
+import CoachDetailsFields, { type CoachDetails } from '@/components/gym/CoachDetailsFields'
+import { parseOptionalInt } from '@/lib/parseNumber'
 
 /**
  * Ficha de coach: la primera vez actúa de onboarding (nombre + DNI + bio +
@@ -20,10 +22,16 @@ export default function CoachProfile() {
   const navigate = useNavigate()
   const userId = useCurrentUserId()
   const [loaded, setLoaded] = useState(false)
-  const [displayName, setDisplayName] = useState('')
+  const [details, setDetails] = useState<CoachDetails>({
+    displayName: '',
+    dni: '',
+    experience: '',
+    bio: '',
+    specialties: [],
+    location: '',
+    certifications: '',
+  })
   const [dni, setDni] = useState('')
-  const [bio, setBio] = useState('')
-  const [experience, setExperience] = useState('')
   const [verified, setVerified] = useState(false)
   const [busy, setBusy] = useState(false)
   const [isNew, setIsNew] = useState(true)
@@ -34,9 +42,15 @@ export default function CoachProfile() {
     if (!userId) return
     Promise.all([fetchMyCoachProfile(userId), fetchMyDni()]).then(([p, savedDni]) => {
       if (p) {
-        setDisplayName(p.displayName)
-        setBio(p.bio)
-        setExperience(p.experienceYears != null ? String(p.experienceYears) : '')
+        setDetails({
+          displayName: p.displayName,
+          dni: '',
+          experience: p.experienceYears != null ? String(p.experienceYears) : '',
+          bio: p.bio,
+          specialties: p.specialties,
+          location: p.location,
+          certifications: p.certifications,
+        })
         setVerified(p.verified)
         setIsNew(false)
         fetchCoachReviews(userId).then(setReviews).catch(() => {})
@@ -47,7 +61,7 @@ export default function CoachProfile() {
   }, [userId])
 
   const save = async () => {
-    if (!displayName.trim()) {
+    if (!details.displayName.trim()) {
       toast.error('Falta el nombre', 'Es el que van a ver tus alumnos.')
       return
     }
@@ -59,9 +73,12 @@ export default function CoachProfile() {
     try {
       await saveDni(dni)
       await saveCoachProfile({
-        displayName,
-        bio,
-        experienceYears: experience.trim() ? Number(experience) : null,
+        displayName: details.displayName,
+        bio: details.bio,
+        experienceYears: parseOptionalInt(details.experience),
+        specialties: details.specialties,
+        location: details.location,
+        certifications: details.certifications,
       })
       toast.success(isNew ? 'Perfil de coach creado' : 'Perfil actualizado')
       setIsNew(false)
@@ -104,44 +121,23 @@ export default function CoachProfile() {
           </p>
         )}
 
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-ink-2">Nombre público</label>
-          <input
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="Cómo te van a ver tus alumnos"
-            className="h-12 w-full rounded-sm bg-surface px-4 text-[15px] outline-none ring-1 ring-line-2 focus:ring-accent"
-          />
-        </div>
+        <CoachDetailsFields value={details} onChange={setDetails} showDni={false} />
+
         <div>
           <label className="mb-1.5 block text-sm font-medium text-ink-2">DNI (privado)</label>
           <input
             inputMode="numeric"
             value={dni}
             onChange={(e) => setDni(e.target.value)}
+            maxLength={12}
             placeholder="Sin puntos"
             className="h-12 w-full rounded-sm bg-surface px-4 text-[15px] tabular-nums outline-none ring-1 ring-line-2 focus:ring-accent"
           />
-        </div>
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-ink-2">Años de experiencia</label>
-          <input
-            type="number"
-            inputMode="numeric"
-            value={experience}
-            onChange={(e) => setExperience(e.target.value)}
-            className="h-12 w-full rounded-sm bg-surface px-4 text-[15px] outline-none ring-1 ring-line-2 focus:ring-accent"
-          />
-        </div>
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-ink-2">Bio</label>
-          <textarea
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            rows={4}
-            placeholder="Especialidad, método, a quién entrenás…"
-            className="w-full rounded-sm bg-surface p-4 text-[15px] outline-none ring-1 ring-line-2 focus:ring-accent"
-          />
+          {!isNew && (
+            <p className="mt-1 text-[12px] text-ink-3">
+              Si cambiás el nombre, la bio o el DNI, la verificación vuelve a quedar pendiente.
+            </p>
+          )}
         </div>
 
         <button

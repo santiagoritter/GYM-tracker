@@ -88,12 +88,29 @@ export default function JoinCoach() {
               )}
             </div>
           </div>
+          {state.coach.location && <p className="text-[14px] text-ink-3">{state.coach.location}</p>}
+          {state.coach.specialties.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {state.coach.specialties.map((sp) => (
+                <span key={sp} className="rounded-full bg-fill px-3 py-1 text-[13px] text-ink-2">
+                  {sp}
+                </span>
+              ))}
+            </div>
+          )}
           {state.coach.bio && (
             <p className="text-[15px] leading-relaxed text-ink-2">{state.coach.bio}</p>
           )}
+          {state.coach.certifications && (
+            <p className="text-[13px] leading-relaxed text-ink-3">
+              Formación: {state.coach.certifications}
+            </p>
+          )}
           <p className="text-[13px] leading-relaxed text-ink-3">
-            Al aceptar, tu coach va a poder ver tus entrenamientos, PRs y medidas, y
-            asignarte rutinas y metas. Podés cortar el vínculo cuando quieras desde tu perfil.
+            Al aceptar, tu coach va a poder ver tu progreso (entrenamientos, récords, medidas,
+            niveles y tu ficha física) y asignarte rutinas y metas. Tus calorías solo las ve si
+            vos lo habilitás; las fotos de progreso nunca se comparten. Podés cortar el vínculo
+            cuando quieras desde tu perfil.
           </p>
           <div className="space-y-2">
             <button

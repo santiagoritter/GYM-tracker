@@ -11,6 +11,11 @@ export async function becomeCoach(input: {
   dni: string
   bio?: string
   experienceYears?: number | null
+  specialties?: string[]
+  location?: string
+  certifications?: string
+  /** Versión de los términos de coach que el usuario aceptó (COACH_TERMS_VERSION). */
+  coachTermsVersion: number
 }): Promise<void> {
   if (!supabase) throw new Error('Supabase no está configurado.')
 

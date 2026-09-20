@@ -1,18 +1,18 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Check, LogOut } from 'lucide-react'
-import { COACH_PRICE_USD, isCoachBillingEnabled } from '@/lib/coachSubscription'
+import { ArrowLeft, LogOut } from 'lucide-react'
+import CoachPlanCard from '@/components/gym/CoachPlanCard'
 import { leaveCoach } from '@/lib/coachSelfSignup'
 import { toast } from '@/stores/toastStore'
 
 /**
- * Plan del modo coach — MAQUETA. Hoy es gratis; el botón de pago está inerte
- * hasta que se prenda `VITE_COACH_BILLING`. Cuando se integre Mercado Pago,
- * solo cambia `coachSubscription.ts` y este botón.
+ * Plan del modo coach: precio y beneficios (`CoachPlanCard`, los mismos del alta)
+ * y la baja del modo coach. Con el cobro apagado el modo coach es gratis y no
+ * hay botón de compra; el paywall real vive en `Paywall.tsx` (compras dentro de
+ * la app, Guideline 3.1.1) cuando `VITE_PURCHASES_ENABLED=on`.
  */
 export default function CoachPlan() {
   const navigate = useNavigate()
-  const billing = isCoachBillingEnabled()
   const [leaving, setLeaving] = useState(false)
 
   const handleLeave = async () => {
@@ -35,14 +35,6 @@ export default function CoachPlan() {
     }
   }
 
-  const perks = [
-    'Alumnos ilimitados vinculados por link o QR',
-    'Ver progreso, PRs y medidas de cada alumno en vivo',
-    'Asignar rutinas y metas',
-    'Chat con adjuntos de ejercicios y rutinas',
-    'Perfil público con reseñas y verificado',
-  ]
-
   return (
     <div className="mx-auto min-h-screen content-width pb-24">
       <header className="glass sticky top-0 z-30 flex items-center gap-3 border-b border-line px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
@@ -53,35 +45,7 @@ export default function CoachPlan() {
       </header>
 
       <div className="space-y-5 px-4 py-6">
-        <div className="rounded-xl bg-surface p-5">
-          <p className="text-[14px] font-semibold text-accent">Modo coach</p>
-          <p className="mt-1 text-3xl font-bold">
-            Gratis
-            <span className="ml-2 align-middle text-[15px] font-medium text-ink-3">
-              por ahora · después US${COACH_PRICE_USD}/mes
-            </span>
-          </p>
-          <ul className="mt-4 space-y-2">
-            {perks.map((p) => (
-              <li key={p} className="flex items-start gap-2 text-[15px] text-ink-2">
-                <Check size={16} className="mt-0.5 shrink-0 text-accent" />
-                {p}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <button
-          disabled={!billing}
-          className="h-12 w-full rounded-sm bg-accent text-sm font-bold text-bg disabled:opacity-50"
-        >
-          {billing ? `Suscribirme — US$${COACH_PRICE_USD}/mes` : 'Suscripción disponible pronto'}
-        </button>
-        {!billing && (
-          <p className="text-center text-[13px] text-ink-3">
-            Mientras tanto el modo coach está habilitado sin costo.
-          </p>
-        )}
+        <CoachPlanCard />
 
         <button
           onClick={handleLeave}
