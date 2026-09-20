@@ -7,6 +7,7 @@
 // leían bien. `decodePayload`/`encodePayload` (el formato viejo
 // "GYMTR:<datos>") se mantienen solo para poder seguir leyendo códigos ya
 // impresos/guardados de antes de este cambio.
+import { publicLink } from '@/lib/publicUrl'
 import LZString from 'lz-string'
 import QRCode from 'qrcode'
 import { db } from '@/db/schema'
@@ -140,7 +141,7 @@ export async function shareRoutine(routine: Routine, options: BuildOptions): Pro
 /** URL que abre directamente la importación — sirve para que cualquier
  * cámara (no solo la de la app) pueda escanear el QR y llegar acá. */
 export function buildShareUrl(code: string): string {
-  return `${window.location.origin}${import.meta.env.BASE_URL}importar/${code}`
+  return publicLink(`importar/${code}`)
 }
 
 /** Saca el código de lo que se escaneó/pegó: puede ser la URL de share, un

@@ -55,7 +55,7 @@ const ITEMS: { q: string; a: React.ReactNode }[] = [
   },
   {
     q: '¿Cómo borro mi cuenta?',
-    a: <>Escribinos a <a className="font-medium text-accent" href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('GymTracker — baja de cuenta')}`}>{SUPPORT_EMAIL}</a> y damos de baja la cuenta y borramos tus datos del servidor.</>,
+    a: 'Desde Ajustes → Cuenta → "Borrar mi cuenta". Te pide confirmar escribiendo BORRAR y elimina tu cuenta y todos tus datos de la nube, además de los de este dispositivo. Si tenés una suscripción, se cancela aparte desde Ajustes de tu iPhone → tu nombre → Suscripciones.',
   },
 ]
 

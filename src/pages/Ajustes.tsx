@@ -24,6 +24,7 @@ import {
   Sun,
   Target,
   Timer,
+  Trash2,
   Trophy,
   Upload,
   Users,
@@ -31,6 +32,7 @@ import {
 import { useAuthStore } from '@/stores/authStore'
 
 const CoachSignupSheet = lazy(() => import('@/components/gym/CoachSignupSheet'))
+const DeleteAccountSheet = lazy(() => import('@/components/gym/DeleteAccountSheet'))
 import { db } from '@/db/schema'
 // Sin lazy(): es genérico (<K extends string>) y React.lazy() no preserva
 // el parámetro de tipo — el generic se erosiona a `string` en el punto de
@@ -130,6 +132,7 @@ export default function Ajustes() {
   const canInstall = useCanInstallPwa()
   const showAppSection = !isNative && !isStandalone()
   const [coachSheetOpen, setCoachSheetOpen] = useState(false)
+  const [deleteSheetOpen, setDeleteSheetOpen] = useState(false)
   const [levelSheetOpen, setLevelSheetOpen] = useState(false)
   const [goalSheetOpen, setGoalSheetOpen] = useState(false)
   const [restCustomOpen, setRestCustomOpen] = useState(false)
@@ -592,11 +595,32 @@ export default function Ajustes() {
           </Card>
         </section>
 
+        {supabaseConfigured && (
+          <section>
+            <SectionHeader title="Cuenta" />
+            <Card>
+              <Row onClick={() => setDeleteSheetOpen(true)}>
+                <Trash2 size={18} className="shrink-0 text-danger" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[15px] text-danger">Borrar mi cuenta</p>
+                  <p className="text-[13px] text-ink-3">Elimina tu cuenta y tus datos de la nube</p>
+                </div>
+                <ChevronRight size={16} className="shrink-0 text-ink-4" />
+              </Row>
+            </Card>
+          </section>
+        )}
+
         <p className="px-1 text-center text-xs text-ink-3">
           GymTracker v0.1 · Modo local
         </p>
       </div>
 
+      {deleteSheetOpen && (
+        <Suspense fallback={null}>
+          <DeleteAccountSheet onClose={() => setDeleteSheetOpen(false)} />
+        </Suspense>
+      )}
       {coachSheetOpen && (
         <Suspense fallback={null}>
           <CoachSignupSheet onClose={() => setCoachSheetOpen(false)} />

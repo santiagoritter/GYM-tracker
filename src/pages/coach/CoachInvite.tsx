@@ -1,3 +1,4 @@
+import { publicLink } from '@/lib/publicUrl'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Check, Copy, QrCode } from 'lucide-react'
@@ -16,14 +17,14 @@ export default function CoachInvite() {
   const [busy, setBusy] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  const link = code ? `${window.location.origin}${import.meta.env.BASE_URL}unirse/${code}` : ''
+  const link = code ? publicLink(`unirse/${code}`) : ''
 
   const generate = async () => {
     setBusy(true)
     try {
       const c = await createInvite()
       setCode(c)
-      const url = `${window.location.origin}${import.meta.env.BASE_URL}unirse/${c}`
+      const url = publicLink(`unirse/${c}`)
       const QRCode = (await import('qrcode')).default
       setQr(
         await QRCode.toDataURL(url, {
