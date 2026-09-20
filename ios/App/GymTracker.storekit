@@ -1,0 +1,88 @@
+{
+  "identifier" : "B6E2A1D0",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+
+  ],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_locale" : "es_AR",
+    "_storefront" : "ARG",
+    "_storeKitErrors" : [
+
+    ]
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "21500001",
+      "localizations" : [
+
+      ],
+      "name" : "GymTracker",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "5.00",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6470000001",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Alumnos ilimitados, progreso completo y rutinas a medida.",
+              "displayName" : "Modo coach",
+              "locale" : "es_AR"
+            }
+          ],
+          "productID" : "gymtracker.coach.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Coach mensual",
+          "subscriptionGroupID" : "21500001",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "1.99",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "6470000002",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Quitá los banners de la app.",
+              "displayName" : "Sin anuncios",
+              "locale" : "es_AR"
+            }
+          ],
+          "productID" : "gymtracker.noads.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Sin anuncios mensual",
+          "subscriptionGroupID" : "21500001",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

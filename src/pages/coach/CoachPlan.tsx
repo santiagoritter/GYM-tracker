@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, LogOut } from 'lucide-react'
 import CoachPlanCard from '@/components/gym/CoachPlanCard'
+import CoachSubscribeBlock from '@/components/gym/CoachSubscribeBlock'
 import { leaveCoach } from '@/lib/coachSelfSignup'
 import { toast } from '@/stores/toastStore'
 
@@ -46,6 +47,7 @@ export default function CoachPlan() {
 
       <div className="space-y-5 px-4 py-6">
         <CoachPlanCard />
+        <CoachSubscribeBlock />
 
         <button
           onClick={handleLeave}

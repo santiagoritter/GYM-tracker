@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { supabase } from '@/lib/supabaseClient'
 import { runSync } from '@/lib/sync'
 import { isGuestUserId } from '@/lib/guest'
+import { identifyPurchasesUser, initPurchases, resetPurchasesUser } from '@/lib/purchases'
 import type { UserRole } from '@/types'
 import { initNativeShell } from '@/lib/native'
 import { initPwaUpdate } from '@/lib/pwaUpdate'
@@ -98,6 +99,7 @@ if (supabase) {
       const name = (session.user.user_metadata?.name as string | undefined) ?? ''
       useAuthStore.getState().setSession(session.user.id, role, name, session.user.email ?? '')
       triggerSync()
+      void identifyPurchasesUser(session.user.id).catch(() => undefined)
       if (!syncInterval) syncInterval = setInterval(triggerSync, SYNC_INTERVAL_MS)
     } else {
       // Sin sesión de Supabase pero en modo sin cuenta: NO se limpia (el evento
@@ -108,6 +110,7 @@ if (supabase) {
         return
       }
       useAuthStore.getState().clearSession()
+      void resetPurchasesUser()
       if (syncInterval) {
         clearInterval(syncInterval)
         syncInterval = undefined
@@ -124,6 +127,9 @@ if (supabase) {
   // persistida es la única fuente. AdminRoute puede decidir ya.
   useAuthStore.getState().markSessionChecked()
 }
+
+// Modo sin cuenta: RevenueCat con id anónimo, para poder comprar "Sin anuncios".
+if (useAuthStore.getState().isGuest) void initPurchases(null).catch(() => undefined)
 
 seedIfEmpty()
 

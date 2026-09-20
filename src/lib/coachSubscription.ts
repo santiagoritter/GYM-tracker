@@ -1,3 +1,5 @@
+import { purchasesAvailable } from '@/lib/purchases'
+
 /**
  * Plan del modo coach. Precio y beneficios en un solo lugar (los usan el alta
  * de coach, la pantalla de plan y el paywall). El cobro real es una compra
@@ -20,6 +22,9 @@ export const COACH_PERKS = [
   'Perfil público con reseñas y sello de verificado',
 ] as const
 
+/** ¿Se cobra el modo coach en este build? Solo si las compras están activas y
+ * disponibles (iOS con RevenueCat configurado). En web/Android o sin las keys el
+ * modo coach queda gratis: no se muestra un paywall que no se puede pagar. */
 export function isCoachBillingEnabled(): boolean {
-  return import.meta.env.VITE_PURCHASES_ENABLED === 'on'
+  return purchasesAvailable()
 }

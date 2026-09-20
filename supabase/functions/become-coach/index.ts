@@ -17,6 +17,11 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+// Con `REQUIRE_COACH_SUBSCRIPTION=on` (supabase secrets set) activar el modo coach
+// exige una suscripción de coach vigente (tabla `subscriptions`, la escribe el
+// webhook de RevenueCat). Apagado por defecto: el modo coach es gratis hasta que
+// se decida cobrar.
+const REQUIRE_SUBSCRIPTION = Deno.env.get('REQUIRE_COACH_SUBSCRIPTION') === 'on'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -78,6 +83,18 @@ Deno.serve(async (req) => {
   if (dni.length < 7 || dni.length > 9) return json({ error: 'DNI inválido.' }, 400)
 
   try {
+    if (REQUIRE_SUBSCRIPTION && currentRole !== 'admin') {
+      const { data: sub } = await admin
+        .from('subscriptions')
+        .select('status, expires_at')
+        .eq('user_id', userId)
+        .eq('entitlement', 'coach')
+        .maybeSingle()
+      const valid =
+        sub?.status === 'active' && (!sub.expires_at || new Date(sub.expires_at).getTime() > Date.now())
+      if (!valid) return json({ error: 'Necesitás una suscripción de coach activa.' }, 402)
+    }
+
     // 1. DNI único entre cuentas de coach.
     const { data: dupe } = await admin
       .from('coach_identity')

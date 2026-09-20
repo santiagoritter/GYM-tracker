@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, X } from 'lucide-react'
 import { becomeCoach } from '@/lib/coachSelfSignup'
-import { COACH_TERMS_VERSION } from '@/lib/coachSubscription'
+import { COACH_TERMS_VERSION, isCoachBillingEnabled } from '@/lib/coachSubscription'
 import { parseOptionalInt } from '@/lib/parseNumber'
 import { toast } from '@/stores/toastStore'
 import ResponsiveSheet from '@/components/ui/ResponsiveSheet'
 import CoachDetailsFields, { type CoachDetails } from '@/components/gym/CoachDetailsFields'
 import CoachPlanCard from '@/components/gym/CoachPlanCard'
+import CoachSubscribeBlock from '@/components/gym/CoachSubscribeBlock'
+import { useEntitlementsStore } from '@/stores/entitlementsStore'
 import { cn } from '@/lib/utils'
 
 type Step = 'details' | 'plan' | 'terms'
@@ -41,6 +43,9 @@ export default function CoachSignupSheet({ onClose }: { onClose: () => void }) {
   const [accepted, setAccepted] = useState(false)
   const [busy, setBusy] = useState(false)
   const stepIndex = STEPS.indexOf(step)
+  const coachEntitled = useEntitlementsStore((s) => s.coach)
+  // Con el cobro prendido, el alta se destraba recién con la suscripción activa.
+  const needsSubscription = isCoachBillingEnabled() && !coachEntitled
 
   const validateDetails = (): string | null => {
     if (!details.displayName.trim()) return 'Falta el nombre público. Es el que van a ver tus alumnos.'
@@ -55,6 +60,7 @@ export default function CoachSignupSheet({ onClose }: { onClose: () => void }) {
       if (problem) return toast.error('Revisá la ficha', problem)
       setStep('plan')
     } else if (step === 'plan') {
+      if (needsSubscription) return toast.error('Falta la suscripción', 'Suscribite para activar el modo coach.')
       setStep('terms')
     }
   }
@@ -127,6 +133,7 @@ export default function CoachSignupSheet({ onClose }: { onClose: () => void }) {
         {step === 'plan' && (
           <>
             <CoachPlanCard />
+            <CoachSubscribeBlock />
             <p className="text-[13px] leading-relaxed text-ink-3">
               Podés salir del modo coach cuando quieras desde Plan Coach; se terminan los
               vínculos con tus alumnos.
@@ -181,7 +188,11 @@ export default function CoachSignupSheet({ onClose }: { onClose: () => void }) {
             {busy ? 'Activando…' : 'Convertirme en coach'}
           </button>
         ) : (
-          <button onClick={next} className="h-12 w-full rounded-sm bg-accent text-sm font-bold text-bg">
+          <button
+            onClick={next}
+            disabled={step === 'plan' && needsSubscription}
+            className="h-12 w-full rounded-sm bg-accent text-sm font-bold text-bg disabled:opacity-40"
+          >
             Continuar
           </button>
         )}

@@ -33,6 +33,7 @@ import { useAuthStore } from '@/stores/authStore'
 
 const CoachSignupSheet = lazy(() => import('@/components/gym/CoachSignupSheet'))
 const DeleteAccountSheet = lazy(() => import('@/components/gym/DeleteAccountSheet'))
+const Paywall = lazy(() => import('@/components/gym/Paywall'))
 import { db } from '@/db/schema'
 // Sin lazy(): es genérico (<K extends string>) y React.lazy() no preserva
 // el parámetro de tipo — el generic se erosiona a `string` en el punto de
@@ -96,6 +97,8 @@ import { backupNeedsPassphrase, exportBackup, importBackup } from '@/lib/backup'
 import { useCanInstallPwa, promptInstall, isStandalone } from '@/lib/pwaInstall'
 import { isNative } from '@/lib/native'
 import { discardGuestData } from '@/lib/guest'
+import { purchasesAvailable, restorePurchases } from '@/lib/purchases'
+import { useEntitlementsStore } from '@/stores/entitlementsStore'
 import { toast } from '@/stores/toastStore'
 
 const ANDROID_APK_URL = 'https://github.com/santiagoritter/GYM-tracker/releases/latest'
@@ -136,6 +139,9 @@ export default function Ajustes() {
   const showAppSection = !isNative && !isStandalone()
   const [coachSheetOpen, setCoachSheetOpen] = useState(false)
   const [deleteSheetOpen, setDeleteSheetOpen] = useState(false)
+  const [paywallOpen, setPaywallOpen] = useState(false)
+  const adFree = useEntitlementsStore((s) => s.adFree)
+  const showPurchases = purchasesAvailable()
   const [levelSheetOpen, setLevelSheetOpen] = useState(false)
   const [goalSheetOpen, setGoalSheetOpen] = useState(false)
   const [restCustomOpen, setRestCustomOpen] = useState(false)
@@ -244,6 +250,15 @@ export default function Ajustes() {
     if (isGuest) return navigate('/registro')
     if (!supabaseConfigured || !userId || syncStatus === 'syncing') return
     runSync(userId)
+  }
+
+  const handleRestore = async () => {
+    try {
+      await restorePurchases()
+      toast.success('Compras restauradas', 'Si tenías una suscripción activa, ya está de vuelta.')
+    } catch (e) {
+      toast.error('No se pudo restaurar', e instanceof Error ? e.message : 'Probá de nuevo.')
+    }
   }
 
   const handleDiscardGuest = async () => {
@@ -640,6 +655,36 @@ export default function Ajustes() {
           </Card>
         </section>
 
+        {showPurchases && (
+          <section>
+            <SectionHeader title="Suscripciones" />
+            <Card>
+              <Row onClick={() => !adFree && setPaywallOpen(true)}>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[15px]">Sin anuncios</p>
+                  <p className="text-[13px] text-ink-3">
+                    {adFree ? 'Activa' : 'Quitá los banners de la app'}
+                  </p>
+                </div>
+                {!adFree && <ChevronRight size={16} className="shrink-0 text-ink-4" />}
+              </Row>
+              <Row onClick={handleRestore}>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[15px]">Restaurar compras</p>
+                  <p className="text-[13px] text-ink-3">Recuperá una suscripción de otro dispositivo</p>
+                </div>
+              </Row>
+              <Row onClick={() => window.open('https://apps.apple.com/account/subscriptions', '_blank', 'noopener')}>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[15px]">Administrar suscripciones</p>
+                  <p className="text-[13px] text-ink-3">Cancelar o cambiar desde tu cuenta de Apple</p>
+                </div>
+                <ChevronRight size={16} className="shrink-0 text-ink-4" />
+              </Row>
+            </Card>
+          </section>
+        )}
+
         {isGuest && (
           <section>
             <SectionHeader title="Datos del teléfono" />
@@ -677,6 +722,11 @@ export default function Ajustes() {
         </p>
       </div>
 
+      {paywallOpen && (
+        <Suspense fallback={null}>
+          <Paywall kind="ad_free" onClose={() => setPaywallOpen(false)} />
+        </Suspense>
+      )}
       {deleteSheetOpen && (
         <Suspense fallback={null}>
           <DeleteAccountSheet onClose={() => setDeleteSheetOpen(false)} />
