@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronRight, Flame, Scale, Target, TrendingUp, Trophy, User, WifiOff, type LucideIcon } from 'lucide-react'
+import { ChevronRight, Scale, Target, TrendingUp, Trophy, User, WifiOff, type LucideIcon } from 'lucide-react'
+import RepeMark from '@/components/ui/RepeMark'
 import { db } from '@/db/schema'
 import { runSync } from '@/lib/sync'
 import { useAuthStore } from '@/stores/authStore'
@@ -165,9 +166,7 @@ function StepWelcome({
 }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center text-center">
-      <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-lg bg-accent">
-        <Flame size={48} className="text-bg" />
-      </div>
+      <RepeMark size={64} className="mb-6 text-accent" />
       <h1 className="mb-2 text-3xl font-bold">
         ¡Bienvenido, {name.split(' ')[0]}!
       </h1>

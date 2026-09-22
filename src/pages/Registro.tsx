@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Dumbbell, Eye, EyeOff, Mail, RefreshCw } from 'lucide-react'
+import { Eye, EyeOff, Mail, RefreshCw } from 'lucide-react'
+import RepeMark from '@/components/ui/RepeMark'
 import { signUp, verifySignupCode, resendSignupCode } from '@/lib/supabaseAuth'
 import { db, ensureProfile } from '@/db/schema'
 import { migrateLocalUserToSupabase } from '@/db/migrateLocalUserToSupabase'
@@ -116,12 +117,13 @@ export default function Registro() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-bg px-6 py-10">
       <div className="animate-fade-up mb-8 flex flex-col items-center gap-3">
-        <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-accent">
-          {step === 'verify'
-            ? <Mail size={32} className="text-bg" strokeWidth={2.5} />
-            : <Dumbbell size={32} className="text-bg" strokeWidth={2.5} />
-          }
-        </div>
+        {step === 'verify' ? (
+          <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-accent">
+            <Mail size={32} className="text-bg" strokeWidth={2.5} />
+          </div>
+        ) : (
+          <RepeMark size={48} className="text-accent" />
+        )}
         <h1 className="text-2xl font-bold">
           {step === 'verify' ? 'Verificá tu email' : 'Crear cuenta'}
         </h1>

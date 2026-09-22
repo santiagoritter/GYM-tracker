@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Dumbbell, Eye, EyeOff, Mail } from 'lucide-react'
+import { Eye, EyeOff, Mail } from 'lucide-react'
+import RepeMark from '@/components/ui/RepeMark'
 import { signIn, verifySignupCode, resendSignupCode, EMAIL_NOT_VERIFIED, type AuthUser } from '@/lib/supabaseAuth'
 import { db, ensureProfile } from '@/db/schema'
 import { migrateLocalUserToSupabase } from '@/db/migrateLocalUserToSupabase'
@@ -183,9 +184,7 @@ export default function Login() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-bg px-6">
       <div className="animate-fade-up mb-10 flex flex-col items-center gap-3">
-        <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-accent">
-          <Dumbbell size={32} className="text-bg" strokeWidth={2.5} />
-        </div>
+        <RepeMark size={48} className="text-accent" />
         <h1 className="text-3xl font-bold tracking-tight">Repe</h1>
         <p className="text-sm text-ink-3">Tu progreso, siempre con vos.</p>
       </div>
