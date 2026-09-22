@@ -280,7 +280,7 @@ export default function Ajustes() {
           captura). Ese padding es para pantallas de pantalla completa
           (Workout.tsx, FAQ.tsx en su forma standalone, etc.) sin nada
           arriba. */}
-      <header className="glass sticky top-[var(--app-header-h,0px)] z-20 flex items-center gap-3 border-b border-line px-4 pb-3 pt-3">
+      <header className="glass sticky top-[var(--app-header-h,0px)] z-20 flex items-center gap-3 border-b border-line px-4 pb-2 pt-2">
         <button
           onClick={() => navigate('/perfil')}
           aria-label="Volver"
@@ -294,7 +294,7 @@ export default function Ajustes() {
         </div>
       </header>
 
-      <div className="space-y-5 px-4 py-4">
+      <div className="space-y-5 px-4 pt-2 pb-4">
         {isGuest && (
           <div className="space-y-3 rounded-md border border-line-2 bg-surface p-4">
             <div>

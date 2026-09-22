@@ -137,12 +137,21 @@ export default function Profile() {
           </Row>
           <Row className="flex-col items-stretch gap-2">
             <label className="text-[13px] font-medium text-ink-2">Fecha de nacimiento</label>
-            <input
-              type="date"
-              value={profile.dob ?? ''}
-              onChange={(e) => update({ dob: e.target.value || undefined })}
-              className="h-11 w-full rounded-xs bg-surface-2 px-3 outline-none focus:ring-1 focus:ring-accent [color-scheme:dark]"
-            />
+            {/* El padding horizontal vive en este wrapper, no en el input: es
+                el bug de WebKit documentado abajo — `-webkit-min-logical-
+                width: 100%` (index.css) fuerza al input a medir 100% de SU
+                caja, y si esa caja además tiene padding propio el resultado
+                final se pasa por la derecha del padding hacia afuera. Con el
+                input sin padding (100% = 100% de la caja completa), no
+                sobra ni falta nada. */}
+            <div className="h-11 overflow-hidden rounded-xs bg-surface-2 px-3 [color-scheme:dark] focus-within:ring-1 focus-within:ring-accent">
+              <input
+                type="date"
+                value={profile.dob ?? ''}
+                onChange={(e) => update({ dob: e.target.value || undefined })}
+                className="h-full w-full bg-transparent outline-none"
+              />
+            </div>
           </Row>
         </Card>
       </section>

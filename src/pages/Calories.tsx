@@ -53,7 +53,7 @@ export default function Calories() {
     <div className="mx-auto content-width pb-24">
       {/* Sin padding de safe-area: vive dentro de AppShell, el header
           global ya lo reserva — sumarlo acá duplicaba el hueco de arriba. */}
-      <header className="glass sticky top-[var(--app-header-h,0px)] z-20 flex items-center gap-3 border-b border-line px-4 pb-3 pt-3">
+      <header className="glass sticky top-[var(--app-header-h,0px)] z-20 flex items-center gap-3 border-b border-line px-4 pb-2 pt-2">
         <button
           onClick={() => navigate('/ajustes')}
           aria-label="Volver"
@@ -67,7 +67,7 @@ export default function Calories() {
         </div>
       </header>
 
-      <div className="space-y-5 px-4 py-4">
+      <div className="space-y-5 px-4 pt-2 pb-4">
         <Card>
           <Row onClick={() => update({ calorieTrackingEnabled: enabled ? 0 : 1 })}>
             <div className="min-w-0 flex-1">

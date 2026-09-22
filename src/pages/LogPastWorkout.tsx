@@ -182,7 +182,7 @@ export default function LogPastWorkout() {
     <div className="mx-auto content-width pb-32">
       {/* Sin padding de safe-area: vive dentro de AppShell, el header
           global ya lo reserva — sumarlo acá duplicaba el hueco de arriba. */}
-      <header className="glass sticky top-[var(--app-header-h,0px)] z-20 flex items-center gap-3 border-b border-line px-4 pb-3 pt-3">
+      <header className="glass sticky top-[var(--app-header-h,0px)] z-20 flex items-center gap-3 border-b border-line px-4 pb-2 pt-2">
         <button
           onClick={() => navigate('/ajustes')}
           aria-label="Volver"
@@ -196,18 +196,22 @@ export default function LogPastWorkout() {
         </div>
       </header>
 
-      <div className="space-y-5 px-4 py-4">
+      <div className="space-y-5 px-4 pt-2 pb-4">
         <section>
           <SectionHeader title="Cuándo" />
           <Card>
             <div className="flex flex-col gap-2 p-4">
-              <input
-                type="date"
-                value={date}
-                max={todayInputValue()}
-                onChange={(e) => setDate(e.target.value)}
-                className="h-12 w-full rounded-sm bg-surface-2 px-3 text-[15px] outline-none focus:ring-1 focus:ring-accent"
-              />
+              {/* Padding en el wrapper, input sin padding propio — ver el
+                  comentario largo en Profile.tsx (mismo bug de WebKit). */}
+              <div className="h-12 overflow-hidden rounded-sm bg-surface-2 px-3 focus-within:ring-1 focus-within:ring-accent">
+                <input
+                  type="date"
+                  value={date}
+                  max={todayInputValue()}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="h-full w-full bg-transparent text-[15px] outline-none"
+                />
+              </div>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}

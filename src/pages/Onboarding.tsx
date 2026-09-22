@@ -249,13 +249,17 @@ function StepPersonal({
           <label className="mb-2 block text-sm font-semibold text-ink-2">
             Fecha de nacimiento
           </label>
-          <input
-            type="date"
-            value={dob}
-            onChange={(e) => onDob(e.target.value)}
-            max={new Date().toISOString().slice(0, 10)}
-            className="w-full rounded-xl bg-surface px-4 py-3 outline-none ring-1 ring-line-2 transition focus:ring-accent [color-scheme:dark]"
-          />
+          {/* Padding en el wrapper, input sin padding propio — ver el
+              comentario largo en Profile.tsx (mismo bug de WebKit). */}
+          <div className="rounded-xl bg-surface px-4 ring-1 ring-line-2 transition [color-scheme:dark] focus-within:ring-accent">
+            <input
+              type="date"
+              value={dob}
+              onChange={(e) => onDob(e.target.value)}
+              max={new Date().toISOString().slice(0, 10)}
+              className="w-full bg-transparent py-3 outline-none"
+            />
+          </div>
         </div>
       </div>
 

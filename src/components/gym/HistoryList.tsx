@@ -44,10 +44,10 @@ export function HistoryList() {
           <div key={w.id} className="overflow-hidden rounded-xl bg-surface">
             <button
               onClick={() => setExpanded(isOpen ? null : w.id)}
-              className="flex w-full items-center justify-between p-4 text-left"
+              className="flex w-full items-center justify-between gap-2 p-4 text-left"
             >
-              <div>
-                <p className="font-medium">{w.name}</p>
+              <div className="min-w-0">
+                <p className="truncate font-medium">{w.name}</p>
                 <p className="text-sm text-ink-2">
                   {formatDate(w.startedAt)} · {formatDuration(w.startedAt, w.finishedAt)} ·{' '}
                   <span className="font-mono">{Math.round(w.totalVolumeKg ?? 0)}</span> kg
@@ -55,7 +55,7 @@ export function HistoryList() {
               </div>
               <ChevronDown
                 size={20}
-                className={cn('text-ink-3 transition-transform', isOpen && 'rotate-180')}
+                className={cn('shrink-0 text-ink-3 transition-transform', isOpen && 'rotate-180')}
               />
             </button>
 

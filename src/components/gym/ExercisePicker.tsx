@@ -54,17 +54,17 @@ export function ExercisePicker({ onSelect, onClose, excludeIds = [] }: Props) {
     <button
       key={e.id}
       onClick={() => onSelect(e)}
-      className="flex w-full items-center justify-between border-b border-line py-3 text-left active:bg-surface"
+      className="flex w-full items-center justify-between gap-2 border-b border-line py-3 text-left active:bg-surface"
     >
-      <div>
-        <p className="font-medium">{e.name}</p>
-        <div className="mt-1 flex gap-1">
+      <div className="min-w-0">
+        <p className="truncate font-medium">{e.name}</p>
+        <div className="mt-1 flex flex-wrap gap-1">
           {e.musclePrimary.map((m) => (
             <MuscleChip key={m} muscle={m} />
           ))}
         </div>
       </div>
-      <span className="flex items-center gap-1 text-xs uppercase text-ink-3">
+      <span className="flex shrink-0 items-center gap-1 text-xs uppercase text-ink-3">
         <EquipmentIcon equipment={e.equipment} size={14} />
       </span>
     </button>

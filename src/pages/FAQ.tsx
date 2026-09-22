@@ -82,7 +82,7 @@ export default function FAQ() {
     <div className="mx-auto content-width pb-24">
       {/* Sin padding de safe-area: vive dentro de AppShell, el header
           global ya lo reserva — sumarlo acá duplicaba el hueco de arriba. */}
-      <header className="glass sticky top-[var(--app-header-h,0px)] z-20 flex items-center gap-3 border-b border-line px-4 pb-3 pt-3">
+      <header className="glass sticky top-[var(--app-header-h,0px)] z-20 flex items-center gap-3 border-b border-line px-4 pb-2 pt-2">
         <button
           onClick={() => navigate('/ajustes')}
           aria-label="Volver"
@@ -93,7 +93,7 @@ export default function FAQ() {
         <h1 className="font-semibold">Preguntas frecuentes</h1>
       </header>
 
-      <div className="space-y-2 px-4 py-4">
+      <div className="space-y-2 px-4 pt-2 pb-4">
         {(purchasesAvailable() ? [...ITEMS, SUBSCRIPTION_ITEM] : ITEMS).map((item) => (
           <details key={item.q} className="group rounded-md bg-surface">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 text-[15px] font-medium [&::-webkit-details-marker]:hidden">
