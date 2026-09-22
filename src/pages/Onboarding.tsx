@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronRight, Flame, Scale, Target, TrendingUp, Trophy, User, WifiOff, type LucideIcon } from 'lucide-react'
 import { db } from '@/db/schema'
+import { runSync } from '@/lib/sync'
 import { useAuthStore } from '@/stores/authStore'
 import { ONBOARDING_MESSAGES, getRandomMessage } from '@/lib/motivational'
 import { GOAL_OPTIONS as GOALS, LEVEL_OPTIONS as LEVELS } from '@/lib/strengthStandards'
@@ -82,6 +83,17 @@ export default function Onboarding() {
           updatedAt: nowIso(),
         })
       }
+      // Antes se navegaba directo, dejando `dirty: 1` esperando el próximo
+      // disparador pasivo de sync (reconexión, foreground, el intervalo de
+      // 5 min de main.tsx). Si la app se cerraba justo después de terminar
+      // el onboarding — muy común, es el momento en que se suelta el
+      // teléfono para ir a entrenar — `onboardingComplete` nunca llegaba al
+      // servidor, y el próximo login en cualquier dispositivo (o tras
+      // reinstalar) volvía a pedir altura/peso porque el perfil remoto no
+      // existía todavía. Se le da al push una oportunidad real (hasta 3s)
+      // antes de navegar; si no hay red, no bloquea — sigue el mismo camino
+      // pasivo de siempre.
+      await Promise.race([runSync(userId), new Promise((resolve) => setTimeout(resolve, 3000))])
       navigate('/', { replace: true })
     } finally {
       setSaving(false)

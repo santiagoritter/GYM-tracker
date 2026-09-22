@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
-import { Check, CopyCheck, Info } from 'lucide-react'
+import { Check, CopyCheck, Info, Pencil } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { MuscleChip } from '@/components/gym/MuscleChip'
 import NumberStepper from '@/components/ui/NumberStepper'
@@ -276,6 +276,11 @@ function SetRow({
   const displayWeight = Number(formatWeight(set.weightKg, units))
   const displayStep = units === 'lbs' ? Math.max(1, Math.round(stepKg / 0.45359237)) : stepKg
   const weightLabel = isBodyweight(equipment) ? 'Lastre' : 'Peso'
+  // Una serie ya completada es un registro de lo que pasó (ver
+  // applyFirstSetToRest más abajo en Workout.tsx) — no se edita con un simple
+  // tap accidental. Reabrirla es una acción aparte (el lápiz); mientras no se
+  // pida explícitamente, el valor queda fijo y sin steppers.
+  const locked = set.completed === 1 && !expanded
 
   return (
     <div
@@ -318,20 +323,41 @@ function SetRow({
           {set.isWarmup === 1 ? 'C' : set.setNumber}
         </button>
 
-        <button
-          onClick={onExpand}
-          aria-label={`Editar la serie ${set.setNumber}`}
-          aria-expanded={expanded}
-          className="col-span-2 grid grid-cols-2 gap-2"
-        >
-          {/* tabular-nums: sin esto los números bailan de ancho al cambiar */}
-          <span className="py-2.5 text-center font-mono text-base font-bold tabular-nums">
-            {set.reps}
-          </span>
-          <span className="py-2.5 text-center font-mono text-base font-bold tabular-nums">
-            {displayWeight}
-          </span>
-        </button>
+        {locked ? (
+          <div className="col-span-2 flex items-center gap-1.5">
+            {/* tabular-nums: sin esto los números bailan de ancho al cambiar */}
+            <div className="grid flex-1 grid-cols-2 gap-2">
+              <span className="py-2.5 text-center font-mono text-base font-bold tabular-nums text-ink-2">
+                {set.reps}
+              </span>
+              <span className="py-2.5 text-center font-mono text-base font-bold tabular-nums text-ink-2">
+                {displayWeight}
+              </span>
+            </div>
+            <button
+              onClick={onExpand}
+              aria-label={`Corregir la serie ${set.setNumber}`}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-ink-3 active:bg-surface-3"
+            >
+              <Pencil size={15} />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={onExpand}
+            aria-label={`Editar la serie ${set.setNumber}`}
+            aria-expanded={expanded}
+            className="col-span-2 grid grid-cols-2 gap-2"
+          >
+            {/* tabular-nums: sin esto los números bailan de ancho al cambiar */}
+            <span className="py-2.5 text-center font-mono text-base font-bold tabular-nums">
+              {set.reps}
+            </span>
+            <span className="py-2.5 text-center font-mono text-base font-bold tabular-nums">
+              {displayWeight}
+            </span>
+          </button>
+        )}
 
         {/* 56px de ancho (antes 44px): más área táctil, pedido explícito. */}
         <button
