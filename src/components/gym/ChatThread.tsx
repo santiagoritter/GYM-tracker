@@ -45,6 +45,7 @@ export default function ChatThread({
   const [sending, setSending] = useState(false)
   const [attachOpen, setAttachOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
+  const [loadError, setLoadError] = useState(false)
   // La otra parte de la conversación: a quien se reporta o bloquea.
   const otherId = meId === coachId ? clientId : coachId
   const [attachMode, setAttachMode] = useState<'menu' | 'exercise' | 'routine'>('menu')
@@ -61,19 +62,34 @@ export default function ChatThread({
 
   useEffect(() => {
     let alive = true
-    fetchThread(coachId, clientId).then((m) => {
-      if (alive) setMessages(m)
-    })
-    markThreadRead(coachId, clientId)
+    setLoadError(false)
+    fetchThread(coachId, clientId)
+      .then((m) => {
+        if (alive) setMessages(m)
+      })
+      .catch(() => {
+        // Sin esto el hilo se quedaba en blanco sin avisar si fallaba el
+        // fetch inicial (ej. sin conexión) — se confundía con "no hay
+        // mensajes todavía".
+        if (alive) setLoadError(true)
+      })
+    markThreadRead(coachId, clientId).catch(() => undefined)
     const sub = subscribeThread(coachId, clientId, (msg) => {
       setMessages((prev) => (prev.some((p) => p.id === msg.id) ? prev : [...prev, msg]))
-      if (msg.senderId !== meId) markThreadRead(coachId, clientId)
+      if (msg.senderId !== meId) markThreadRead(coachId, clientId).catch(() => undefined)
     })
     return () => {
       alive = false
       sub.close()
     }
   }, [coachId, clientId, meId])
+
+  const retryLoad = () => {
+    setLoadError(false)
+    fetchThread(coachId, clientId)
+      .then(setMessages)
+      .catch(() => setLoadError(true))
+  }
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: 'end' })
@@ -159,10 +175,22 @@ export default function ChatThread({
       )}
 
       <div className="flex-1 space-y-2 overflow-y-auto px-4 py-4">
-        {messages.length === 0 && (
-          <p className="py-12 text-center text-sm text-ink-3">
-            Todavía no hay mensajes. Escribí para arrancar.
-          </p>
+        {loadError ? (
+          <div className="flex flex-col items-center gap-3 py-12 text-center">
+            <p className="text-sm text-ink-3">No se pudo cargar la conversación.</p>
+            <button
+              onClick={retryLoad}
+              className="h-11 rounded-sm bg-surface px-4 text-sm font-semibold text-ink-2 active:opacity-70"
+            >
+              Reintentar
+            </button>
+          </div>
+        ) : (
+          messages.length === 0 && (
+            <p className="py-12 text-center text-sm text-ink-3">
+              Todavía no hay mensajes. Escribí para arrancar.
+            </p>
+          )
         )}
         {messages.map((m) => {
           const mine = m.senderId === meId
