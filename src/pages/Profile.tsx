@@ -212,7 +212,7 @@ export default function Profile() {
       )}
 
       <p className="text-center text-xs text-ink-3">
-        GymTracker v0.1 ·{' '}
+        Repe v0.1 ·{' '}
         {isGuest ? 'Tus datos viven solo en este teléfono' : 'Tus datos se respaldan en tu cuenta'}
       </p>
     </div>

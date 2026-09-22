@@ -58,8 +58,8 @@ export default defineConfig(({ mode }) => {
           rollupFormat: 'iife',
         },
         manifest: {
-          name: 'GymTracker',
-          short_name: 'GymTracker',
+          name: 'Repe',
+          short_name: 'Repe',
           description: 'Registro de entrenamientos minimalista y offline-first',
           theme_color: '#0A0A0A',
           background_color: '#0A0A0A',

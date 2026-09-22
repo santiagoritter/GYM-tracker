@@ -38,7 +38,7 @@ self.addEventListener('push', (event: PushEvent) => {
   } catch {
     return
   }
-  const title = payload.title ?? 'GymTracker'
+  const title = payload.title ?? 'Repe'
   event.waitUntil(
     self.registration.showNotification(title, {
       body: payload.body ?? '',

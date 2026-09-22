@@ -24,7 +24,7 @@ const ITEMS: { q: string; a: React.ReactNode }[] = [
   },
   {
     q: '¿Por qué no puedo controlar Spotify / ver mis playlists?',
-    a: 'GymTracker no reproduce música: controla lo que ya suena en tu Spotify. Necesitás tener Spotify abierto en algún dispositivo y una cuenta Premium para los controles. Si conectaste Spotify hace tiempo, puede que tengas que reconectar desde Ajustes → Conexiones para habilitar las playlists.',
+    a: 'Repe no reproduce música: controla lo que ya suena en tu Spotify. Necesitás tener Spotify abierto en algún dispositivo y una cuenta Premium para los controles. Si conectaste Spotify hace tiempo, puede que tengas que reconectar desde Ajustes → Conexiones para habilitar las playlists.',
   },
   {
     q: '¿Para qué usa el GPS?',
@@ -76,7 +76,7 @@ const SUBSCRIPTION_ITEM: { q: string; a: React.ReactNode } = {
 export default function FAQ() {
   const navigate = useNavigate()
   const mailto = (subject: string) =>
-    `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`GymTracker — ${subject}`)}`
+    `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`Repe — ${subject}`)}`
 
   return (
     <div className="mx-auto content-width pb-24">

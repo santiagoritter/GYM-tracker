@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>GymTracker</string>
+        <string>Repe</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -62,13 +62,13 @@
 		<string>location</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>GymTracker usa la cámara para escanear los QR de rutinas y para sacar las fotos de progreso.</string>
+	<string>Repe usa la cámara para escanear los QR de rutinas y para sacar las fotos de progreso.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>GymTracker accede a tus fotos para que puedas elegir una imagen de progreso desde la galería.</string>
+	<string>Repe accede a tus fotos para que puedas elegir una imagen de progreso desde la galería.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>GymTracker usa tu ubicación para trazar el recorrido, la distancia y el ritmo mientras registrás una salida a correr.</string>
+	<string>Repe usa tu ubicación para trazar el recorrido, la distancia y el ritmo mientras registrás una salida a correr.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Con permiso "Siempre", GymTracker sigue registrando tu recorrido aunque bloquees la pantalla durante una salida.</string>
+	<string>Con permiso "Siempre", Repe sigue registrando tu recorrido aunque bloquees la pantalla durante una salida.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSSupportsLiveActivities</key>
@@ -87,7 +87,7 @@
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-3940256099942544~1458002511</string>
 	<key>NSUserTrackingUsageDescription</key>
-	<string>GymTracker usa este permiso para mostrarte anuncios más relevantes. Si no lo aceptás, igual vas a ver anuncios, pero no personalizados.</string>
+	<string>Repe usa este permiso para mostrarte anuncios más relevantes. Si no lo aceptás, igual vas a ver anuncios, pero no personalizados.</string>
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict>

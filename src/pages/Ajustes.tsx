@@ -151,7 +151,7 @@ export default function Ajustes() {
 
   const handleInstall = async () => {
     const ok = await promptInstall()
-    if (ok) toast.success('Instalando', 'Buscá el ícono de GymTracker en tu pantalla de inicio.')
+    if (ok) toast.success('Instalando', 'Buscá el ícono de Repe en tu pantalla de inicio.')
   }
 
   const update = (patch: Partial<LocalProfile>) => {
@@ -298,7 +298,7 @@ export default function Ajustes() {
         {isGuest && (
           <div className="space-y-3 rounded-md border border-line-2 bg-surface p-4">
             <div>
-              <p className="font-semibold">Estás usando GymTracker sin cuenta</p>
+              <p className="font-semibold">Estás usando Repe sin cuenta</p>
               <p className="mt-1 text-[13px] leading-relaxed text-ink-3">
                 Tus datos están solo en este teléfono. Con una cuenta se respaldan en la nube, los
                 recuperás en otro dispositivo y podés vincularte con un coach. No perdés nada de lo que
@@ -718,7 +718,7 @@ export default function Ajustes() {
         )}
 
         <p className="px-1 text-center text-xs text-ink-3">
-          GymTracker v0.1 · Modo local
+          Repe v0.1 · Modo local
         </p>
       </div>
 

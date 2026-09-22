@@ -38,7 +38,7 @@ export default function RunPermissionGate({
       <div className="space-y-2">
         <h1 className="text-2xl font-bold">Permiso de ubicación</h1>
         <p className="text-[15px] leading-relaxed text-ink-2">
-          Para trackear tu salida a correr, GymTracker usa el GPS del teléfono y calcula
+          Para trackear tu salida a correr, Repe usa el GPS del teléfono y calcula
           distancia, ritmo, parciales por kilómetro y el recorrido en el mapa.
         </p>
         {isNative && (
@@ -53,7 +53,7 @@ export default function RunPermissionGate({
       {denied ? (
         <div className="space-y-3">
           <p className="rounded-sm bg-warning/10 p-3 text-[14px] text-warning">
-            El permiso está denegado. Habilitá la ubicación para GymTracker desde los ajustes
+            El permiso está denegado. Habilitá la ubicación para Repe desde los ajustes
             del sistema y volvé a intentar.
           </p>
           <button

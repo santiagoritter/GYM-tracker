@@ -12,7 +12,7 @@ import type { CapacitorConfig } from '@capacitor/cli'
  */
 const config: CapacitorConfig = {
   appId: 'com.santiagoritter.gymtracker',
-  appName: 'GymTracker',
+  appName: 'Repe',
   webDir: 'dist',
 
   // El contenido va embebido en el binario, no se descarga de un servidor:

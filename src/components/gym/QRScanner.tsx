@@ -83,7 +83,7 @@ export function QRScanner({ onClose }: { onClose: () => void }) {
             } else {
               setScanError(
                 navigator.onLine
-                  ? 'Ese código no es una rutina válida de GymTracker.'
+                  ? 'Ese código no es una rutina válida de Repe.'
                   : 'No hay conexión: conectate a internet para leer este código.'
               )
             }
@@ -113,7 +113,7 @@ export function QRScanner({ onClose }: { onClose: () => void }) {
       } else {
         alert(
           navigator.onLine
-            ? 'El texto pegado no es una rutina válida de GymTracker'
+            ? 'El texto pegado no es una rutina válida de Repe'
             : 'No hay conexión: conectate a internet para importar la rutina.'
         )
       }

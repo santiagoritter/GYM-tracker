@@ -3,11 +3,11 @@
 
 # Términos de uso — GymTracker
 
-Al crear una cuenta o usar GymTracker aceptás estos términos. Si no estás de acuerdo, no uses la app.
+Al crear una cuenta o usar Repe aceptás estos términos. Si no estás de acuerdo, no uses la app.
 
 ## Uso de la app y edad mínima
 
-GymTracker se ofrece para uso personal. Tenés que tener al menos **16 años** para crear una cuenta. Sos responsable de la información que cargás y de entrenar de forma segura.
+Repe se ofrece para uso personal. Tenés que tener al menos **16 años** para crear una cuenta. Sos responsable de la información que cargás y de entrenar de forma segura.
 
 ## Tu cuenta
 
@@ -23,7 +23,7 @@ Al registrar una salida o una sesión de cardio, prestá atención al entorno (t
 
 ## Modo coach
 
-El modo coach conecta a un entrenador con sus alumnos. Los coaches son **usuarios independientes**: GymTracker no los emplea, no garantiza sus servicios ni resultados, y **la verificación** (tilde) solo indica que se contrastó un dato de identidad, no acredita títulos ni capacidad profesional.
+El modo coach conecta a un entrenador con sus alumnos. Los coaches son **usuarios independientes**: Repe no los emplea, no garantiza sus servicios ni resultados, y **la verificación** (tilde) solo indica que se contrastó un dato de identidad, no acredita títulos ni capacidad profesional.
 
 Para ser coach tenés que tener al menos 18 años, cargar datos verdaderos y tratar la información de tus alumnos con confidencialidad, usándola solo para entrenarlos. Cada alumno decide si acepta un vínculo y puede terminarlo en cualquier momento; al terminar, el coach pierde el acceso a sus datos.
 
@@ -49,7 +49,7 @@ Tus datos viven en tu dispositivo y, con sesión, se respaldan en la nube. Hacé
 
 ## Propiedad intelectual
 
-GymTracker, su diseño y su código son de su desarrollador. Vos conservás tus datos y contenidos; nos das permiso para almacenarlos y mostrarlos solo para prestarte el servicio.
+Repe, su diseño y su código son de su desarrollador. Vos conservás tus datos y contenidos; nos das permiso para almacenarlos y mostrarlos solo para prestarte el servicio.
 
 ## Disponibilidad y limitación de responsabilidad
 

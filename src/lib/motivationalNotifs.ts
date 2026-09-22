@@ -56,7 +56,7 @@ export function buildMotivationalNotifications(refDate = new Date()): Motivation
     return {
       id: MOTIV_ID_BASE + i,
       title: quote.text,
-      body: quote.author ?? 'GymTracker',
+      body: quote.author ?? 'Repe',
       hour: slot.hour,
       minute: slot.minute,
     }

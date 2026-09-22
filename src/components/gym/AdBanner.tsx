@@ -75,10 +75,10 @@ export default function AdBanner() {
     <>
       <ResponsiveSheet onClose={accept} panelClassName="flex flex-col">
         <div className="space-y-3 px-5 pt-5 pb-2">
-          <h2 className="text-lg font-bold">Anuncios en GymTracker</h2>
+          <h2 className="text-lg font-bold">Anuncios en Repe</h2>
           <p className="text-[14px] leading-relaxed text-ink-2">
             La app es gratis y se sostiene con anuncios en las pantallas de consulta; nunca aparecen
-            mientras entrenás. A continuación iOS te va a preguntar si permitís que GymTracker te siga
+            mientras entrenás. A continuación iOS te va a preguntar si permitís que Repe te siga
             entre apps y sitios: si decís que no, igual ves anuncios, pero no personalizados.
           </p>
           {purchasesAvailable() && (

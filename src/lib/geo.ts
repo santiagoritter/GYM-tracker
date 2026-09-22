@@ -128,7 +128,7 @@ export async function startWatch(
       const id = await BackgroundGeolocation.addWatcher(
         {
           backgroundTitle: 'Registrando tu salida',
-          backgroundMessage: 'GymTracker está siguiendo tu recorrido',
+          backgroundMessage: 'Repe está siguiendo tu recorrido',
           requestPermissions: true,
           stale: false,
           distanceFilter: 5,

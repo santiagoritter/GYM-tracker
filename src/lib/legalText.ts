@@ -49,13 +49,13 @@ export function legalFlags(): Record<LegalFlag, boolean> {
 export const PRIVACY: LegalDoc = {
   title: 'Política de privacidad',
   intro: [
-    'GymTracker es una app de seguimiento de entrenamientos pensada para funcionar **sin conexión**: tus datos viven primero en tu dispositivo. Esta política explica qué datos se guardan, para qué, con quién se comparten y cómo los controlás.',
+    'Repe es una app de seguimiento de entrenamientos pensada para funcionar **sin conexión**: tus datos viven primero en tu dispositivo. Esta política explica qué datos se guardan, para qué, con quién se comparten y cómo los controlás.',
   ],
   sections: [
     {
       title: 'Quién es responsable',
       body: [
-        `El responsable del tratamiento es el desarrollador de GymTracker. Para cualquier consulta sobre tus datos escribinos a **${SUPPORT_EMAIL}**.`,
+        `El responsable del tratamiento es el desarrollador de Repe. Para cualquier consulta sobre tus datos escribinos a **${SUPPORT_EMAIL}**.`,
       ],
     },
     {
@@ -123,7 +123,7 @@ export const PRIVACY: LegalDoc = {
     {
       title: 'Menores',
       body: [
-        `GymTracker no está dirigida a menores de ${LEGAL_MIN_AGE} años y no recopilamos a sabiendas datos de menores de esa edad. Si creés que un menor creó una cuenta, escribinos y la eliminamos.`,
+        `Repe no está dirigida a menores de ${LEGAL_MIN_AGE} años y no recopilamos a sabiendas datos de menores de esa edad. Si creés que un menor creó una cuenta, escribinos y la eliminamos.`,
       ],
     },
     {
@@ -150,13 +150,13 @@ export const PRIVACY: LegalDoc = {
 export const TERMS: LegalDoc = {
   title: 'Términos de uso',
   intro: [
-    'Al crear una cuenta o usar GymTracker aceptás estos términos. Si no estás de acuerdo, no uses la app.',
+    'Al crear una cuenta o usar Repe aceptás estos términos. Si no estás de acuerdo, no uses la app.',
   ],
   sections: [
     {
       title: 'Uso de la app y edad mínima',
       body: [
-        `GymTracker se ofrece para uso personal. Tenés que tener al menos **${LEGAL_MIN_AGE} años** para crear una cuenta. Sos responsable de la información que cargás y de entrenar de forma segura.`,
+        `Repe se ofrece para uso personal. Tenés que tener al menos **${LEGAL_MIN_AGE} años** para crear una cuenta. Sos responsable de la información que cargás y de entrenar de forma segura.`,
       ],
     },
     {
@@ -180,7 +180,7 @@ export const TERMS: LegalDoc = {
     {
       title: 'Modo coach',
       body: [
-        'El modo coach conecta a un entrenador con sus alumnos. Los coaches son **usuarios independientes**: GymTracker no los emplea, no garantiza sus servicios ni resultados, y **la verificación** (tilde) solo indica que se contrastó un dato de identidad, no acredita títulos ni capacidad profesional.',
+        'El modo coach conecta a un entrenador con sus alumnos. Los coaches son **usuarios independientes**: Repe no los emplea, no garantiza sus servicios ni resultados, y **la verificación** (tilde) solo indica que se contrastó un dato de identidad, no acredita títulos ni capacidad profesional.',
         'Para ser coach tenés que tener al menos 18 años, cargar datos verdaderos y tratar la información de tus alumnos con confidencialidad, usándola solo para entrenarlos. Cada alumno decide si acepta un vínculo y puede terminarlo en cualquier momento; al terminar, el coach pierde el acceso a sus datos.',
         'Los acuerdos económicos entre coach y alumno por fuera de la app son responsabilidad de ambos.',
       ],
@@ -217,7 +217,7 @@ export const TERMS: LegalDoc = {
     {
       title: 'Propiedad intelectual',
       body: [
-        'GymTracker, su diseño y su código son de su desarrollador. Vos conservás tus datos y contenidos; nos das permiso para almacenarlos y mostrarlos solo para prestarte el servicio.',
+        'Repe, su diseño y su código son de su desarrollador. Vos conservás tus datos y contenidos; nos das permiso para almacenarlos y mostrarlos solo para prestarte el servicio.',
       ],
     },
     {

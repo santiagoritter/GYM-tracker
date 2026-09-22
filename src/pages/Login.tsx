@@ -186,7 +186,7 @@ export default function Login() {
         <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-accent">
           <Dumbbell size={32} className="text-bg" strokeWidth={2.5} />
         </div>
-        <h1 className="text-3xl font-bold tracking-tight">GymTracker</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Repe</h1>
         <p className="text-sm text-ink-3">Tu progreso, siempre con vos.</p>
       </div>
 
@@ -259,7 +259,7 @@ export default function Login() {
             Continuar sin cuenta
           </button>
           <p className="text-center text-[12px] leading-relaxed text-ink-3">
-            Usá GymTracker sin registrarte: tus datos quedan solo en este teléfono. Cuando quieras,
+            Usá Repe sin registrarte: tus datos quedan solo en este teléfono. Cuando quieras,
             creás una cuenta y se guardan en la nube sin perder nada.
           </p>
         </div>

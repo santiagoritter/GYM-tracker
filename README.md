@@ -1,4 +1,4 @@
-# GymTracker
+# Repe
 
 App de seguimiento de entrenamientos. Minimalista, offline-first, compartible.
 

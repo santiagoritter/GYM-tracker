@@ -119,7 +119,7 @@ export async function importBackup(userId: string, json: string, passphrase?: st
   }
 
   if (payload.v !== 1 || !payload.tables || typeof payload.tables !== 'object') {
-    throw new Error('No es un archivo de backup de GymTracker.')
+    throw new Error('No es un archivo de backup de Repe.')
   }
 
   await db.transaction('rw', SYNC_ORDER.map((name) => db.table(name)), async () => {

@@ -41,7 +41,7 @@ export default function LegalUpdateGate() {
             </h2>
             <p className="text-[14px] leading-relaxed text-ink-2">
               Agregamos información sobre el modo coach, el chat y los reportes, el borrado de
-              cuenta y el uso de tus datos. Para seguir usando GymTracker, revisalos y aceptalos.
+              cuenta y el uso de tus datos. Para seguir usando Repe, revisalos y aceptalos.
             </p>
           </div>
           <div className="flex flex-col gap-1 text-[15px] font-medium text-accent">

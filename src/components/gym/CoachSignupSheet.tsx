@@ -144,7 +144,7 @@ export default function CoachSignupSheet({ onClose }: { onClose: () => void }) {
         {step === 'terms' && (
           <>
             <ul className="space-y-2.5 text-[14px] leading-relaxed text-ink-2">
-              <li>• Sos un usuario independiente: GymTracker no te emplea ni garantiza tus servicios.</li>
+              <li>• Sos un usuario independiente: Repe no te emplea ni garantiza tus servicios.</li>
               <li>• Tenés al menos 18 años y los datos que cargás son verdaderos.</li>
               <li>
                 • Tratás la información de tus alumnos con confidencialidad y solo para

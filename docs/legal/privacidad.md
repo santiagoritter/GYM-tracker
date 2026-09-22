@@ -3,11 +3,11 @@
 
 # Política de privacidad — GymTracker
 
-GymTracker es una app de seguimiento de entrenamientos pensada para funcionar **sin conexión**: tus datos viven primero en tu dispositivo. Esta política explica qué datos se guardan, para qué, con quién se comparten y cómo los controlás.
+Repe es una app de seguimiento de entrenamientos pensada para funcionar **sin conexión**: tus datos viven primero en tu dispositivo. Esta política explica qué datos se guardan, para qué, con quién se comparten y cómo los controlás.
 
 ## Quién es responsable
 
-El responsable del tratamiento es el desarrollador de GymTracker. Para cualquier consulta sobre tus datos escribinos a **santiagoritter26@gmail.com**.
+El responsable del tratamiento es el desarrollador de Repe. Para cualquier consulta sobre tus datos escribinos a **santiagoritter26@gmail.com**.
 
 ## Qué datos tratamos
 
@@ -67,7 +67,7 @@ Podés acceder, corregir y **exportar** tus datos desde Ajustes → Datos (con o
 
 ## Menores
 
-GymTracker no está dirigida a menores de 16 años y no recopilamos a sabiendas datos de menores de esa edad. Si creés que un menor creó una cuenta, escribinos y la eliminamos.
+Repe no está dirigida a menores de 16 años y no recopilamos a sabiendas datos de menores de esa edad. Si creés que un menor creó una cuenta, escribinos y la eliminamos.
 
 ## Seguridad
 
