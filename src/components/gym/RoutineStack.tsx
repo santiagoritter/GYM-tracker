@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { ArrowLeftRight, Play, QrCode, Star, Trash2 } from 'lucide-react'
+import { ArrowLeftRight, Pencil, Play, QrCode, Star, Trash2 } from 'lucide-react'
 import { Card, Row } from '@/components/ui/Card'
 import Portal from '@/components/ui/Portal'
 import type { Routine, RoutineDay } from '@/types'
@@ -143,6 +143,13 @@ export default function RoutineStack({
                   <span className="truncate font-semibold">{routine.name}</span>
                 </button>
                 <div className="flex shrink-0">
+                  <button
+                    onClick={() => onEdit(routine)}
+                    aria-label={`Editar ${routine.name}`}
+                    className="flex h-11 w-9 items-center justify-center text-ink-3"
+                  >
+                    <Pencil size={18} />
+                  </button>
                   <button
                     onClick={() => onShare(routine)}
                     aria-label="Compartir por QR"

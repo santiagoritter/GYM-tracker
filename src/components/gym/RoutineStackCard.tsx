@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { motion } from 'motion/react'
-import { Play, QrCode, Repeat2, Star, Trash2, X } from 'lucide-react'
+import { Pencil, Play, QrCode, Repeat2, Star, Trash2, X } from 'lucide-react'
 import { Row } from '@/components/ui/Card'
 import type { Routine, RoutineDay } from '@/types'
 import { cn } from '@/lib/utils'
@@ -204,6 +204,16 @@ export default function RoutineStackCard({
                 )}
               </button>
               <div className="flex shrink-0">
+                {/* Explícito, al lado de QR/favorito/eliminar — antes la
+                    única forma de editar era tocar el nombre, sin ningún
+                    ícono que lo sugiriera. */}
+                <button
+                  onClick={onEdit}
+                  aria-label={`Editar ${routine.name}`}
+                  className="flex h-11 w-9 items-center justify-center text-ink-3"
+                >
+                  <Pencil size={18} />
+                </button>
                 <button
                   onClick={onShare}
                   aria-label="Compartir por QR"

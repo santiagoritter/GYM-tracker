@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { motion } from 'motion/react'
-import { Activity, ChevronRight, Footprints, Images, Play, Flame } from 'lucide-react'
+import { Activity, ChevronRight, Footprints, Play, Flame, Settings } from 'lucide-react'
 import { routinesFor, routineDaysOf, workoutsFor } from '@/db/scoped'
 import { nextRoutineDay, startWorkoutFromDay } from '@/db/routines'
 import { useWorkoutStore } from '@/stores/workoutStore'
@@ -215,13 +215,13 @@ export default function Home() {
         </motion.button>
         <motion.button
           whileTap={{ scale: 0.96 }}
-          onClick={() => navigate('/progreso?tab=photos')}
+          onClick={() => navigate('/perfil')}
           className="flex aspect-square flex-col items-center justify-center gap-2 rounded-2xl bg-surface"
         >
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-fill">
-            <Images size={20} className="text-ink-2" />
+            <Settings size={20} className="text-ink-2" />
           </div>
-          <span className="text-[12px] font-semibold text-ink-2">Fotos</span>
+          <span className="text-[12px] font-semibold text-ink-2">Ajustes</span>
         </motion.button>
       </div>
 
