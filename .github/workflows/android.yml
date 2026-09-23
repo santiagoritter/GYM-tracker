@@ -22,6 +22,11 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # `secrets` no se puede leer directo en un `if:` de step (GitHub lo
+    # rechaza al parsear el workflow, "Unrecognized named-value: secrets").
+    # Se pasa por una env var a nivel de job y se chequea esa.
+    env:
+      HAS_ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -47,7 +52,7 @@ jobs:
           VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
 
       - name: Fail early if the signing keystore secret is missing
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 == '' }}
+        if: ${{ env.HAS_ANDROID_KEYSTORE != 'true' }}
         run: |
           echo "::error::Falta el secret ANDROID_KEYSTORE_BASE64 (o está vacío) — sin firma de release no se publica nada. Ver docs/16-CAPACITOR.md."
           exit 1
