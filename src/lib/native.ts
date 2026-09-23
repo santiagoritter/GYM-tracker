@@ -111,7 +111,16 @@ export async function notify(
             id: id ?? Date.now() % 2147483647,
             title,
             body,
-            schedule: atSeconds ? { at: new Date(Date.now() + atSeconds * 1000) } : undefined,
+            // `allowWhileIdle`: sin esto, en Doze (Android 6+, pantalla
+            // apagada un rato) el SO puede demorar el aviso de fin de
+            // descanso varios minutos. Con esto, como mucho una vez cada
+            // 9 min según el propio límite de Doze — no es instantáneo al
+            // 100%, pero es lo más cerca que se puede llegar sin el
+            // permiso de alarma exacta (SCHEDULE_EXACT_ALARM, ya declarado
+            // en el manifest, pero el usuario lo puede tener denegado).
+            schedule: atSeconds
+              ? { at: new Date(Date.now() + atSeconds * 1000), allowWhileIdle: true }
+              : undefined,
           },
         ],
       })
