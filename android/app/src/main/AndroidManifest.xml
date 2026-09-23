@@ -9,6 +9,19 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
+        <!-- Requerido por el SDK de Google Mobile Ads (AdMob, plugin
+             @capacitor-community/admob) — sin esto la app crashea AL ABRIR,
+             ni siquiera hace falta llamar a `initialize()` para que reviente
+             (`MobileAdsInitProvider` corre antes que cualquier código JS).
+             El valor real viene de `admobAppId` en app/build.gradle (env
+             `ADMOB_APP_ID_ANDROID`); mientras no haya un ID propio cargado
+             usa el de prueba de Google. Ver src/lib/ads.ts — los anuncios
+             en sí siguen apagados por flag hasta cargar la key real, esto
+             solo evita el crash del SDK. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="${admobAppId}" />
+
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
             android:name=".MainActivity"
@@ -52,13 +65,26 @@
     <!-- Notificaciones (recordatorios + fin de descanso, Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- Modo running: ubicación en primer y segundo plano (B6). El servicio
-         de foreground lo declara el plugin @capacitor-community/background-geolocation
-         y se mergea acá; estas son las permission grants que el plugin necesita. -->
+    <!-- Modo running: ubicación mientras se usa la app, con un servicio de
+         foreground para seguir trackeando con la pantalla apagada (el
+         plugin @capacitor-community/background-geolocation declara el
+         servicio y estos mismos permisos en su propio manifest, se listan
+         acá también por claridad, el merge no duplica). Deliberadamente
+         SIN `ACCESS_BACKGROUND_LOCATION`: esa es la ubicación en segundo
+         plano SIN que la app esté en uso (mapas, geofencing) — el plugin no
+         la pide, y declararla sin necesitarla obliga a pasar la revisión
+         extra de "acceso a la ubicación en segundo plano" de Play Console. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+
+    <!-- Aviso de fin de descanso puntual (RestTimer). Sin esto, en Android
+         14+ el SO puede demorar la notificación varios minutos con la
+         pantalla apagada (Doze) — ver `native.ts` y `LocalNotificationManager`
+         del plugin, que ya soporta `allowWhileIdle` pero necesita este
+         permiso declarado para que el SO lo conceda. NO es
+         `USE_EXACT_ALARM`: ese lo restringe Play a apps de alarma/calendario. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 </manifest>

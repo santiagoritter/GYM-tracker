@@ -1,16 +1,17 @@
 name: Build Android APK
 
 # Manual: se corre desde la pestaña Actions → "Build Android APK" → Run workflow.
-# Compila la web SIN base path (build:native), sincroniza Capacitor y arma el
-# APK. Lo sube como artifact del run y, además, lo publica en un release
-# `android-latest` para tener un link de descarga directo y estable
-# (github.com/<repo>/releases/latest).
+# Compila la web SIN base path (build:native), sincroniza Capacitor y arma un
+# APK release + un AAB, firmados de verdad con el keystore de producción
+# (secret ANDROID_KEYSTORE_BASE64 + contraseñas/alias — sin eso el build
+# falla explícito en vez de publicar algo sin firmar o roto). Sube los dos
+# como artifacts del run y, si corre desde `main`, además publica el APK en
+# el release `android-latest` (link de descarga directo y estable,
+# github.com/<repo>/releases/latest). El AAB es el formato que exige Play
+# Store para publicar — se sube a Play Console a mano.
 #
-# Hoy firma con el keystore DEBUG (el APK instala, pero Android avisa
-# "app de origen desconocido"). Para un APK de release firmado de verdad:
-# generar un keystore, cargarlo como secrets (ANDROID_KEYSTORE_BASE64,
-# ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD) y
-# cambiar `assembleDebug` por `assembleRelease` + firma. Ver docs/16.
+# Paso a paso para generar el keystore y cargarlo a Play App Signing:
+# docs/16-CAPACITOR.md.
 
 on:
   workflow_dispatch:
@@ -45,31 +46,70 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
 
-      - name: Assemble debug APK
-        working-directory: android
-        run: ./gradlew assembleDebug --no-daemon
+      - name: Fail early if the signing keystore secret is missing
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 == '' }}
+        run: |
+          echo "::error::Falta el secret ANDROID_KEYSTORE_BASE64 (o está vacío) — sin firma de release no se publica nada. Ver docs/16-CAPACITOR.md."
+          exit 1
 
-      - name: Rename APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk gymtracker.apk
+      - name: Decode signing keystore
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/release.keystore
+
+      - name: Assemble release APK + AAB
+        working-directory: android
+        run: ./gradlew assembleRelease bundleRelease --no-daemon
+        env:
+          ANDROID_KEYSTORE_PATH: release.keystore
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_VERSION_CODE: ${{ github.run_number }}
+          ADMOB_APP_ID_ANDROID: ${{ secrets.ADMOB_APP_ID_ANDROID }}
+
+      - name: Verify the AdMob App ID landed in the merged manifest
+        # Si esto falta, el SDK de Google Mobile Ads crashea la app AL ABRIR
+        # (ver el comentario en AndroidManifest.xml) — se falla acá en vez de
+        # publicar un APK/AAB que no abre.
+        run: |
+          MANIFEST=$(find android/app/build -name AndroidManifest.xml -path "*release*" | head -1)
+          if [ -z "$MANIFEST" ]; then
+            echo "::error::No se encontró el AndroidManifest.xml procesado de release"
+            exit 1
+          fi
+          grep -q "com.google.android.gms.ads.APPLICATION_ID" "$MANIFEST" || {
+            echo "::error::Falta el APPLICATION_ID de AdMob en $MANIFEST"
+            exit 1
+          }
+
+      - name: Rename artifacts
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk gymtracker.apk
+          cp android/app/build/outputs/bundle/release/app-release.aab gymtracker.aab
 
       - uses: actions/upload-artifact@v4
         with:
           name: gymtracker-apk
           path: gymtracker.apk
 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gymtracker-aab
+          path: gymtracker.aab
+
       - name: Publish to android-latest release
         # Solo desde main: un APK armado desde otra rama (features a medio
         # terminar, flags distintos) no tiene que pisar el release público
-        # que la gente instala. Desde otra rama el paso anterior ya deja el
-        # APK como artifact del run, así que sigue disponible para probar.
+        # que la gente instala. Desde otra rama el APK y el AAB siguen
+        # disponibles como artifacts del run para probar.
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: android-latest
-          name: GymTracker para Android (último build)
+          name: Repe para Android (último build)
           body: |
-            APK de la última versión. Descargá `gymtracker.apk` y abrilo en el
-            teléfono (hay que permitir "instalar apps de esta fuente").
-            Build de depuración: Android puede avisar "origen desconocido".
+            APK firmado de la última versión (release, no debug). Descargá
+            `gymtracker.apk` y abrilo en el teléfono — Android igual va a
+            avisar "origen desconocido" al instalar algo fuera de Play, eso
+            es esperable al instalar así, no un problema de esta build.
           prerelease: true
           files: gymtracker.apk

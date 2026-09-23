@@ -1,5 +1,19 @@
 apply plugin: 'com.android.application'
 
+// Firma de release — ausente en dev local (sin secrets), presente en CI
+// (android.yml decodifica el secret ANDROID_KEYSTORE_BASE64 a un archivo y
+// exporta estas 4 variables antes de compilar). Sin esto `assembleRelease`
+// sigue compilando igual, solo que sin firmar — no rompe el build local.
+def releaseKeystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+def releaseKeystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+def releaseKeyAlias = System.getenv("ANDROID_KEY_ALIAS")
+def releaseKeyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+def hasReleaseSigning = releaseKeystorePath && releaseKeystorePassword && releaseKeyAlias && releaseKeyPassword
+
+// versionCode real por build de CI (github.run_number, sube siempre);
+// versionName alineado con package.json e iOS (MARKETING_VERSION).
+def ciVersionCode = System.getenv("ANDROID_VERSION_CODE")
+
 android {
     namespace = "com.santiagoritter.gymtracker"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,19 +21,37 @@ android {
         applicationId "com.santiagoritter.gymtracker"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode ciVersionCode ? ciVersionCode.toInteger() : 1
+        versionName "1.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        // Ver AndroidManifest.xml — App ID real de AdMob (o el de prueba de
+        // Google mientras no haya uno propio cargado).
+        manifestPlaceholders = [
+            admobAppId: (System.getenv("ADMOB_APP_ID_ANDROID") ?: "ca-app-pub-3940256099942544~3347511713")
+        ]
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (hasReleaseSigning) {
+            release {
+                storeFile file(releaseKeystorePath)
+                storePassword releaseKeystorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }

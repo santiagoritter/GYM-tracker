@@ -199,22 +199,62 @@ agenda algo (`LocalNotifications.requestPermissions()`), disparado por activar e
 ## Distribución del APK
 
 `.github/workflows/android.yml` (manual, desde Actions → "Build Android APK") compila la web
-con `build:native` (sin base path), sincroniza Capacitor, arma el APK y lo publica como
-asset del release `android-latest` — así hay un link de descarga directo y estable:
-`github.com/santiagoritter/GYM-tracker/releases/latest`. Ese link también está en `README.md`
-y en Ajustes → "La app" → "Descargar para Android".
+con `build:native` (sin base path), sincroniza Capacitor, arma el APK **y el AAB** de
+**release** (ya no debug) y publica el APK como asset del release `android-latest` — así hay
+un link de descarga directo y estable: `github.com/santiagoritter/GYM-tracker/releases/latest`
+(solo se pisa si el run corrió desde `main`; desde otra rama el APK/AAB quedan como artifact
+del run). Ese link también está en `README.md` y en Ajustes → "La app" → "Descargar para
+Android".
 
-Hoy firma con el **keystore debug** (instala, pero Android avisa "app de origen desconocido").
-Para un APK de release firmado de verdad:
+### Firma de release — ya generada
 
-1. Generar un keystore de subida:
-   `keytool -genkey -v -keystore gymtracker.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload`
-2. Cargar como secrets del repo: `ANDROID_KEYSTORE_BASE64` (`base64 -w0 gymtracker.jks`),
-   `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`.
-3. En el workflow, cambiar `assembleDebug` por `assembleRelease` + `signingConfig` que lea
-   esos secrets, o firmar con `apksigner` después del assemble.
+El keystore de firma (`repe-release.keystore`, alias `repe-release`, RSA 2048, válido hasta
+2056) ya está generado y cargado como 4 secrets del repo (`ANDROID_KEYSTORE_BASE64`,
+`ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` — es un keystore
+PKCS12, así que `ANDROID_KEYSTORE_PASSWORD` y `ANDROID_KEY_PASSWORD` son literalmente la misma
+contraseña, `keytool` no deja tener dos distintas en ese formato). `android/app/build.gradle`
+los lee por variable de entorno (`ANDROID_KEYSTORE_PATH`, etc.) y arma `signingConfigs.release`
+solo si están presentes — sin ellos, `assembleRelease` sigue compilando pero sin firmar (no
+rompe un build local sin las variables cargadas).
 
-Play Store queda para más adelante (revisión, ficha, cuenta de desarrollador 25 USD única vez).
+**Una sola clave, no dos** (a diferencia del setup con "upload key" + "app signing key"
+separadas que recomienda Google): la misma firma el AAB que se sube a Play Console y el APK
+que se distribuye desde GitHub. Es la elección deliberada para que instalar desde GitHub y
+después actualizar desde Play (o al revés) no obligue a desinstalar — las dos fuentes quedan
+firmadas igual.
+
+**Backup — crítico, sin esto no hay vuelta atrás.** El keystore y las contraseñas viven en
+`~/Repe-android-signing/` en la Mac de desarrollo (`repe-release.keystore` +
+`credentials.txt`, permisos `600`). Ese archivo **no está en git ni en ningún backup
+automático** — si se pierde el disco sin haberlo copiado a otro lado (un gestor de
+contraseñas, un backup cifrado aparte), la app queda sin forma de subir una actualización
+nueva a Play para siempre: hay que publicar como app nueva, con otro `applicationId`, y todos
+los usuarios pierden su instalación. **Copiar esos dos archivos a un lugar seguro y duradero
+es responsabilidad del dueño del proyecto, ninguna automatización de este repo lo hace por
+él.**
+
+### Cargar la misma clave en Play Console (Play App Signing)
+
+Al crear la app en Play Console por primera vez, en el paso de firma elegir **"Exportar y
+subir una clave desde un almacén de claves Java"** (no dejar que Google genere una nueva) y
+usar la utilidad **PEPK** de Google (`https://developer.android.com/studio/publish/app-signing#sign_release`)
+para cifrar `repe-release.keystore` con la clave pública que da Play Console en ese paso.
+Así el APK firmado con esta misma clave que sale de `android.yml` queda compatible con lo que
+Play termina distribuyendo.
+
+### Verificación de una build de release
+
+- `apksigner verify --print-certs app-release.apk` — el certificado tiene que coincidir con
+  `keytool -list -v -keystore repe-release.keystore` (mismo SHA-256).
+- Instalar la versión N y después la N+1 con `adb install -r` — tiene que actualizar sin
+  desinstalar (mismo certificado). Si Android pide desinstalar, algo firmó distinto.
+- CI falla explícito (no publica) si falta el secret `ANDROID_KEYSTORE_BASE64` o si el
+  `AndroidManifest.xml` procesado no trae el `APPLICATION_ID` de AdMob (ver más abajo).
+
+Play Store: cuenta de desarrollador (25 USD, pago único), ficha de la tienda, capturas,
+política de privacidad pública, y **prueba cerrada de 12 testers durante 14 días** antes de
+poder pasar a producción con una cuenta personal nueva — conviene subir el primer AAB a esa
+prueba cuanto antes, no dejarlo para el final.
 
 ## Instalación como PWA (sin APK)
 

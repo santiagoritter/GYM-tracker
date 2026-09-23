@@ -718,7 +718,7 @@ export default function Ajustes() {
         )}
 
         <p className="px-1 text-center text-xs text-ink-3">
-          Repe v0.1 · Modo local
+          Repe v1.0 · Modo local
         </p>
       </div>
 
