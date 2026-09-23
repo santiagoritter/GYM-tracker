@@ -237,57 +237,54 @@
     font-feature-settings: 'kern' 1, 'liga' 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Pull-to-refresh y rebote accidental del documento (antes vivía en
+       `body`, ver el porqué del movimiento en el comentario de abajo).
+       Solo el eje Y: el eje X en `none` rompe el gesto de "atrás" con dos
+       dedos del trackpad en Chrome de Mac. Se saca en iOS nativo
+       (`data-platform="ios-native"`, seteado en main.tsx) para no tocar
+       el rebote propio que ya tiene WKWebView. */
+    overscroll-behavior-y: none;
+  }
+  html[data-platform='ios-native'] {
+    overscroll-behavior-y: auto;
   }
   html, body {
     /* Red de seguridad: cualquier elemento que se pase de ancho (chips con
        scroll horizontal, inputs, etc.) generaba una franja vacía a la
-       derecha en vez de quedar contenido dentro de su propio contenedor. */
+       derecha en vez de quedar contenido dentro de su propio contenedor.
+       `hidden` primero por compatibilidad con iOS 15 (no entiende `clip`,
+       se queda con esta declaración); `clip` la pisa en todo lo demás y
+       es la causa real del bug de abajo: recorta igual pero, a diferencia
+       de `hidden`, no convierte al elemento en contenedor de scroll. */
     overflow-x: hidden;
-    /* Fase 6 (bug Android/Chrome: scroll con un dedo no anda, con dos sí) —
-       endurecimiento defensivo, NO una corrección confirmada: no se pudo
-       reproducir en este entorno. Investigación real hecha antes de tocar
-       esto: se leyó el código fuente instalado de `motion`
-       (framer-motion@13) y se descartó con evidencia el sospechoso
-       principal de la sesión anterior (la píldora `drag="x"` de la tab
-       bar) — usa Pointer Events modernos, con `touch-action` acotado al
-       propio elemento vía estilo inline (`pan-y` cuando drag="x", no
-       `none`), sin listeners globales en document/window al montar. Se
-       revisó también HoldButton.tsx/NumberStepper.tsx: mismo patrón,
-       acotado, sin fugas. No se encontró ningún `touch-action` en
-       elementos grandes o en el propio scroll root.
-       Este cambio deja explícito lo que hoy es implícito (`auto` en el
-       scroll root): el scroll vertical siempre tiene que estar permitido
-       acá, sin depender de que el navegador resuelva bien el default en
-       cualquier combinación de Android/Chrome. No cambia ningún
-       comportamiento existente si `auto` ya resolvía a esto — es una
-       afirmación explícita, no una restricción nueva. Si esto NO resuelve
-       el bug reportado, hace falta debug remoto real (chrome://inspect
-       con un Android conectado) para ver qué pasa de verdad: no hay forma
-       de reproducir esto en este entorno.
-
-       Actualización (reporte del usuario en dispositivo real, después de
-       este cambio): el bug sigue. Dato nuevo que achica la lista de
-       sospechosos — el arrastre SÍ funciona si arranca sobre la barra de
-       navegación (tab bar); el problema está en el resto de la pantalla,
-       no ahí. Esto descarta todavía más a la píldora `drag="x"` de la
-       tab bar (esa zona anda bien) y apunta a algo puntual del contenido
-       principal — más compatible con un elemento que capture el
-       puntero/gesto (`setPointerCapture`, o `preventDefault` en
-       `touchstart`/`pointerdown` sin soltar) que con un problema de
-       `touch-action` en general, ya que el fix de acá es global y no lo
-       resolvió. Sin evidencia todavía de qué componente es. Sigue sin
-       poder reproducirse en este entorno — hace falta debug remoto real
-       (chrome://inspect) para avanzar con evidencia en vez de otra
-       corrección a ciegas. Candidatos a revisar cuando eso sea posible:
-       componentes con gestos propios montados fuera de la tab bar
-       (RestTimer.tsx, los steppers dentro de ExerciseCard.tsx, los
-       sheets vía Portal). */
+    overflow-x: clip;
+    /* Causa raíz real del bug "en Android/PWA/PC no se puede scrollear"
+       (medida en Chromium headless, no es una hipótesis): con
+       `overflow-x: hidden` acá y en `body` a la vez, `body` pasaba a ser
+       SU PROPIO contenedor de scroll (con `overflow-y` implícito en
+       `auto`) pero con 0px de contenido para scrollear — todo el
+       documento mide lo mismo que `body`. `overscroll-behavior: none`
+       (antes en `body`, ver abajo) cortaba ahí la cadena de scroll: la
+       rueda o el dedo sobre el contenido llegaban a ese contenedor vacío
+       y no pasaban a la ventana. Con `overflow-x: clip` el elemento no
+       arma contenedor de scroll, así que la cadena sigue hasta la
+       ventana, que es la que de verdad tiene contenido para mover.
+       Por qué andaba en Android solo arrastrando desde la tab bar o el
+       header: son `position: fixed` (Layout.tsx), que se ubican respecto
+       de la ventana, no de `body` — su gesto saltea el contenedor roto.
+       En PC no andaba desde ningún lado porque ahí la barra lateral y el
+       header son `sticky`, dentro de `body`. Por qué SÍ andaba en iOS:
+       WKWebView no arma un scroller propio para un contenedor con 0px de
+       contenido (no verificado con WebKit real, es la explicación más
+       consistente con lo medido en Chromium). Se descartó con medición:
+       bloqueos por JS, listeners de wheel/touch/pointer (no hay ninguno
+       fuera de los internos de React, todos pasivos), overlays encima del
+       contenido y `touch-action` (con `auto` el bug seguía en 0). */
     touch-action: pan-y;
   }
   body {
     @apply min-h-screen font-sans;
     -webkit-tap-highlight-color: transparent;
-    overscroll-behavior: none;
     /* Mantener presionado (HoldButton, filas, chips) disparaba el menú de
        selección/copiar nativo de iOS por encima de la UI en vez del gesto
        propio de la app — se desactiva selección y "callout" global, y se

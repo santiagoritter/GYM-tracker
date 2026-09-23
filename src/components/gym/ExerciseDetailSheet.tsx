@@ -192,13 +192,6 @@ export default function ExerciseDetailSheet({ exercise, onClose }: Props) {
     return () => document.removeEventListener('keydown', handler)
   }, [onClose])
 
-  // Bloquear scroll del body cuando está abierto
-  useEffect(() => {
-    if (exercise) document.body.style.overflow = 'hidden'
-    else document.body.style.overflow = ''
-    return () => { document.body.style.overflow = '' }
-  }, [exercise])
-
   if (!exercise) return null
 
   return (

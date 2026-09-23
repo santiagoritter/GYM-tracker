@@ -58,6 +58,11 @@ jobs:
           path: gymtracker.apk
 
       - name: Publish to android-latest release
+        # Solo desde main: un APK armado desde otra rama (features a medio
+        # terminar, flags distintos) no tiene que pisar el release público
+        # que la gente instala. Desde otra rama el paso anterior ya deja el
+        # APK como artifact del run, así que sigue disponible para probar.
+        if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: android-latest
