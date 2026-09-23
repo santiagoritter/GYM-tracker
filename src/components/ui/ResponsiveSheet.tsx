@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from 'motion/react'
 import Portal from '@/components/ui/Portal'
 import { useSheetDrag } from '@/hooks/useSheetDrag'
 import { useIsDesktop } from '@/hooks/useMediaQuery'
+import { useScrollLock } from '@/hooks/useScrollLock'
 import { cn } from '@/lib/utils'
 import {
   sheetPanelVariantsFlex,
@@ -46,6 +47,11 @@ export default function ResponsiveSheet({
 }: ResponsiveSheetProps) {
   const isDesktop = useIsDesktop()
   const reduced = useReducedMotion()
+  // El fondo detrás del sheet no puede scrollear mientras está abierto —
+  // antes "no scrolleaba" por accidente (el bug de index.css dejaba
+  // muerto el scroll de toda la app); con ese bug arreglado, hace falta
+  // este bloqueo explícito.
+  useScrollLock()
 
   const variants = isDesktop
     ? reduced

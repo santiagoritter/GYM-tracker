@@ -9,7 +9,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { supabase } from '@/lib/supabaseClient'
 import { runSync } from '@/lib/sync'
 import type { UserRole } from '@/types'
-import { initNativeShell } from '@/lib/native'
+import { initNativeShell, isNative, platform } from '@/lib/native'
 import { initPwaUpdate } from '@/lib/pwaUpdate'
 import { initPwaInstall } from '@/lib/pwaInstall'
 import { ensureReminderChannel } from '@/lib/nativeReminders'
@@ -19,6 +19,12 @@ import '@/index.css'
 // No-op en el navegador; en nativo ajusta la barra de estado y oculta el
 // splash cuando la app ya puede dibujar.
 initNativeShell()
+
+// Consumido por index.css: en iOS nativo el rebote del documento
+// (overscroll) lo maneja WKWebView, así que ahí no se pisa con CSS.
+if (isNative && platform === 'ios') {
+  document.documentElement.dataset.platform = 'ios-native'
+}
 
 // No-op si no hay service worker (nativo, navegadores sin soporte). En web
 // registra el SW y pide activamente si hay versión nueva — ver el comentario

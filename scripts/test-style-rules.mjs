@@ -63,6 +63,43 @@ for (const file of files) {
   })
 }
 
+// ── Bug de scroll muerto en Android/PWA/PC (ver index.css) ─────────────────
+// `overflow-x: hidden` sobre un elemento que también tiene `overscroll-
+// behavior: none` (u otro overflow) lo convierte en su propio contenedor de
+// scroll, casi siempre con 0px de contenido para scrollear — la cadena de
+// scroll muere ahí. Dos reglas concretas para que no vuelva a colarse:
+//   1. Toda declaración `overflow-x: hidden` en un bloque CSS tiene que
+//      convivir con `overflow-x: clip` en el MISMO bloque (clip no arma
+//      contenedor de scroll; hidden solo queda de fallback para iOS 15).
+//   2. Un selector `body` (solo, sin `html` en el mismo selector) no puede
+//      declarar `overscroll-behavior`.
+const cssFiles = files.filter((f) => f.endsWith('.css'))
+for (const file of cssFiles) {
+  const rel = file.replace(SRC, 'src/')
+  const content = readFileSync(file, 'utf8')
+  const blockRe = /([^{};]+)\{([^{}]*)\}/g
+  let m
+  while ((m = blockRe.exec(content))) {
+    const selector = m[1].trim()
+    const body = m[2]
+    if (!selector || /^@/.test(selector)) continue
+
+    if (/overflow-x\s*:\s*hidden/.test(body) && !/overflow-x\s*:\s*clip/.test(body)) {
+      fail.push(
+        `${rel} selector "${selector}": overflow-x: hidden sin overflow-x: clip en el mismo bloque — convierte al elemento en su propio contenedor de scroll (ver index.css)`
+      )
+    }
+
+    const selectors = selector.split(',').map((s) => s.trim())
+    const isBareBody = selectors.includes('body') && !selectors.includes('html')
+    if (isBareBody && /overscroll-behavior/.test(body)) {
+      fail.push(
+        `${rel} selector "${selector}": overscroll-behavior en un selector "body" sin "html" — corta la cadena de scroll si body vuelve a ser un contenedor con 0px (ver index.css)`
+      )
+    }
+  }
+}
+
 console.log(`Archivos revisados: ${files.length}`)
 
 if (fail.length) {
