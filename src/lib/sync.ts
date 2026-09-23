@@ -193,7 +193,14 @@ export async function pullRemoteChanges(userId: string): Promise<boolean> {
   let hadError = false
 
   for (const table of SYNC_ORDER) {
-    const cursorKey = `pull_${table}`
+    // El cursor es por CUENTA, no global — antes era `pull_${table}` a
+    // secas, compartido por cualquier usuario que hubiera iniciado sesión
+    // en este dispositivo. Una segunda cuenta heredaba el cursor de la
+    // primera y nunca bajaba nada anterior a esa fecha. La clave vieja se
+    // borra (no se reutiliza): volver a bajar todo una vez es seguro, una
+    // fila con `dirty===1` sigue ganando más abajo.
+    const cursorKey = `pull_${userId}_${table}`
+    await db.syncState.delete(`pull_${table}`)
     const cursorRow = await db.syncState.get(cursorKey)
     const cursor = cursorRow?.value ?? '1970-01-01T00:00:00Z'
 

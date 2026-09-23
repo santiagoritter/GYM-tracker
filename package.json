@@ -17,6 +17,7 @@
     "test:levels": "esbuild scripts/test-muscle-group-levels.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/mgl.mjs --log-level=error && node node_modules/.tmp/mgl.mjs",
     "test:backup": "esbuild scripts/test-backup.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/backup.mjs --log-level=error && node node_modules/.tmp/backup.mjs",
     "test:user-id-remap": "esbuild scripts/test-user-id-remap.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/user-id-remap.mjs --log-level=error && node node_modules/.tmp/user-id-remap.mjs",
+    "test:wipe-local-data": "esbuild scripts/test-wipe-local-data.mts --bundle --platform=node --format=esm --alias:@=./src --define:import.meta.env={} --outfile=node_modules/.tmp/wipe-local-data.mjs --log-level=error && node node_modules/.tmp/wipe-local-data.mjs",
     "test:workout": "esbuild scripts/test-workout-summary.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/workout.mjs --log-level=error && node node_modules/.tmp/workout.mjs",
     "test:past": "esbuild scripts/test-past-workouts.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/past.mjs --log-level=error && node node_modules/.tmp/past.mjs",
     "test:quotes": "esbuild scripts/test-quotes.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/quotes.mjs --log-level=error && node node_modules/.tmp/quotes.mjs",
@@ -28,7 +29,7 @@
     "test:coach-draft": "esbuild scripts/test-coach-routine-draft.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/coach-draft.mjs --log-level=error && node node_modules/.tmp/coach-draft.mjs",
     "test:crypto": "esbuild scripts/test-crypto.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/crypto.mjs --log-level=error && node node_modules/.tmp/crypto.mjs",
     "test:rest-rec": "esbuild scripts/test-rest-recommendation.mts --bundle --platform=node --format=esm --alias:@=./src --outfile=node_modules/.tmp/rest-rec.mjs --log-level=error && node node_modules/.tmp/rest-rec.mjs",
-    "test": "npm run test:style && npm run test:db && npm run test:rec && npm run test:levels && npm run test:backup && npm run test:user-id-remap && npm run test:workout && npm run test:past && npm run test:quotes && npm run test:run && npm run test:session && npm run test:filter && npm run test:legal && npm run test:coach-draft && npm run test:crypto && npm run test:rest-rec"
+    "test": "npm run test:style && npm run test:db && npm run test:rec && npm run test:levels && npm run test:backup && npm run test:user-id-remap && npm run test:wipe-local-data && npm run test:workout && npm run test:past && npm run test:quotes && npm run test:run && npm run test:session && npm run test:filter && npm run test:legal && npm run test:coach-draft && npm run test:crypto && npm run test:rest-rec"
   },
   "dependencies": {
     "@capacitor-community/admob": "^8.1.0",

@@ -25,5 +25,11 @@ export const routineDaysOf = (routineId: string) =>
   db.routineDays.where('routineId').equals(routineId)
 export const routineExercisesOf = (dayId: string) =>
   db.routineExercises.where('dayId').equals(dayId)
+// Con userId propio (a diferencia de las otras tablas hijas de esta
+// sección): hace falta para consultas que cruzan TODAS las rutinas de un
+// usuario por `exerciseId` (ej. RestAnalytics, "en qué rutinas está este
+// ejercicio"), donde no hay un único `dayId` del cual partir.
+export const routineExercisesForUser = (userId: string) =>
+  db.routineExercises.where('userId').equals(userId)
 export const workoutSetsOf = (workoutId: string) =>
   db.workoutSets.where('workoutId').equals(workoutId)

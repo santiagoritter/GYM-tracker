@@ -4,6 +4,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { ChevronDown, Pencil, Timer, TrendingUp, Trash2 } from 'lucide-react'
 import { db } from '@/db/schema'
 import { softDelete } from '@/db/mutations'
+import { routineExercisesForUser } from '@/db/scoped'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useChartColors } from '@/hooks/useChartColors'
 import { suggestRestSeconds } from '@/lib/restRecommendation'
@@ -63,13 +64,20 @@ export function RestAnalytics() {
   // El descanso configurado hoy para este ejercicio: cualquier
   // RoutineExercise que lo use (puede estar en varias rutinas/días — se
   // toma el primero como referencia), o el default global si no está en
-  // ninguna rutina. Filtrado en memoria, no `.where('exerciseId')`: esa
-  // tabla nunca indexó ese campo (solo id/dayId/userId/exerciseOrder/dirty
-  // — ver schema.ts), un `.where()` sobre un keyPath no indexado tira en
+  // ninguna rutina. Acotado a este usuario (`routineExercisesForUser`) y
+  // filtrado por `exerciseId` en memoria, no `.where('exerciseId')`: esa
+  // tabla no indexa ese campo (solo id/dayId/userId/exerciseOrder/dirty —
+  // ver schema.ts), un `.where()` sobre un keyPath no indexado tira en
   // tiempo de ejecución ("KeyPath exerciseId on object store
   // routineExercises..."). Es una tabla chica (rutinas de un usuario), un
-  // filtro en memoria no pesa nada.
-  const allRoutineExercises = useLiveQuery(() => db.routineExercises.toArray(), []) ?? []
+  // filtro en memoria no pesa nada. Antes era `db.routineExercises.toArray()`
+  // sin acotar: en un dispositivo con más de una cuenta, tanto la lectura
+  // acá como el guardado de `applySuggestion` de abajo tocaban rutinas de
+  // OTRAS cuentas que compartieran el mismo `exerciseId`.
+  const allRoutineExercises = useLiveQuery(
+    () => (userId ? routineExercisesForUser(userId).toArray() : []),
+    [userId]
+  ) ?? []
   const routineEntries = useMemo(
     () => allRoutineExercises.filter((e) => e.exerciseId === effectiveExercise),
     [allRoutineExercises, effectiveExercise]

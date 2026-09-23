@@ -41,9 +41,12 @@ export async function migrateGuestData(newUserId: string): Promise<void> {
   clearGuestId()
 }
 
-/** Borra todo lo de este dispositivo y sale del modo sin cuenta. */
+/** Borra los datos de este invitado (no de otra cuenta que haya usado el
+ * mismo dispositivo) y sale del modo sin cuenta. */
 export async function discardGuestData(): Promise<void> {
-  await wipeLocalData()
+  const { userId } = useAuthStore.getState()
+  if (!userId) return
+  await wipeLocalData(userId)
 }
 
 /** ¿Hay datos de invitado con contenido real (para avisar antes de perderlos)? */

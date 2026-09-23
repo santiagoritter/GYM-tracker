@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { X } from 'lucide-react'
 import { deleteAccount } from '@/lib/deleteAccount'
 import { toast } from '@/stores/toastStore'
+import { useAuthStore } from '@/stores/authStore'
 import ResponsiveSheet from '@/components/ui/ResponsiveSheet'
 
 const CONFIRM_WORD = 'BORRAR'
@@ -13,15 +14,16 @@ const CONFIRM_WORD = 'BORRAR'
  * login.
  */
 export default function DeleteAccountSheet({ onClose }: { onClose: () => void }) {
+  const userId = useAuthStore((s) => s.userId)
   const [typed, setTyped] = useState('')
   const [busy, setBusy] = useState(false)
   const ready = typed.trim().toUpperCase() === CONFIRM_WORD
 
   const submit = async () => {
-    if (!ready || busy) return
+    if (!ready || busy || !userId) return
     setBusy(true)
     try {
-      await deleteAccount()
+      await deleteAccount(userId)
       window.location.reload()
     } catch (e) {
       toast.error('No se pudo borrar la cuenta', e instanceof Error ? e.message : 'Probá de nuevo.')
