@@ -72,22 +72,34 @@ export function QRScanner({ onClose }: { onClose: () => void }) {
 
           resolvingRef.current = true
           setResolving(true)
-          resolveScannedText(code.data).then((parsed) => {
-            if (cancelled) return
-            resolvingRef.current = false
-            setResolving(false)
-            if (parsed) {
-              navigator.vibrate?.(100)
-              setPayload(parsed)
-              setName(parsed.n)
-            } else {
-              setScanError(
-                navigator.onLine
-                  ? 'Ese código no es una rutina válida de Repe.'
-                  : 'No hay conexión: conectate a internet para leer este código.'
-              )
-            }
-          })
+          resolveScannedText(code.data)
+            .then((parsed) => {
+              if (cancelled) return
+              resolvingRef.current = false
+              setResolving(false)
+              if (parsed) {
+                navigator.vibrate?.(100)
+                setPayload(parsed)
+                setName(parsed.n)
+              } else {
+                setScanError(
+                  navigator.onLine
+                    ? 'Ese código no es una rutina válida de Repe.'
+                    : 'No hay conexión: conectate a internet para leer este código.'
+                )
+              }
+            })
+            .catch(() => {
+              // Sin este catch, un error acá (ej. resolveShareCode tirando
+              // en vez de devolver null) dejaba `resolvingRef.current` en
+              // `true` para siempre — el guard de la línea de arriba
+              // bloqueaba CUALQUIER escaneo siguiente hasta cerrar y
+              // volver a abrir el scanner.
+              if (cancelled) return
+              resolvingRef.current = false
+              setResolving(false)
+              setScanError('No se pudo leer el código. Probá de nuevo.')
+            })
         }, 300)
       } catch {
         if (!cancelled) setCameraError(true)
@@ -125,12 +137,18 @@ export function QRScanner({ onClose }: { onClose: () => void }) {
 
   const handleImport = async () => {
     if (!payload || !userId) return
-    const { routineId, skipped } = await importPayload(userId, payload, name)
-    if (skipped > 0) {
-      alert(`Rutina importada. ${skipped} ejercicio(s) no se encontraron en el catálogo y se omitieron.`)
+    try {
+      const { routineId, skipped } = await importPayload(userId, payload, name)
+      if (skipped > 0) {
+        alert(`Rutina importada. ${skipped} ejercicio(s) no se encontraron en el catálogo y se omitieron.`)
+      }
+      onClose()
+      navigate(`/rutina/${routineId}`)
+    } catch {
+      // Sin catch, un error acá dejaba al usuario mirando el preview sin
+      // ningún aviso de que la importación falló.
+      alert('No se pudo importar la rutina. Probá de nuevo.')
     }
-    onClose()
-    navigate(`/rutina/${routineId}`)
   }
 
   // ── Preview de importación ──

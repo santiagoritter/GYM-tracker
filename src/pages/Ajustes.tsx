@@ -268,8 +268,12 @@ export default function Ajustes() {
       )
     )
       return
-    await discardGuestData()
-    window.location.reload()
+    try {
+      await discardGuestData()
+      window.location.reload()
+    } catch (e) {
+      toast.error('No se pudo borrar', e instanceof Error ? e.message : 'Probá de nuevo.')
+    }
   }
 
   return (

@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { ONBOARDING_MESSAGES, getRandomMessage } from '@/lib/motivational'
 import { GOAL_OPTIONS as GOALS, LEVEL_OPTIONS as LEVELS } from '@/lib/strengthStandards'
 import { cn, nowIso } from '@/lib/utils'
+import { toast } from '@/stores/toastStore'
 import type { FitnessGoal, ExperienceLevel } from '@/types'
 
 const WELCOME_HIGHLIGHTS: { text: string; Icon: LucideIcon }[] = [
@@ -40,15 +41,18 @@ export default function Onboarding() {
   // tipear.
   useEffect(() => {
     if (!userId) return
-    db.profile.get(userId).then((profile) => {
-      if (!profile) return
-      if (profile.sex) setSex(profile.sex)
-      if (profile.dob) setDob(profile.dob)
-      if (profile.bodyWeightKg) setWeightKg(String(profile.bodyWeightKg))
-      if (profile.heightCm) setHeightCm(String(profile.heightCm))
-      if (profile.goal) setGoal(profile.goal)
-      if (profile.level) setLevel(profile.level)
-    })
+    db.profile
+      .get(userId)
+      .then((profile) => {
+        if (!profile) return
+        if (profile.sex) setSex(profile.sex)
+        if (profile.dob) setDob(profile.dob)
+        if (profile.bodyWeightKg) setWeightKg(String(profile.bodyWeightKg))
+        if (profile.heightCm) setHeightCm(String(profile.heightCm))
+        if (profile.goal) setGoal(profile.goal)
+        if (profile.level) setLevel(profile.level)
+      })
+      .catch(() => undefined)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId])
 
@@ -96,6 +100,8 @@ export default function Onboarding() {
       // pasivo de siempre.
       await Promise.race([runSync(userId), new Promise((resolve) => setTimeout(resolve, 3000))])
       navigate('/', { replace: true })
+    } catch (e) {
+      toast.error('No se pudo guardar', e instanceof Error ? e.message : 'Probá de nuevo.')
     } finally {
       setSaving(false)
     }

@@ -73,33 +73,42 @@ export async function syncReminderSchedule(
 
   if (profile.reminderEnabled !== 1 || !profile.reminderTime) return
 
-  const perm = await LocalNotifications.checkPermissions()
-  if (perm.display !== 'granted') {
-    const asked = await LocalNotifications.requestPermissions()
-    if (asked.display !== 'granted') return
+  // Todo lo de acá para abajo (permisos + schedule) quedaba SIN try/catch
+  // — llamada como `void syncReminderSchedule(profile)` desde
+  // reminders.ts, un error acá (permiso del SO, plugin) se volvía una
+  // promesa rechazada sin manejar.
+  try {
+    const perm = await LocalNotifications.checkPermissions()
+    if (perm.display !== 'granted') {
+      const asked = await LocalNotifications.requestPermissions()
+      if (asked.display !== 'granted') return
+    }
+
+    await ensureReminderChannel()
+
+    const [hour, minute] = profile.reminderTime.split(':').map(Number)
+    const days = profile.reminderDays ?? [1, 2, 3, 4, 5]
+    // Fecha con la hora del recordatorio, solo para que `getQuoteForNow`
+    // elija el daypart correcto (no importa el día concreto).
+    const refDate = new Date()
+    refDate.setHours(hour, minute, 0, 0)
+    const quote = getQuoteForNow(refDate)
+    const body = quote.author ? `${quote.text} — ${quote.author}` : quote.text
+
+    await LocalNotifications.schedule({
+      notifications: days.map((jsDay) => ({
+        id: REMINDER_ID_BASE + jsDay,
+        title: 'Hora de entrenar',
+        body,
+        channelId: CHANNEL_ID,
+        schedule: {
+          on: { weekday: jsDayToCapacitorWeekday(jsDay), hour, minute },
+          allowWhileIdle: true,
+        },
+      })),
+    })
+  } catch {
+    // Sin permiso, sin plugin, o el SO rechazó el schedule: el recordatorio
+    // simplemente no queda agendado — no hay nada más que hacer acá.
   }
-
-  await ensureReminderChannel()
-
-  const [hour, minute] = profile.reminderTime.split(':').map(Number)
-  const days = profile.reminderDays ?? [1, 2, 3, 4, 5]
-  // Fecha con la hora del recordatorio, solo para que `getQuoteForNow`
-  // elija el daypart correcto (no importa el día concreto).
-  const refDate = new Date()
-  refDate.setHours(hour, minute, 0, 0)
-  const quote = getQuoteForNow(refDate)
-  const body = quote.author ? `${quote.text} — ${quote.author}` : quote.text
-
-  await LocalNotifications.schedule({
-    notifications: days.map((jsDay) => ({
-      id: REMINDER_ID_BASE + jsDay,
-      title: 'Hora de entrenar',
-      body,
-      channelId: CHANNEL_ID,
-      schedule: {
-        on: { weekday: jsDayToCapacitorWeekday(jsDay), hour, minute },
-        allowWhileIdle: true,
-      },
-    })),
-  })
 }

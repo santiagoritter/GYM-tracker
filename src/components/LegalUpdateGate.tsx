@@ -5,6 +5,7 @@ import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { LEGAL_VERSION } from '@/lib/legal'
 import { nowIso } from '@/lib/utils'
 import Portal from '@/components/ui/Portal'
+import { toast } from '@/stores/toastStore'
 
 /**
  * Pide aceptar de nuevo los términos y la política cuando `LEGAL_VERSION`
@@ -24,7 +25,9 @@ export default function LegalUpdateGate() {
   if ((profile.legalVersion ?? 0) >= LEGAL_VERSION) return null
 
   const accept = () =>
-    db.profile.update(userId, { legalAcceptedAt: nowIso(), legalVersion: LEGAL_VERSION })
+    db.profile
+      .update(userId, { legalAcceptedAt: nowIso(), legalVersion: LEGAL_VERSION })
+      .catch(() => toast.error('No se pudo guardar', 'Probá de nuevo — el aviso sigue apareciendo hasta que se guarde.'))
 
   return (
     <Portal>
