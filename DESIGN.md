@@ -229,20 +229,33 @@ Prohibidas las de color y las de negro puro.
 
 ```
 mobile   32rem (512px)   columna centrada, es el max-w-lg de siempre
-desktop  sin tope fijo   en Inicio, Progreso y el panel de usuarios del
-                         admin, que pasan a grid multi-columna a partir
-                         de 1024px (`lg:`)
+desktop  sin tope fijo   en el panel de usuarios del admin y en el modo
+                         coach, que pasan a grid/tabla a partir de 1024px
 ```
 
-El **modo coach** también pasa a multi-columna en desktop: `/coach` es un
-master-detail (lista de alumnos de 20rem + panel del alumno seleccionado, con su
-progreso, rutinas y mensajes), y hasta 6xl de ancho. En mobile sigue siendo lista →
-pantalla de detalle.
+(Corregido: una auditoría de 2026-09 encontró que Inicio y Progreso NO
+pasan a multi-columna pese a que esta sección lo decía — quedó como deuda
+en `IDEAS.md`, no se inventa que ya existe.)
+
+El **modo coach** en desktop tiene DOS anchos de panel maestro, no uno:
+- **1024–1279px**: la tabla de alumnos (`CoachRosterTable`) ocupa todo el
+  ancho disponible; al elegir uno, su detalle reemplaza la tabla a pantalla
+  completa (con "← Alumnos" para volver) — no hay espacio real para los dos
+  a la vez sin apretar.
+- **≥1280px** (`xl:`): master-detail de verdad — panel maestro fijo de
+  26rem con scroll propio (`sticky`) + el detalle del alumno al lado, sin
+  tope de ancho. La tabla en el panel maestro es de 3 columnas (Alumno,
+  Último entreno, Semana): con 5 columnas en 26rem el navegador colapsaba
+  dos directamente a 0px de ancho (confirmado visualmente, no una
+  hipótesis) — PRs y mensajes van como indicadores chicos junto al nombre
+  en vez de columnas aparte.
+
+En mobile el modo coach sigue siendo lista → pantalla de detalle, sin tabla.
 
 El resto de las pantallas (listas lineales, flujos, detalle) mantiene la
 columna centrada también en desktop — forzar columnas ahí es la
-abstracción que no hace falta. El breakpoint único es 1024px: por debajo,
-la app es idéntica a hoy: un solo diseño mobile, sin ramas.
+abstracción que no hace falta. Fuera de la tabla del admin y la del coach,
+el breakpoint es 1024px sin ramas adicionales.
 
 ---
 

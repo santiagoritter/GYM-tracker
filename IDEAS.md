@@ -9,6 +9,31 @@ Orden: impacto real sobre el uso diario, no dificultad.
 
 ## Alto impacto
 
+### Multi-columna en Inicio y Progreso (desktop)
+`DESIGN.md` decía que estas dos pantallas pasaban a grid multi-columna
+desde 1024px — una auditoría de 2026-09 confirmó que no es así, siguen
+como la columna centrada mobile estirada. La corrección del texto ya se
+hizo (no mentir en la doc); implementarlo de verdad queda pendiente.
+
+### Coach en PC: lo que quedó afuera de la primera pasada del tablero
+Con el tablero en tabla (`CoachRosterTable`) + master-detail rehecho +
+no leídos en vivo ya andando, quedó afuera de esta tanda (por tiempo, no
+por dificultad):
+- **Bandeja de mensajes unificada** (`/coach?vista=mensajes`): una vista
+  de todos los hilos ordenados por el último mensaje. Hoy se entra al
+  chat de a un alumno por vez desde su panel.
+- **Caché en memoria por alumno** al cambiar de selección en el
+  master-detail: hoy cada click a un alumno repite el fetch completo de
+  `fetchClientProgress`, aunque se vuelva al mismo alumno en la misma
+  sesión.
+- **Acciones rápidas en la cabecera del alumno** (Mensaje / Nueva rutina
+  / Nota) y mover "Finalizar vínculo" a un menú "…" en vez de un botón
+  rojo a todo el ancho al pie del panel.
+- **Constructor de rutinas de escritorio** (biblioteca fija + rutina al
+  lado, arrastrar para ordenar), **metas y notas privadas del coach por
+  alumno** (tabla nueva), **adherencia** (heatmap reusado + 1RM por
+  ejercicio en el tiempo) y **exportar CSV** del alumno.
+
 ### Interacciones con spring physics (gestos reales, no CSS transitions)
 `~/.agents/skills/apple-design/SKILL.md` (secciones 1-11) describe cómo
 Apple construye drag/swipe/sheets con física de resortes interrumpible en

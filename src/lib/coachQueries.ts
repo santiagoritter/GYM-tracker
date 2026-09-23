@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabaseClient'
 import type { RoutineDraft } from '@/lib/coachRoutineDraft'
+import type { RosterClient } from '@/lib/coachRoster'
 import { uid } from '@/lib/utils'
 
 /**
@@ -61,6 +62,39 @@ export async function fetchMyClients(): Promise<ClientSummary[]> {
   return ((data ?? []) as { client_id: string; display_name: string | null; email: string; bonded_at: string }[]).map(
     (r) => ({ clientId: r.client_id, displayName: r.display_name, email: r.email, bondedAt: r.bonded_at })
   )
+}
+
+/** Tablero de alumnos (desktop): todo en una sola RPC (`coach_roster`,
+ * 0025) en vez de una consulta por alumno — con 30-50 alumnos eso eran
+ * igual de round-trips. La agregación/orden/filtro es pura y vive en
+ * coachRoster.ts (testeada aparte, sin red). */
+export async function fetchCoachRoster(): Promise<RosterClient[]> {
+  if (!supabase) return []
+  const { data, error } = await supabase.rpc('coach_roster')
+  if (error) throw error
+  return (
+    (data ?? []) as {
+      client_id: string
+      display_name: string | null
+      email: string
+      bonded_at: string
+      weekly_goal: number | null
+      last_workout_at: string | null
+      workouts_7d: number
+      prs_7d: number
+      unread: number
+    }[]
+  ).map((r) => ({
+    clientId: r.client_id,
+    displayName: r.display_name,
+    email: r.email,
+    bondedAt: r.bonded_at,
+    weeklyGoal: r.weekly_goal,
+    lastWorkoutAt: r.last_workout_at,
+    workouts7d: r.workouts_7d,
+    prs7d: r.prs_7d,
+    unread: r.unread,
+  }))
 }
 
 export async function fetchClientOverview(clientId: string): Promise<ClientOverview> {
