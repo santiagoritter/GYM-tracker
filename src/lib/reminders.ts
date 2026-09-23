@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '@/db/schema'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { getQuoteForNow } from '@/lib/quotes'
-import { isNative } from '@/lib/native'
+import { isNative, showWebNotification } from '@/lib/native'
 import { syncReminderSchedule } from '@/lib/nativeReminders'
 import { syncMotivationalSchedule } from '@/lib/motivationalNotifs'
 import { localDayKey } from '@/lib/stats'
@@ -23,16 +23,15 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
 function fireNotification() {
   if (!notificationsSupported() || Notification.permission !== 'granted') return
   const q = getQuoteForNow()
-  const notif = new Notification('Hora de entrenar', {
+  const iconUrl = `${import.meta.env.BASE_URL}icons/icon-192.png`
+  void showWebNotification('Hora de entrenar', {
     body: q.author ? `${q.text} — ${q.author}` : q.text,
-    icon: '/icons/icon-192.png',
-    badge: '/icons/icon-192.png',
+    // Antes era '/icons/icon-192.png' a secas: en Pages, servida bajo
+    // /GYM-tracker/, esa ruta absoluta daba 404 (el ícono nunca se veía).
+    icon: iconUrl,
+    badge: iconUrl,
     tag: 'gymtracker-reminder',
   })
-  notif.onclick = () => {
-    window.focus()
-    notif.close()
-  }
 }
 
 /**

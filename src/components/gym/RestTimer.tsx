@@ -85,7 +85,7 @@ export function RestTimer() {
     // sonaba al terminar Y otra vez (con háptico) al reabrir la app. En web
     // no existe notificación agendada — ahí sí hace falta disparar acá.
     if (!isNative) {
-      notify('Descanso terminado', getRandomMessage(REST_END_MESSAGES).text)
+      notify('Descanso terminado', getRandomMessage(REST_END_MESSAGES).text).catch(() => undefined)
     }
     // iOS: la Live Activity pasa a mostrar solo el próximo ejercicio.
     finishRestActivity(exerciseName)

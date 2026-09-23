@@ -90,7 +90,11 @@ export default function Run() {
     if (phase !== 'setup') return
     let cleared = false
     let watch: GeoWatch | null = null
-    startWatch(() => setSetupFix(true)).then((w) => {
+    // `background: false`: acá solo hace falta señal para mostrar "GPS
+    // listo" antes de arrancar — sin esto, `startWatch` por default pide
+    // permiso de ubicación "Siempre" (background) recién para eso, antes
+    // de que el usuario ni arrancara la salida.
+    startWatch(() => setSetupFix(true), { background: false }).then((w) => {
       if (cleared) w.clear()
       else watch = w
     })

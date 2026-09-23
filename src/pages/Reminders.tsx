@@ -12,7 +12,7 @@ import {
   notificationsSupported,
   requestNotificationPermission,
 } from '@/lib/reminders'
-import { isNative, notify } from '@/lib/native'
+import { isNative, notify, showWebNotification } from '@/lib/native'
 import { isPushAvailable, subscribeToPush, unsubscribeFromPush } from '@/lib/webPush'
 
 // getDay(): 0 = domingo … 6 = sábado. Orden de visualización lunes→domingo.
@@ -125,9 +125,12 @@ export default function Reminders() {
       toast.error('Permiso denegado', 'Habilitá las notificaciones en tu navegador.')
       return
     }
-    new Notification('Hora de entrenar', {
+    // `new Notification()` directo tira "Illegal constructor" en Chrome
+    // Android y otros navegadores mobile; el ícono además era una ruta
+    // absoluta que en Pages (bajo /GYM-tracker/) daba 404.
+    await showWebNotification('Hora de entrenar', {
       body: 'Así se va a ver tu recordatorio.',
-      icon: '/icons/icon-192.png',
+      icon: `${import.meta.env.BASE_URL}icons/icon-192.png`,
     })
   }
 
@@ -184,8 +187,10 @@ export default function Reminders() {
         </Card>
 
         {/* Frases motivacionales: independiente del recordatorio de arriba.
-            3 horarios fijos (mañana/tarde/noche), agendadas con el SO en la
-            app instalada — ver motivationalNotifs.ts. */}
+            3 horarios fijos (mañana/tarde/noche), agendadas con el SO — solo
+            existe en nativo (motivationalNotifs.ts/reminders.ts la agendan
+            solo si isNative). En web el switch se veía y no hacía nada. */}
+        {isNative && (
         <Card>
           <Row onClick={handleToggleMotiv}>
             <div className="min-w-0 flex-1">
@@ -209,6 +214,7 @@ export default function Reminders() {
             </span>
           </Row>
         </Card>
+        )}
 
         {/* Hora */}
         <section>

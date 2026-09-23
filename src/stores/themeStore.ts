@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { syncStatusBarStyle } from '@/lib/native'
 
 export type Theme = 'dark' | 'light'
 
@@ -40,4 +41,8 @@ export function applyTheme(theme: Theme): void {
   document
     .querySelector('meta[name="theme-color"]')
     ?.setAttribute('content', isLight ? '#F2F2F5' : '#0B0B0C')
+  // No-op en web; en nativo mantiene legible el texto de la barra de
+  // estado con el tema actual (antes quedaba fija en "texto claro" desde
+  // el arranque, ilegible en tema claro).
+  void syncStatusBarStyle(theme)
 }

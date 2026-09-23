@@ -13,6 +13,45 @@ export const isNative = Capacitor.isNativePlatform()
 export const platform = Capacitor.getPlatform() as 'ios' | 'android' | 'web'
 
 /**
+ * Notificación web (fuera de nativo): por el service worker si hay uno
+ * activo, si no por el constructor directo. Chrome Android (y otros
+ * navegadores mobile) tiran "Illegal constructor" con `new Notification()`
+ * — ahí SOLO anda vía `ServiceWorkerRegistration.showNotification()`. El
+ * click de una notificación mostrada por el SW ya lo maneja el propio SW
+ * (`notificationclick` en src/sw.ts), no hace falta duplicarlo acá.
+ */
+export async function showWebNotification(
+  title: string,
+  options: NotificationOptions
+): Promise<void> {
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
+  if ('serviceWorker' in navigator) {
+    try {
+      const reg = await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 1000)),
+      ])
+      if (reg) {
+        await reg.showNotification(title, options)
+        return
+      }
+    } catch {
+      // Sigue al fallback de abajo.
+    }
+  }
+  try {
+    const notif = new Notification(title, options)
+    notif.onclick = () => {
+      window.focus()
+      notif.close()
+    }
+  } catch {
+    // Constructor no soportado (mobile) y sin SW disponible: no hay más
+    // nada que hacer acá, no es un error del usuario.
+  }
+}
+
+/**
  * Vibración corta de confirmación (completar una serie).
  *
  * En nativo usa el motor háptico, que en iOS es notablemente mejor que
@@ -86,7 +125,7 @@ export async function notify(
   // En web no se puede programar a futuro sin un service worker con push:
   // el llamador se encarga del timing.
   if (atSeconds) return
-  new Notification(title, { body, silent: false })
+  await showWebNotification(title, { body, silent: false })
 }
 
 /** Id fijo de la notificación de fin de descanso. Rango propio: no pisa
@@ -109,22 +148,37 @@ export async function cancelRestNotification(): Promise<void> {
 }
 
 /**
- * Ajustes de arranque en nativo: barra de estado clara sobre fondo oscuro y
- * ocultar el splash recién cuando la app está lista para dibujar.
+ * Ajustes de arranque en nativo: ocultar el splash recién cuando la app
+ * está lista para dibujar. La barra de estado la sincroniza
+ * `syncStatusBarStyle` (llamada desde `applyTheme` en main.tsx, justo
+ * después de esto) — antes se seteaba acá una sola vez, fija en
+ * `Style.Dark` (texto claro), y quedaba ilegible si el usuario tenía o
+ * pasaba a tema claro (texto claro sobre fondo ahora claro).
  */
 export async function initNativeShell(): Promise<void> {
   if (!isNative) return
   try {
-    const [{ StatusBar, Style }, { SplashScreen }] = await Promise.all([
-      import('@capacitor/status-bar'),
-      import('@capacitor/splash-screen'),
-    ])
-    await StatusBar.setStyle({ style: Style.Dark })
-    if (platform === 'android') {
-      await StatusBar.setBackgroundColor({ color: '#0B0B0C' })
-    }
+    const { SplashScreen } = await import('@capacitor/splash-screen')
     await SplashScreen.hide()
   } catch {
-    // Si algún plugin no está, la app arranca igual
+    // Si el plugin no está, la app arranca igual
+  }
+}
+
+/**
+ * Sincroniza la barra de estado nativa con el tema actual. Se llama desde
+ * `applyTheme` (themeStore.ts) — el único lugar que ya aplica un cambio de
+ * tema — tanto al arrancar como en cada toggle desde Ajustes.
+ */
+export async function syncStatusBarStyle(theme: 'light' | 'dark'): Promise<void> {
+  if (!isNative) return
+  try {
+    const { StatusBar, Style } = await import('@capacitor/status-bar')
+    await StatusBar.setStyle({ style: theme === 'light' ? Style.Light : Style.Dark })
+    if (platform === 'android') {
+      await StatusBar.setBackgroundColor({ color: theme === 'light' ? '#F2F2F5' : '#0B0B0C' })
+    }
+  } catch {
+    // Sin el plugin disponible, no hay nada más que hacer acá.
   }
 }
