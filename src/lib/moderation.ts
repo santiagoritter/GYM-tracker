@@ -2,9 +2,13 @@ import { supabase } from '@/lib/supabaseClient'
 
 /**
  * Reportar y bloquear (Guideline 1.2). Las tablas `reports` y `blocks` y la
- * RPC `block_user` viven en la migración 0017. La identidad del que reporta o
- * bloquea sale de la sesión del lado del servidor (RLS / `auth.uid()`), acá no
- * se manda un userId propio para decidir qué se escribe.
+ * RPC `block_user` viven en la migración 0017. `reportContent` SÍ manda
+ * `reporter_id` en el insert (hace falta, es una columna de la fila) — lo
+ * que no se puede es mentir con él: la policy `reports_insert_own`
+ * (0017:141-143) tiene un `WITH CHECK (reporter_id = auth.uid())`, así que
+ * el servidor rechaza cualquier insert que intente reportar en nombre de
+ * otro. La identidad la sigue resolviendo el servidor, no el valor que
+ * manda el cliente.
  */
 
 export type ReportReason = 'spam' | 'abuse' | 'inappropriate' | 'impersonation' | 'other'

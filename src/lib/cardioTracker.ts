@@ -1,6 +1,7 @@
 import { useCardioStore } from '@/stores/cardioStore'
 import { cardioMachine, currentDistanceKm } from '@/lib/cardio'
 import { endRunActivity, startRunActivity, updateRunActivity } from '@/lib/liveActivity'
+import { platform } from '@/lib/native'
 
 /**
  * Live Activity de cardio, desacoplada de la pantalla (mismo motivo que
@@ -28,6 +29,11 @@ function pushUpdate(): void {
 }
 
 export function startCardioTracking(): void {
+  // Live Activities son solo iOS (`liveActivity.ts` ya lo resuelve con
+  // `iosOnly`, es no-op en Android/web) — pero sin este chequeo acá el
+  // intervalo se armaba igual en cualquier plataforma, despertando cada
+  // 10s para terminar llamando a una función que no hace nada.
+  if (platform !== 'ios') return
   if (timer) return
   const s = useCardioStore.getState().session
   if (!s) return
