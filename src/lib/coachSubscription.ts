@@ -1,11 +1,10 @@
-import { purchasesAvailable } from '@/lib/purchases'
+import { useAppConfigStore } from '@/stores/appConfigStore'
 
 /**
  * Plan del modo coach. Precio y beneficios en un solo lugar (los usan el alta
  * de coach, la pantalla de plan y el paywall). El cobro real es una compra
  * dentro de la app vía StoreKit (Guideline 3.1.1: las funciones digitales no
- * pueden cobrarse por fuera) y se activa con `VITE_PURCHASES_ENABLED=on`; con
- * el flag apagado el modo coach es gratis y las pantallas lo dicen.
+ * pueden cobrarse por fuera).
  */
 
 export const COACH_PRICE_USD = 5
@@ -22,9 +21,20 @@ export const COACH_PERKS = [
   'Perfil público con reseñas y sello de verificado',
 ] as const
 
-/** ¿Se cobra el modo coach en este build? Solo si las compras están activas y
- * disponibles (iOS con RevenueCat configurado). En web/Android o sin las keys el
- * modo coach queda gratis: no se muestra un paywall que no se puede pagar. */
-export function isCoachBillingEnabled(): boolean {
-  return purchasesAvailable()
+/** ¿Se cobra el modo coach? Lo decide el SERVIDOR (`app_config`, migración
+ * 0024), no la plataforma — antes esto miraba `purchasesAvailable()`
+ * (true solo en iOS con RevenueCat configurado), así que un coach podía
+ * darse de alta gratis desde la web o Android con el mismo resultado
+ * final que pagando en iOS. Ver `become-coach`, que exige la misma
+ * suscripción del lado del servidor, y `appConfigStore.ts`. En una
+ * plataforma sin compras disponibles, la UI (`CoachSubscribeBlock`) igual
+ * respeta esto — solo cambia si puede mostrar el botón de comprar o un
+ * aviso de "suscribite desde la app de iOS".
+ *
+ * Hook, no función plana: `loadAppConfig()` resuelve asíncrono al
+ * arrancar, así que un componente montado antes de esa respuesta
+ * necesita re-renderizar cuando el valor cambia — una lectura suelta con
+ * `.getState()` se hubiera quedado pegada al primer valor. */
+export function useCoachBillingEnabled(): boolean {
+  return useAppConfigStore((s) => s.coachBillingRequired)
 }

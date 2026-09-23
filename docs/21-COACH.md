@@ -155,9 +155,31 @@ vuelve a pendiente si cambian nombre/bio/DNI. **Prueba**: `supabase/tests/coach_
 
 **Alta en 3 pasos (0019).** Ficha (nombre, DNI, experiencia, ciudad, especialidades,
 certificaciones, bio) → plan (US$5/mes, `CoachPlanCard`) → términos de coach
-(`coaches.terms_version`). No se pide foto del DNI. Con las compras activas el paso 2
-exige la suscripción (`CoachSubscribeBlock`); el servidor lo exige con
-`REQUIRE_COACH_SUBSCRIPTION=on`.
+(`coaches.terms_version`). No se pide foto del DNI.
+
+**Cobro del modo coach: lo decide el servidor, no la plataforma (0024).** Antes
+el cliente miraba `purchasesAvailable()` (true solo en iOS con RevenueCat
+configurado) y el servidor un secret de Edge Function
+(`REQUIRE_COACH_SUBSCRIPTION`) que nadie sincronizaba con eso — con el secret
+apagado (su default), cualquiera se daba de alta gratis desde la web y usaba
+el modo coach en iOS con la misma cuenta. Ahora hay una sola fuente de verdad:
+`app_config.coach_billing_required` (tabla de una fila, lectura pública, solo
+se escribe a mano). La lee el cliente (`appConfigStore.ts` → `useCoachBillingEnabled()`
+en `coachSubscription.ts`, cacheado offline con `false` por defecto) y el
+servidor (`become-coach`, que exige la suscripción cuando está prendido). El
+webhook de RevenueCat mapea por `entitlement_ids` (no por `product_id`: en
+Android el product_id es compuesto, `producto:basePlanId`, y un mapeo exacto
+nunca matcheaba ahí) y solo revoca el rol al vencer si el flag está prendido
+— con el cobro apagado, nadie pagó nada, así que nada le saca el rol.
+
+**Antes de prender `coach_billing_required` en producción:** las builds
+nuevas (que ya leen el flag del servidor, no de la plataforma) tienen que
+estar publicadas en las 3 plataformas — iOS, Android y la PWA — si no, un
+cliente viejo instalado sigue con el comportamiento anterior mientras el
+servidor ya empezó a exigir. Al prender el flag (UPDATE directo en el SQL
+Editor, no hay UI para esto): correr `scripts/enforce-coach-billing.mjs`
+para bajarle el rol a los coaches sin una suscripción vigente (primero en
+dry-run, sin `--confirm`, para ver a quién afecta).
 
 **Progreso completo del alumno (0020).** `coachClientData.ts` lee en vivo (paginado,
 sin borrados): entrenos con series (al expandir), PRs, medidas, logros, descansos,

@@ -1,5 +1,5 @@
 import { Check } from 'lucide-react'
-import { COACH_PERKS, COACH_PRICE_USD, isCoachBillingEnabled } from '@/lib/coachSubscription'
+import { COACH_PERKS, COACH_PRICE_USD, useCoachBillingEnabled } from '@/lib/coachSubscription'
 
 /**
  * Tarjeta del plan de coach: precio + beneficios. La usan el paso "Plan" del
@@ -7,7 +7,7 @@ import { COACH_PERKS, COACH_PRICE_USD, isCoachBillingEnabled } from '@/lib/coach
  * Con el cobro apagado muestra que el modo coach es gratis (sin botones muertos).
  */
 export default function CoachPlanCard() {
-  const billing = isCoachBillingEnabled()
+  const billing = useCoachBillingEnabled()
   return (
     <div className="rounded-xl bg-surface p-5">
       <p className="text-[14px] font-semibold text-accent">Modo coach</p>

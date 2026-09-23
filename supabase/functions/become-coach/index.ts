@@ -17,11 +17,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-// Con `REQUIRE_COACH_SUBSCRIPTION=on` (supabase secrets set) activar el modo coach
-// exige una suscripción de coach vigente (tabla `subscriptions`, la escribe el
-// webhook de RevenueCat). Apagado por defecto: el modo coach es gratis hasta que
-// se decida cobrar.
-const REQUIRE_SUBSCRIPTION = Deno.env.get('REQUIRE_COACH_SUBSCRIPTION') === 'on'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -83,7 +78,18 @@ Deno.serve(async (req) => {
   if (dni.length < 7 || dni.length > 9) return json({ error: 'DNI inválido.' }, 400)
 
   try {
-    if (REQUIRE_SUBSCRIPTION && currentRole !== 'admin') {
+    // Antes leía un secret de Edge Function (REQUIRE_COACH_SUBSCRIPTION) que
+    // nadie sincronizaba con lo que el CLIENTE mostraba (que decidía según
+    // la plataforma, no según si de verdad se cobraba) — con el secret
+    // apagado (su default), cualquiera se daba de alta gratis. Ahora hay una
+    // sola fuente de verdad en la base, que también lee el cliente
+    // (`app_config`, ver 0024_billing_config.sql / appConfigStore.ts).
+    const { data: config } = await admin
+      .from('app_config')
+      .select('coach_billing_required')
+      .eq('id', true)
+      .maybeSingle()
+    if (config?.coach_billing_required && currentRole !== 'admin') {
       const { data: sub } = await admin
         .from('subscriptions')
         .select('status, expires_at')

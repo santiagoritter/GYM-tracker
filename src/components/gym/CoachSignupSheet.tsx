@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, X } from 'lucide-react'
 import { becomeCoach } from '@/lib/coachSelfSignup'
-import { COACH_TERMS_VERSION, isCoachBillingEnabled } from '@/lib/coachSubscription'
+import { COACH_TERMS_VERSION, useCoachBillingEnabled } from '@/lib/coachSubscription'
 import { parseOptionalInt } from '@/lib/parseNumber'
 import { toast } from '@/stores/toastStore'
 import ResponsiveSheet from '@/components/ui/ResponsiveSheet'
@@ -45,7 +45,7 @@ export default function CoachSignupSheet({ onClose }: { onClose: () => void }) {
   const stepIndex = STEPS.indexOf(step)
   const coachEntitled = useEntitlementsStore((s) => s.coach)
   // Con el cobro prendido, el alta se destraba recién con la suscripción activa.
-  const needsSubscription = isCoachBillingEnabled() && !coachEntitled
+  const needsSubscription = useCoachBillingEnabled() && !coachEntitled
 
   const validateDetails = (): string | null => {
     if (!details.displayName.trim()) return 'Falta el nombre público. Es el que van a ver tus alumnos.'

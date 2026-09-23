@@ -19,6 +19,7 @@ import { ensureQuotesChannel } from '@/lib/motivationalNotifs'
 import { initSpotifyNativeCallback } from '@/lib/spotifyNativeCallback'
 import { endRestActivity } from '@/lib/liveActivity'
 import { applyTheme, useThemeStore } from '@/stores/themeStore'
+import { loadAppConfig } from '@/stores/appConfigStore'
 import '@/index.css'
 
 // No-op en el navegador; en nativo ajusta la barra de estado y oculta el
@@ -138,6 +139,10 @@ if (supabase) {
 if (useAuthStore.getState().isGuest) void initPurchases(null).catch(() => undefined)
 
 seedIfEmpty()
+
+// Config pública del servidor (hoy: si se cobra el modo coach). Se queda
+// con el último valor conocido hasta que esto resuelva — ver appConfigStore.ts.
+void loadAppConfig()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

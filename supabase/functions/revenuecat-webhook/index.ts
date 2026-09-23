@@ -1,9 +1,12 @@
 // Supabase Edge Function: revenuecat-webhook
 //
 // Recibe los eventos de RevenueCat (compra, renovación, vencimiento…) y deja
-// `subscriptions` al día. Al VENCER una suscripción de coach, el usuario deja
-// de ser coach (rol → user y se terminan los vínculos con sus alumnos) — el
-// mismo efecto que `leave-coach`.
+// `subscriptions` al día. Al VENCER una suscripción de coach, y solo si
+// `app_config.coach_billing_required` está prendido, el usuario deja de ser
+// coach (rol → user y se terminan los vínculos con sus alumnos) — el mismo
+// efecto que `leave-coach`. Con el cobro apagado (modo gratis), una
+// suscripción que vence no le saca el rol a nadie — nunca se lo exigió para
+// tenerlo.
 //
 // Autenticación: RevenueCat no manda un JWT de Supabase; en su dashboard
 // (Integrations → Webhooks) se configura una cabecera `Authorization` con un
@@ -18,16 +21,11 @@
 //   supabase secrets set REVENUECAT_WEBHOOK_SECRET=<un secreto largo>
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { entitlementsFromEvent, type KnownEntitlement } from '../_shared/entitlements.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const WEBHOOK_SECRET = Deno.env.get('REVENUECAT_WEBHOOK_SECRET') ?? ''
-
-// Debe coincidir con src/lib/purchases.ts.
-const PRODUCT_TO_ENTITLEMENT: Record<string, 'coach' | 'ad_free'> = {
-  'gymtracker.coach.monthly': 'coach',
-  'gymtracker.noads.monthly': 'ad_free',
-}
 
 const ACTIVE_EVENTS = new Set([
   'INITIAL_PURCHASE',
@@ -59,27 +57,29 @@ Deno.serve(async (req) => {
   const type = String(event.type ?? '')
   const userId = String(event.app_user_id ?? '')
   const productId = String(event.product_id ?? '')
-  const entitlement = PRODUCT_TO_ENTITLEMENT[productId]
+  const entitlements = entitlementsFromEvent(event)
 
-  // Eventos que no nos interesan (TEST, anónimos, productos ajenos): 200 para
-  // que RevenueCat no reintente.
-  if (!UUID.test(userId) || !entitlement) return json({ ok: true, ignored: true })
+  // Eventos que no nos interesan (TEST, anónimos, entitlements ajenos): 200
+  // para que RevenueCat no reintente.
+  if (!UUID.test(userId) || entitlements.length === 0) return json({ ok: true, ignored: true })
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE)
   const expiresMs = typeof event.expiration_at_ms === 'number' ? event.expiration_at_ms : null
   const expiresAt = expiresMs ? new Date(expiresMs).toISOString() : null
 
   try {
-    if (ACTIVE_EVENTS.has(type)) {
-      await upsert(admin, userId, entitlement, productId, 'active', expiresAt)
-    } else if (type === 'BILLING_ISSUE') {
-      await upsert(admin, userId, entitlement, productId, 'billing_issue', expiresAt)
-    } else if (type === 'EXPIRATION') {
-      await upsert(admin, userId, entitlement, productId, 'expired', expiresAt)
-      if (entitlement === 'coach') await revokeCoach(admin, userId)
+    for (const entitlement of entitlements) {
+      if (ACTIVE_EVENTS.has(type)) {
+        await upsert(admin, userId, entitlement, productId, 'active', expiresAt)
+      } else if (type === 'BILLING_ISSUE') {
+        await upsert(admin, userId, entitlement, productId, 'billing_issue', expiresAt)
+      } else if (type === 'EXPIRATION') {
+        await upsert(admin, userId, entitlement, productId, 'expired', expiresAt)
+        if (entitlement === 'coach') await maybeRevokeCoach(admin, userId)
+      }
+      // CANCELLATION: la suscripción sigue vigente hasta `expires_at`; el
+      // cambio real llega con EXPIRATION.
     }
-    // CANCELLATION: la suscripción sigue vigente hasta `expires_at`; el cambio
-    // real llega con EXPIRATION.
     return json({ ok: true })
   } catch (err) {
     // 5xx para que RevenueCat reintente.
@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
 async function upsert(
   admin: ReturnType<typeof createClient>,
   userId: string,
-  entitlement: string,
+  entitlement: KnownEntitlement,
   productId: string,
   status: 'active' | 'expired' | 'billing_issue',
   expiresAt: string | null
@@ -107,8 +107,18 @@ async function upsert(
 }
 
 /** Igual que `leave-coach`: termina los vínculos y vuelve el rol a `user`
- * (un admin no se degrada). */
-async function revokeCoach(admin: ReturnType<typeof createClient>, userId: string) {
+ * (un admin no se degrada) — pero SOLO si el cobro está exigido. Con
+ * `coach_billing_required = false` (modo gratis, el default), nadie tuvo
+ * que pagar para ser coach, así que una suscripción que vence no le tiene
+ * que sacar nada a nadie. */
+async function maybeRevokeCoach(admin: ReturnType<typeof createClient>, userId: string) {
+  const { data: config } = await admin
+    .from('app_config')
+    .select('coach_billing_required')
+    .eq('id', true)
+    .maybeSingle()
+  if (!config?.coach_billing_required) return
+
   const { data } = await admin.auth.admin.getUserById(userId)
   const role = (data.user?.app_metadata as Record<string, unknown> | undefined)?.role
   if (role !== 'coach') return
