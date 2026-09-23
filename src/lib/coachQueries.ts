@@ -93,12 +93,13 @@ export async function fetchClientOverview(clientId: string): Promise<ClientOverv
 /** id de la fila `coach_clients` activa entre el coach que llama y este alumno. */
 export async function fetchBondId(clientId: string): Promise<string | null> {
   if (!supabase) return null
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('coach_clients')
     .select('id')
     .eq('client_id', clientId)
     .eq('status', 'active')
     .maybeSingle()
+  if (error) throw error
   return data?.id ?? null
 }
 
@@ -222,11 +223,15 @@ export async function fetchMyCoachProfile(userId: string): Promise<{
   certifications: string
 } | null> {
   if (!supabase) return null
-  const { data } = await supabase
+  // Antes no chequeaba `error`: un fallo de red también da `data: null`,
+  // así que un coach ya dado de alta se veía como "coach nuevo" (form
+  // vacío) — y guardar ese form vacío pisaba la bio/especialidades reales.
+  const { data, error } = await supabase
     .from('coaches')
     .select('display_name, bio, experience_years, verified, specialties, location, certifications')
     .eq('id', userId)
     .maybeSingle()
+  if (error) throw error
   if (!data) return null
   return {
     displayName: data.display_name ?? '',
@@ -272,7 +277,9 @@ export async function fetchClientRoutineDraft(
   const { data: exercises, error: eErr } = dayIds.length
     ? await supabase
         .from('routine_exercises')
-        .select('id, day_id, exercise_id, exercise_order, sets_target, reps_min, reps_max, rest_seconds, notes')
+        .select(
+          'id, day_id, exercise_id, exercise_order, sets_target, reps_min, reps_max, rest_seconds, notes, superset_group'
+        )
         .eq('user_id', clientId)
         .in('day_id', dayIds)
         .is('deleted_at', null)
@@ -298,6 +305,7 @@ export async function fetchClientRoutineDraft(
           repsMax: e.reps_max as number,
           restSeconds: e.rest_seconds as number,
           notes: (e.notes as string | null) ?? '',
+          supersetGroup: (e.superset_group as number | null) ?? undefined,
         })),
     })),
   }

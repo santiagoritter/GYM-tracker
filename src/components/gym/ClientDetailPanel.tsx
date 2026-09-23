@@ -77,7 +77,15 @@ export default function ClientDetailPanel({
         setName(me?.displayName || me?.email || 'Alumno')
       })
       .catch(() => setName('Alumno'))
-    fetchBondId(clientId).then(setBondId).catch(() => setBondId(null))
+    fetchBondId(clientId)
+      .then(setBondId)
+      .catch(() => {
+        // Antes fetchBondId tragaba el error de red y esto quedaba igual
+        // que "no hay vínculo": el botón de terminar vínculo se
+        // deshabilitaba sin ninguna explicación.
+        setBondId(null)
+        toast.error('No se pudo confirmar el vínculo', 'Recargá para poder terminarlo.')
+      })
   }, [clientId, load, loadPlan])
 
   const handleEndBond = async () => {

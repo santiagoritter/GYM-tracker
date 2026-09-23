@@ -50,7 +50,7 @@ export default function ChatThread({
   const otherId = meId === coachId ? clientId : coachId
   const [attachMode, setAttachMode] = useState<'menu' | 'exercise' | 'routine'>('menu')
   const [exerciseQuery, setExerciseQuery] = useState('')
-  const endRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   const exercises = useLiveQuery(() => db.exercises.toArray(), []) ?? []
   const exerciseName = useMemo(() => new Map(exercises.map((e) => [e.id, e.name])), [exercises])
@@ -62,10 +62,25 @@ export default function ChatThread({
 
   useEffect(() => {
     let alive = true
+    let sub: ReturnType<typeof subscribeThread> | undefined
     setLoadError(false)
     fetchThread(coachId, clientId)
       .then((m) => {
-        if (alive) setMessages(m)
+        if (!alive) return
+        setMessages(m)
+        // Se suscribe recién con la lista ya en mano, pasándole los ids
+        // conocidos: si no, el primer poll (o el fallback si Realtime
+        // tarda) trataba a los hasta 200 mensajes recién pintados como
+        // "nuevos" y disparaba markThreadRead una vez por cada uno.
+        sub = subscribeThread(
+          coachId,
+          clientId,
+          (msg) => {
+            setMessages((prev) => (prev.some((p) => p.id === msg.id) ? prev : [...prev, msg]))
+            if (msg.senderId !== meId) markThreadRead(coachId, clientId).catch(() => undefined)
+          },
+          m.map((x) => x.id)
+        )
       })
       .catch(() => {
         // Sin esto el hilo se quedaba en blanco sin avisar si fallaba el
@@ -74,13 +89,9 @@ export default function ChatThread({
         if (alive) setLoadError(true)
       })
     markThreadRead(coachId, clientId).catch(() => undefined)
-    const sub = subscribeThread(coachId, clientId, (msg) => {
-      setMessages((prev) => (prev.some((p) => p.id === msg.id) ? prev : [...prev, msg]))
-      if (msg.senderId !== meId) markThreadRead(coachId, clientId).catch(() => undefined)
-    })
     return () => {
       alive = false
-      sub.close()
+      sub?.close()
     }
   }, [coachId, clientId, meId])
 
@@ -92,7 +103,13 @@ export default function ChatThread({
   }
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ block: 'end' })
+    // Sobre el contenedor propio, no `scrollIntoView` sobre un elemento al
+    // final de la lista: eso escala hasta encontrar un ancestro scrolleable
+    // y, en modo embebido (el chat vive adentro de otro panel de escritorio),
+    // ese ancestro terminaba siendo la ventana entera — cada mensaje nuevo
+    // scrolleaba toda la página, no solo el chat.
+    const el = scrollRef.current
+    if (el) el.scrollTop = el.scrollHeight
   }, [messages.length])
 
   const send = async (payload: {
@@ -174,7 +191,7 @@ export default function ChatThread({
         </header>
       )}
 
-      <div className="flex-1 space-y-2 overflow-y-auto px-4 py-4">
+      <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto px-4 py-4">
         {loadError ? (
           <div className="flex flex-col items-center gap-3 py-12 text-center">
             <p className="text-sm text-ink-3">No se pudo cargar la conversación.</p>
@@ -242,7 +259,6 @@ export default function ChatThread({
             </div>
           )
         })}
-        <div ref={endRef} />
       </div>
 
       <div className="flex items-end gap-2 border-t border-line px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2.5">

@@ -1,5 +1,5 @@
 import { publicLink } from '@/lib/publicUrl'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Check, Copy, QrCode, Trash2 } from 'lucide-react'
 import { createInvite, fetchMyInvites, revokeInvite, type MyInvite } from '@/lib/coachMutations'
@@ -17,6 +17,8 @@ export default function CoachInvite() {
   const [busy, setBusy] = useState(false)
   const [copied, setCopied] = useState(false)
   const [invites, setInvites] = useState<MyInvite[]>([])
+  const copiedTimer = useRef<ReturnType<typeof setTimeout>>()
+  useEffect(() => () => clearTimeout(copiedTimer.current), [])
 
   const loadInvites = useCallback(() => {
     fetchMyInvites().then(setInvites).catch(() => setInvites([]))
@@ -52,7 +54,8 @@ export default function CoachInvite() {
     try {
       await navigator.clipboard.writeText(link)
       setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
+      clearTimeout(copiedTimer.current)
+      copiedTimer.current = setTimeout(() => setCopied(false), 1500)
     } catch {
       toast.error('No se pudo copiar', 'Mantené apretado el enlace para copiarlo.')
     }

@@ -18,6 +18,10 @@ export interface DraftExercise {
   repsMax: number
   restSeconds: number
   notes: string
+  /** Mismo número = mismo superset (ver types/index.ts). Faltaba acá: el
+   * borrador nunca la leía de vuelta ni la mandaba a la RPC, así que
+   * editar una rutina con superseries las perdía al guardar. */
+  supersetGroup?: number
 }
 
 export interface DraftDay {
@@ -106,6 +110,7 @@ export function draftToRpcPayload(draft: RoutineDraft) {
             repsMax: clamp(e.repsMax, 1, DRAFT_LIMITS.reps),
             restSeconds: clamp(e.restSeconds, 0, DRAFT_LIMITS.restMax),
             notes: e.notes.trim(),
+            supersetGroup: e.supersetGroup ?? null,
           })),
     })),
   }

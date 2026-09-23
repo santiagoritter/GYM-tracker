@@ -116,17 +116,26 @@ export interface ThreadSubscription {
  * Suscribe al hilo. Llama `onMessage` con cada mensaje nuevo. Intenta
  * Realtime; si no llega a `SUBSCRIBED` en ~3 s (websocket bloqueado, etc.),
  * cae a un polling de 4 s que refetchea el hilo y emite los que falten.
+ *
+ * `knownIds` son los ids que el caller ya tiene (típicamente el resultado
+ * de `fetchThread` con el que se pintó el hilo antes de suscribirse) — sin
+ * esto, `seen` arrancaba vacío y el PRIMER poll (o el fallback de acá
+ * abajo, que hasta hace poco arrancaba siempre a los 3s) trataba a los
+ * hasta 200 mensajes ya visibles como "nuevos", disparando `onMessage` —
+ * y con eso `markThreadRead` — una vez por mensaje del otro lado.
  */
 export function subscribeThread(
   coachId: string,
   clientId: string,
-  onMessage: (msg: ChatMessage) => void
+  onMessage: (msg: ChatMessage) => void,
+  knownIds: Iterable<string> = []
 ): ThreadSubscription {
   if (!supabase) return { close: () => {} }
 
   let pollTimer: ReturnType<typeof setInterval> | undefined
-  const seen = new Set<string>()
+  const seen = new Set<string>(knownIds)
   let usingPoll = false
+  let subscribed = false
 
   const startPolling = () => {
     if (usingPoll) return
@@ -157,14 +166,20 @@ export function subscribeThread(
       }
     )
     .subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        subscribed = true
+        return
+      }
       if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
         startPolling()
       }
     })
 
   const fallbackTimer = setTimeout(() => {
-    // Si en 3 s no quedó SUBSCRIBED, arrancamos el polling igual (idempotente).
-    startPolling()
+    // Antes arrancaba el polling siempre, sin chequear `subscribed` — con
+    // Realtime conectado bien, quedaban los dos sistemas corriendo para
+    // siempre (un fetch de hasta 200 mensajes cada 4s, sin necesidad).
+    if (!subscribed) startPolling()
   }, 3000)
 
   return {

@@ -22,6 +22,8 @@ export default function CoachProfile() {
   const navigate = useNavigate()
   const userId = useCurrentUserId()
   const [loaded, setLoaded] = useState(false)
+  const [loadError, setLoadError] = useState(false)
+  const [retryTick, setRetryTick] = useState(0)
   const [details, setDetails] = useState<CoachDetails>({
     displayName: '',
     dni: '',
@@ -40,25 +42,43 @@ export default function CoachProfile() {
 
   useEffect(() => {
     if (!userId) return
-    Promise.all([fetchMyCoachProfile(userId), fetchMyDni()]).then(([p, savedDni]) => {
-      if (p) {
-        setDetails({
-          displayName: p.displayName,
-          dni: '',
-          experience: p.experienceYears != null ? String(p.experienceYears) : '',
-          bio: p.bio,
-          specialties: p.specialties,
-          location: p.location,
-          certifications: p.certifications,
-        })
-        setVerified(p.verified)
-        setIsNew(false)
-        fetchCoachReviews(userId).then(setReviews).catch(() => {})
-      }
-      if (savedDni) setDni(savedDni)
-      setLoaded(true)
-    })
-  }, [userId])
+    let cancelled = false
+    setLoaded(false)
+    setLoadError(false)
+    Promise.all([fetchMyCoachProfile(userId), fetchMyDni()])
+      .then(([p, savedDni]) => {
+        if (cancelled) return
+        if (p) {
+          setDetails({
+            displayName: p.displayName,
+            dni: '',
+            experience: p.experienceYears != null ? String(p.experienceYears) : '',
+            bio: p.bio,
+            specialties: p.specialties,
+            location: p.location,
+            certifications: p.certifications,
+          })
+          setVerified(p.verified)
+          setIsNew(false)
+          fetchCoachReviews(userId).then(setReviews).catch(() => {})
+        }
+        if (savedDni) setDni(savedDni)
+      })
+      .catch(() => {
+        // Antes esto no tenía catch: un error de red dejaba la pantalla en
+        // "Cargando…" para siempre (`setLoaded(true)` nunca llegaba a
+        // correr). Ahora se distingue de "coach nuevo" — ver el fix de
+        // `fetchMyCoachProfile` en coachQueries.ts, que antes también
+        // confundía un fallo de red con "no hay fila".
+        if (!cancelled) setLoadError(true)
+      })
+      .finally(() => {
+        if (!cancelled) setLoaded(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [userId, retryTick])
 
   const save = async () => {
     if (!details.displayName.trim()) {
@@ -91,6 +111,20 @@ export default function CoachProfile() {
   }
 
   if (!loaded) return <p className="py-12 text-center text-sm text-ink-3">Cargando…</p>
+
+  if (loadError) {
+    return (
+      <div className="flex flex-col items-center gap-3 px-4 py-12 text-center">
+        <p className="text-sm text-ink-3">No se pudo cargar tu perfil de coach.</p>
+        <button
+          onClick={() => setRetryTick((n) => n + 1)}
+          className="h-11 rounded-sm bg-surface px-4 text-sm font-semibold text-ink-2 active:opacity-70"
+        >
+          Reintentar
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className="mx-auto min-h-screen lg:min-h-0 content-width pb-24">

@@ -49,6 +49,7 @@ export default function CoachRoutineBuilder() {
   const meId = useCurrentUserId()
   const [draft, setDraft] = useState<RoutineDraft | null>(null)
   const [loading, setLoading] = useState(Boolean(routineId))
+  const [loadError, setLoadError] = useState(false)
   const [saving, setSaving] = useState(false)
   const [pickerDay, setPickerDay] = useState<string | null>(null)
   const isEditing = Boolean(routineId)
@@ -65,6 +66,8 @@ export default function CoachRoutineBuilder() {
   useEffect(() => {
     if (!routineId) return
     let cancelled = false
+    setLoading(true)
+    setLoadError(false)
     fetchClientRoutineDraft(clientId, routineId)
       .then((d) => {
         if (cancelled) return
@@ -76,7 +79,15 @@ export default function CoachRoutineBuilder() {
         setDraft(d)
       })
       .catch((e: unknown) => {
-        if (!cancelled) toast.error('No se pudo cargar', e instanceof Error ? e.message : 'Error')
+        if (cancelled) return
+        // Antes esto solo mostraba un toast y `draft` quedaba en null — la
+        // pantalla de "¿cómo querés empezar?" (pensada para una rutina
+        // NUEVA) se mostraba igual con `routineId` ya seteado, así que
+        // "Desde cero" + Guardar terminaba PISANDO la rutina existente en
+        // vez de mostrar el error. Con `loadError` el render de abajo
+        // bloquea esa pantalla y obliga a reintentar o volver.
+        setLoadError(true)
+        toast.error('No se pudo cargar', e instanceof Error ? e.message : 'Error')
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -86,6 +97,26 @@ export default function CoachRoutineBuilder() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId, routineId])
+
+  const retryLoad = () => {
+    if (!routineId) return
+    setLoading(true)
+    setLoadError(false)
+    fetchClientRoutineDraft(clientId, routineId)
+      .then((d) => {
+        if (!d) {
+          toast.error('No se encontró la rutina', 'Puede que ya la hayas retirado.')
+          backToClient()
+          return
+        }
+        setDraft(d)
+      })
+      .catch((e: unknown) => {
+        setLoadError(true)
+        toast.error('No se pudo cargar', e instanceof Error ? e.message : 'Error')
+      })
+      .finally(() => setLoading(false))
+  }
 
   const patchDay = (key: string, patch: Partial<DraftDay>) =>
     setDraft((d) => d && { ...d, days: d.days.map((x) => (x.key === key ? { ...x, ...patch } : x)) })
@@ -163,7 +194,19 @@ export default function CoachRoutineBuilder() {
 
       {loading && <p className="py-12 text-center text-sm text-ink-3">Cargando…</p>}
 
-      {!loading && !draft && (
+      {!loading && loadError && isEditing && (
+        <div className="flex flex-col items-center gap-3 px-4 py-12 text-center">
+          <p className="text-sm text-ink-3">No se pudo cargar la rutina para editarla.</p>
+          <button
+            onClick={retryLoad}
+            className="h-11 rounded-sm bg-surface px-4 text-sm font-semibold text-ink-2 active:opacity-70"
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
+
+      {!loading && !loadError && !draft && (
         <div className="space-y-5 px-4 py-4">
           <p className="text-[14px] text-ink-2">¿Cómo querés empezar?</p>
           <button
@@ -211,7 +254,10 @@ export default function CoachRoutineBuilder() {
             <label className="mb-1.5 block text-sm font-medium text-ink-2">Nombre de la rutina</label>
             <input
               value={draft.name}
-              onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+              onChange={(e) => {
+                const name = e.target.value
+                setDraft((d) => d && { ...d, name })
+              }}
               maxLength={80}
               placeholder="Ej: Fuerza 4 días"
               className="h-12 w-full rounded-sm bg-surface px-4 text-[15px] outline-none ring-1 ring-line-2 focus:ring-accent"
@@ -232,14 +278,14 @@ export default function CoachRoutineBuilder() {
                   <IconButton
                     label="Subir día"
                     disabled={dayIndex === 0}
-                    onClick={() => setDraft({ ...draft, days: move(draft.days, dayIndex, -1) })}
+                    onClick={() => setDraft((d) => d && { ...d, days: move(d.days, dayIndex, -1) })}
                   >
                     <ArrowUp size={16} />
                   </IconButton>
                   <IconButton
                     label="Bajar día"
                     disabled={dayIndex === draft.days.length - 1}
-                    onClick={() => setDraft({ ...draft, days: move(draft.days, dayIndex, 1) })}
+                    onClick={() => setDraft((d) => d && { ...d, days: move(d.days, dayIndex, 1) })}
                   >
                     <ArrowDown size={16} />
                   </IconButton>
@@ -255,7 +301,7 @@ export default function CoachRoutineBuilder() {
                     disabled={draft.days.length === 1}
                     onClick={() => {
                       if (confirm(`¿Eliminar "${day.name}"?`))
-                        setDraft({ ...draft, days: draft.days.filter((x) => x.key !== day.key) })
+                        setDraft((d) => d && { ...d, days: d.days.filter((x) => x.key !== day.key) })
                     }}
                   >
                     <Trash2 size={18} />
@@ -297,7 +343,9 @@ export default function CoachRoutineBuilder() {
 
           {draft.days.length < DRAFT_LIMITS.days && (
             <button
-              onClick={() => setDraft({ ...draft, days: [...draft.days, newDay(`Día ${draft.days.length + 1}`)] })}
+              onClick={() =>
+                setDraft((d) => d && { ...d, days: [...d.days, newDay(`Día ${d.days.length + 1}`)] })
+              }
               className="flex h-12 w-full items-center justify-center gap-1.5 rounded-sm bg-fill text-sm font-semibold text-ink-2 active:bg-fill-2"
             >
               <Plus size={16} /> Agregar día

@@ -51,6 +51,29 @@ check(rpc.days[0]!.id === 'day-1' && rpc.days[0]!.exercises[0]!.id === 'ex-1', '
 const created = draftToRpcPayload(payloadToDraft(ROUTINE_TEMPLATES[0]!.payload))
 check(created.days.every((x) => !('id' in x)), 'un borrador nuevo no manda ids')
 
+// supersetGroup: editar una rutina que ya tenía superseries no puede
+// perderlas al guardar (bug real: fetchClientRoutineDraft no la leía de
+// vuelta, así que el borrador cargado tenía undefined y la RPC la pisaba
+// con null al guardar sin tocar nada).
+const sg = emptyDraft()
+sg.name = 'Con superset'
+sg.days[0]!.exercises.push(
+  { ...newExercise('bench-press'), id: 'ex-a', supersetGroup: 1 },
+  { ...newExercise('incline-press'), id: 'ex-b', supersetGroup: 1 }
+)
+const sgPayload = draftToRpcPayload(sg)
+check(
+  sgPayload.days[0]!.exercises.every((e) => e.supersetGroup === 1),
+  'supersetGroup no viaja en el payload a la RPC'
+)
+const noSgDraft = emptyDraft()
+noSgDraft.days[0]!.exercises.push(newExercise('bench-press'))
+const noSg = draftToRpcPayload(noSgDraft)
+check(
+  noSg.days[0]!.exercises.every((e) => e.supersetGroup === null),
+  'un ejercicio sin superset debería mandar null explícito, no omitirlo'
+)
+
 if (fail.length) {
   console.error('❌ Borrador de rutina del coach:\n - ' + fail.join('\n - '))
   process.exit(1)
