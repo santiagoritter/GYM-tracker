@@ -35,7 +35,12 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       VitePWA({
-        registerType: 'autoUpdate',
+        // 'prompt', no 'autoUpdate': con autoUpdate la app se recargaba sola
+        // en cuanto detectaba una versión nueva, sin avisar y sin importar
+        // si había un entreno/salida a correr/cardio en curso. Con 'prompt'
+        // el SW nuevo queda esperando hasta que pwaUpdate.ts decide
+        // aplicarlo (ver ese archivo y src/sw.ts).
+        registerType: 'prompt',
         // El script que vite-plugin-pwa inyecta solo (registerSW.js) registra
         // el SW y nada más — sin chequeo periódico, la única vez que el
         // navegador revisa si hay versión nueva es en la carga de página.

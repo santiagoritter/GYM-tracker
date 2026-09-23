@@ -12,7 +12,14 @@ declare const self: ServiceWorkerGlobalScope & {
 
 cleanupOutdatedCaches()
 precacheAndRoute(self.__WB_MANIFEST)
-self.skipWaiting()
+// SIN self.skipWaiting() acá: con `registerType: 'prompt'` (vite.config.ts)
+// el SW nuevo tiene que quedarse en "waiting" hasta que pwaUpdate.ts decida
+// que es un buen momento (nunca en medio de un entreno/correr/cardio) y le
+// mande este mensaje — antes tomaba control solo, y la página se recargaba
+// sola sin avisar, aunque hubiera una actividad en curso.
+self.addEventListener('message', (event: ExtendableMessageEvent) => {
+  if ((event.data as { type?: string } | undefined)?.type === 'SKIP_WAITING') self.skipWaiting()
+})
 clientsClaim()
 
 // Sin runtime caching de red todavía: la app no pide nada a un backend
