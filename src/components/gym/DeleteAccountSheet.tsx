@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import { deleteAccount } from '@/lib/deleteAccount'
+import { subscriptionManagementHint } from '@/lib/purchases'
 import { toast } from '@/stores/toastStore'
 import { useAuthStore } from '@/stores/authStore'
 import ResponsiveSheet from '@/components/ui/ResponsiveSheet'
@@ -59,7 +60,7 @@ export default function DeleteAccountSheet({ onClose }: { onClose: () => void })
         </p>
         <p>
           Si tenés una suscripción, borrar la cuenta <strong className="text-ink">no la cancela</strong>:
-          hacelo desde Ajustes de tu iPhone → tu nombre → Suscripciones.
+          hacelo desde {subscriptionManagementHint()}.
         </p>
         <p>
           Antes de seguir podés guardar una copia en Ajustes → Datos → Exportar mis datos.

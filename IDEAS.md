@@ -29,6 +29,13 @@ por dificultad):
 - **Acciones rápidas en la cabecera del alumno** (Mensaje / Nueva rutina
   / Nota) y mover "Finalizar vínculo" a un menú "…" en vez de un botón
   rojo a todo el ancho al pie del panel.
+- **Textos legales todavía dicen "Apple"/"iPhone" fijo** (`legalText.ts`,
+  5 lugares: compras, anuncios/ATT, borrado de cuenta, exportar datos,
+  sección de suscripciones). Los textos de UI equivalentes ya se
+  arreglaron (`subscriptionManagementHint()` en `purchases.ts`) — el
+  legal es más delicado (es el documento público, generado con su propio
+  test de sincronía) y merece una pasada aparte, no un cambio apurado
+  dentro de este bloque.
 - **Constructor de rutinas de escritorio** (biblioteca fija + rutina al
   lado, arrastrar para ordenar), **metas y notas privadas del coach por
   alumno** (tabla nueva), **adherencia** (heatmap reusado + 1RM por

@@ -7,6 +7,7 @@ import {
   PRODUCT_AD_FREE,
   PRODUCT_COACH,
   restorePurchases,
+  subscriptionManagementHint,
   type PurchaseOption,
 } from '@/lib/purchases'
 import { COACH_PERKS } from '@/lib/coachSubscription'
@@ -59,7 +60,11 @@ export default function Paywall({
     }
   }, [])
 
-  const option = options?.find((o) => o.productId === copy.product) ?? null
+  // En Android (Play Billing 5+) `productId` viene compuesto:
+  // `gymtracker.coach.monthly:monthly-base` — un `===` exacto contra el id
+  // "pelado" de `copy.product` nunca matcheaba ahí, así que la única
+  // opción real quedaba invisible y el paywall decía "no disponible".
+  const option = options?.find((o) => o.productId.split(':')[0] === copy.product) ?? null
 
   const buy = async () => {
     if (!option || busy) return
@@ -132,9 +137,9 @@ export default function Paywall({
               <span className="ml-1 text-[14px] font-medium text-ink-3">/ {option.period || 'mes'}</span>
             </p>
             <p className="mt-2 text-[12px] leading-relaxed text-ink-3">
-              Suscripción con renovación automática. Se cobra a tu cuenta de Apple al confirmar y se
-              renueva cada período salvo que la canceles al menos 24 horas antes de que termine. La
-              administrás o cancelás en Ajustes del iPhone → tu nombre → Suscripciones.
+              Suscripción con renovación automática. Se cobra a la cuenta de tu tienda al confirmar
+              y se renueva cada período salvo que la canceles al menos 24 horas antes de que
+              termine. La administrás o cancelás en {subscriptionManagementHint()}.
             </p>
           </div>
         )}

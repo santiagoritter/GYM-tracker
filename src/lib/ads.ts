@@ -4,16 +4,23 @@ import { platform } from '@/lib/native'
 /**
  * Anuncios (AdMob) — solo un banner, solo en pantallas de consulta, nunca durante
  * un entrenamiento, una salida a correr o el cardio. Apagado por defecto: sin
- * `VITE_ADS_ENABLED=on` y un id de bloque de anuncios, o fuera de iOS, no hay ni
- * un byte de anuncios en la app.
+ * `VITE_ADS_ENABLED=on` y un id de bloque de anuncios PARA ESTA plataforma, o
+ * fuera de iOS/Android, no hay ni un byte de anuncios en la app.
  *
- * Privacidad (Guideline 5.1.2 / ATT): antes del primer anuncio se muestra una
- * explicación propia, después el aviso de "seguimiento" de iOS y, donde aplica
- * (UE), el formulario de consentimiento de Google (UMP). Si el usuario no
- * autoriza el seguimiento, los anuncios son no personalizados.
+ * Privacidad (Guideline 5.1.2 / ATT en iOS): antes del primer anuncio se
+ * muestra una explicación propia, después el aviso de "seguimiento" de iOS
+ * (en Android el plugin devuelve directamente `authorized`, no existe ese
+ * permiso ahí) y, donde aplica (UE), el formulario de consentimiento de
+ * Google (UMP). Si el usuario no autoriza el seguimiento, los anuncios son
+ * no personalizados.
  */
 
-const BANNER_ID = import.meta.env.VITE_ADMOB_BANNER_ID as string | undefined
+const BANNER_ID =
+  platform === 'ios'
+    ? (import.meta.env.VITE_ADMOB_BANNER_ID_IOS as string | undefined)
+    : platform === 'android'
+      ? (import.meta.env.VITE_ADMOB_BANNER_ID_ANDROID as string | undefined)
+      : undefined
 /** Bloque de banner de PRUEBA de Google: en desarrollo nunca se pide uno real. */
 const TEST_BANNER_ID = 'ca-app-pub-3940256099942544/2934735716'
 /** Alto del banner adaptable + margen; lo usa el layout para no tapar contenido. */
@@ -24,7 +31,11 @@ const TAB_BAR_MARGIN = 88
 export const ADS_INTRO_KEY = 'gymtracker-ads-intro-seen'
 
 export function adsAvailable(): boolean {
-  return import.meta.env.VITE_ADS_ENABLED === 'on' && platform === 'ios' && Boolean(BANNER_ID)
+  return (
+    import.meta.env.VITE_ADS_ENABLED === 'on' &&
+    (platform === 'ios' || platform === 'android') &&
+    Boolean(BANNER_ID)
+  )
 }
 
 /** ¿El banner está en pantalla? El layout suma espacio abajo mientras sea true. */

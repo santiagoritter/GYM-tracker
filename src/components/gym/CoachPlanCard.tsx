@@ -1,5 +1,6 @@
 import { Check } from 'lucide-react'
 import { COACH_PERKS, COACH_PRICE_USD, useCoachBillingEnabled } from '@/lib/coachSubscription'
+import { subscriptionManagementHint } from '@/lib/purchases'
 
 /**
  * Tarjeta del plan de coach: precio + beneficios. La usan el paso "Plan" del
@@ -36,8 +37,8 @@ export default function CoachPlanCard() {
       </ul>
       {billing && (
         <p className="mt-4 text-[12px] leading-relaxed text-ink-3">
-          Suscripción mensual con renovación automática. Se cobra a tu cuenta de Apple y podés
-          cancelarla cuando quieras desde Ajustes → tu nombre → Suscripciones.
+          Suscripción mensual con renovación automática. Se cobra a la cuenta de tu tienda y
+          podés cancelarla cuando quieras desde {subscriptionManagementHint()}.
         </p>
       )}
     </div>

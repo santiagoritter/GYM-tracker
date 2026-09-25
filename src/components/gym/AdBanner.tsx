@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useEntitlementsStore } from '@/stores/entitlementsStore'
 import { purchasesAvailable } from '@/lib/purchases'
+import { platform } from '@/lib/native'
 import { ADS_INTRO_KEY, adsAvailable, hideBannerAd, showBannerAd } from '@/lib/ads'
 import ResponsiveSheet from '@/components/ui/ResponsiveSheet'
 
@@ -78,8 +79,10 @@ export default function AdBanner() {
           <h2 className="text-lg font-bold">Anuncios en Repe</h2>
           <p className="text-[14px] leading-relaxed text-ink-2">
             La app es gratis y se sostiene con anuncios en las pantallas de consulta; nunca aparecen
-            mientras entrenás. A continuación iOS te va a preguntar si permitís que Repe te siga
-            entre apps y sitios: si decís que no, igual ves anuncios, pero no personalizados.
+            mientras entrenás.{' '}
+            {platform === 'ios'
+              ? 'A continuación iOS te va a preguntar si permitís que Repe te siga entre apps y sitios: si decís que no, igual ves anuncios, pero no personalizados.'
+              : 'Si hay anuncios personalizados disponibles en tu región, te vamos a pedir tu consentimiento; si no, ves anuncios no personalizados igual.'}
           </p>
           {purchasesAvailable() && (
             <p className="text-[14px] leading-relaxed text-ink-2">

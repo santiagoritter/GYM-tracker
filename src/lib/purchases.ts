@@ -2,26 +2,51 @@ import { platform } from '@/lib/native'
 import { useEntitlementsStore } from '@/stores/entitlementsStore'
 
 /**
- * Compras dentro de la app (StoreKit vía RevenueCat). Guideline 3.1.1: las
- * funciones digitales (modo coach, quitar anuncios) se cobran SOLO por IAP; no
- * hay pagos externos.
+ * Compras dentro de la app (StoreKit/Play Billing vía RevenueCat). Guideline
+ * 3.1.1 (iOS) y la política de Play equivalente: las funciones digitales
+ * (modo coach, quitar anuncios) se cobran SOLO por IAP; no hay pagos
+ * externos.
  *
- * Todo degrada sin romper: si el flag `VITE_PURCHASES_ENABLED` está apagado, no
- * hay API key de RevenueCat, o no es iOS, `purchasesAvailable()` da `false` y
- * ninguna pantalla muestra compras — la app se comporta como gratuita.
+ * Todo degrada sin romper: si el flag `VITE_PURCHASES_ENABLED` está apagado,
+ * no hay API key de RevenueCat para ESTA plataforma, o no es iOS/Android,
+ * `purchasesAvailable()` da `false` y ninguna pantalla muestra compras — la
+ * app se comporta como gratuita en esa plataforma puntual (que el modo
+ * coach se COBRE o no ya no depende de esto, ver `coachSubscription.ts` —
+ * es una decisión del servidor; esto solo decide si ACÁ se puede pagar).
  *
- * Productos (crear en App Store Connect, mismo grupo de suscripciones) y
- * entitlements (crear en RevenueCat y asociar a cada producto):
+ * Productos (crear en App Store Connect / Play Console, mismo grupo de
+ * suscripciones) y entitlements (crear en RevenueCat y asociar a cada
+ * producto):
  */
 export const PRODUCT_COACH = 'gymtracker.coach.monthly'
 export const PRODUCT_AD_FREE = 'gymtracker.noads.monthly'
 export const ENTITLEMENT_COACH = 'coach'
 export const ENTITLEMENT_AD_FREE = 'ad_free'
 
-const API_KEY = import.meta.env.VITE_REVENUECAT_IOS_KEY as string | undefined
+const API_KEY =
+  platform === 'ios'
+    ? (import.meta.env.VITE_REVENUECAT_IOS_KEY as string | undefined)
+    : platform === 'android'
+      ? (import.meta.env.VITE_REVENUECAT_ANDROID_KEY as string | undefined)
+      : undefined
 
 export function purchasesAvailable(): boolean {
-  return import.meta.env.VITE_PURCHASES_ENABLED === 'on' && platform === 'ios' && Boolean(API_KEY)
+  return (
+    import.meta.env.VITE_PURCHASES_ENABLED === 'on' &&
+    (platform === 'ios' || platform === 'android') &&
+    Boolean(API_KEY)
+  )
+}
+
+/** Dónde administra/cancela la suscripción — cada tienda tiene su propio
+ * camino, no hay un link universal. Usado en el paywall, la tarjeta de
+ * plan del coach y el borrado de cuenta; antes decían "tu cuenta de
+ * Apple"/"Ajustes de tu iPhone" fijo, aunque el que paga en Android nunca
+ * ve eso en su teléfono. */
+export function subscriptionManagementHint(): string {
+  if (platform === 'ios') return 'Ajustes de tu iPhone → tu nombre → Suscripciones'
+  if (platform === 'android') return 'Play Store → ícono de perfil → Pagos y suscripciones → Suscripciones'
+  return 'la tienda desde la que te suscribiste'
 }
 
 export interface PurchaseOption {
