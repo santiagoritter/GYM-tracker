@@ -102,6 +102,39 @@
   #nav.nav-scrolled {
     @apply border-line-2 bg-bg/80 backdrop-blur-md;
   }
+
+  /* Glow ambiental y badges flotantes: excepción explícita y acotada a
+     site/ de las reglas anti-slop de DESIGN.md §0 (que rigen la app) — acá
+     es una decisión de diseño para la landing, pedida y acotada a un lugar
+     por sección, no "glow alrededor de cualquier cosa". Ver DESIGN.md §8. */
+  .ambient-glow {
+    @apply pointer-events-none absolute -z-10 rounded-full opacity-[0.16] blur-[90px];
+    background: radial-gradient(circle, #e8ff47 0%, transparent 70%);
+  }
+
+  /* Marco de teléfono minimalista (borde + isla, sin botones falsos ni
+     detalle innecesario) para el mockup del hero — el único lugar del
+     sitio con chrome de dispositivo, DESIGN.md §8 lo acota a ahí. */
+  .phone-frame {
+    @apply relative overflow-hidden rounded-[2.75rem] border-[6px] border-[#1c1c20] bg-black shadow-[0_40px_100px_-30px_rgba(0,0,0,0.8)];
+  }
+  .phone-frame::before {
+    content: '';
+    @apply absolute left-1/2 top-2 z-10 h-[18px] w-[84px] -translate-x-1/2 rounded-full bg-black;
+  }
+
+  /* Tarjetas flotantes alrededor del mockup del hero — cada una referencia
+     un dato/feature real (no decoración vacía). `float` es continua, no
+     por scroll: es lo que las hace sentir "vivas" apenas carga la página. */
+  .float-badge {
+    @apply absolute z-20 flex items-center gap-2 rounded-md border border-line-2 bg-surface/90 px-3.5 py-2.5 text-[13px] font-semibold text-ink shadow-[0_16px_40px_-12px_rgba(0,0,0,0.7)] backdrop-blur-sm;
+    animation: float 5s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .float-badge {
+      animation: none;
+    }
+  }
 }
 
 @layer utilities {
@@ -134,5 +167,19 @@
   .js-motion-ready .kinetic-word {
     opacity: 0;
     transform: translateY(100%) rotate(4deg);
+  }
+
+  /* Flote continuo de las tarjetas del hero — solo transform, liviano para
+     el compositor. Cada badge arranca en un punto distinto del ciclo vía
+     `animation-delay` inline, así no laten todas en fase (eso sí se ve
+     artificial). */
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
   }
 }

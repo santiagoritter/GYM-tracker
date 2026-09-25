@@ -386,6 +386,19 @@ sin JS de carrusel — el borde derecho deja asomar la siguiente tarjeta a
 propósito, es la señal de que se puede seguir scrolleando, sin flechas ni
 dots decorativos.
 
+**Hero: excepción explícita y acotada al glow/chrome de dispositivo que §0
+prohíbe en la app.** A pedido del dueño, investigado contra
+`fitonist-app.webflow.io` (no copiado literal — paleta, contenido y marco
+propios): layout de dos columnas en desktop con un mockup de teléfono real
+(`.phone-frame`, el único chrome de dispositivo del sitio) rodeado de
+tarjetas flotantes (`.float-badge`) en animación continua (`@keyframes
+float`, no por scroll — es lo que las hace sentir vivas apenas carga), más
+un glow ambiental (`.ambient-glow`) detrás, acotado a 3 lugares de toda la
+página. Cada badge referencia una feature real, nunca un dato inventado
+("racha de 7 días" se cambió a "tu racha, siempre a la vista" en la
+revisión — afirmaba un número puntual de esa cuenta sin poder verificarlo).
+`prefers-reduced-motion` apaga el flote (`@media` en `.float-badge`).
+
 **Capturas**: reales, del dispositivo, con datos de ejemplo — nunca mockups
 vectoriales ni chrome de teléfono de stock. Sin marcos de dispositivo
 alrededor (el borde real de un iPhone 17 Pro en la captura ya cumple ese
