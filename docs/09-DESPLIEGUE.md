@@ -11,11 +11,19 @@
 
 | Pieza | Dónde | Cómo se despliega |
 |---|---|---|
-| PWA (la app) | GitHub Pages, `https://santiagoritter.github.io/GYM-tracker/` | Automático: `deploy.yml` en cada push a `main` |
+| PWA (la app) | GitHub Pages, `https://santiagoritter.github.io/GYM-tracker/` — **la que ya usan los dispositivos instalados, no se da de baja** | Automático: `deploy.yml` en cada push a `main` |
+| PWA (la app), mirror | Vercel, proyecto `repe-app`, `https://repe-app-five.vercel.app` | Automático: Vercel tiene el repo conectado por GitHub, redeploya solo en cada push a `main` (además del deploy manual de abajo) |
 | Android | GitHub Releases, release `android-latest` | Manual: `Actions → Build Android APK → Run workflow` (rama `main` para publicar) |
 | iOS | Sin distribución todavía — solo verificación de build | Manual: `Actions → Verify iOS build` (no genera `.ipa`, sin firma) |
 | Backend | Supabase Cloud, proyecto ya creado | Manual: `Actions → Deploy Supabase → Run workflow` |
-| Web de marketing (`site/`) | Vercel, `https://site-kohl-rho-85.vercel.app` (dominio propio pendiente) | Manual con la CLI de Vercel, ver abajo |
+| Web de marketing (`site/`) | Vercel, proyecto `site`, `https://site-kohl-rho-85.vercel.app` (dominio propio pendiente) | Manual con la CLI de Vercel, ver abajo |
+
+**Por qué dos hosts para la misma app:** GitHub Pages es el original, con el
+link ya guardado/instalado por quien la usa hoy — no se toca. El mirror en
+Vercel se sumó a pedido, como alternativa con deploy más rápido y sin el
+límite de subpath (`/GYM-tracker/`) de Pages. Los dos sirven el mismo build,
+apuntan al mismo Supabase, y en cualquier momento uno puede quedar como el
+"oficial" sin migrar nada — es el mismo `dist/`.
 
 **No hay un solo botón "deploy" que suba todo.** Cada pieza es un workflow o
 comando separado, a propósito: publicar un cambio de UI no tiene por qué
@@ -98,6 +106,35 @@ supabase functions deploy <nombre> # una función puntual
 No hay buckets de Storage: las fotos de progreso y de ejercicio se manejan
 distinto (ver `docs/13-BACKEND-SUPABASE.md` — esa es la doc confiable de
 Supabase, no esta).
+
+---
+
+## PWA, mirror → Vercel (proyecto `repe-app`)
+
+Mismo `dist/` que GitHub Pages, pero servido desde la raíz del dominio (sin
+`VITE_BASE_PATH`, el default de `vite.config.ts` ya es `/`). Repo conectado
+vía la integración de GitHub de Vercel: cada push a `main` redeploya solo,
+sin workflow propio.
+
+Variables de entorno cargadas en el proyecto (`vercel env ls`, scope
+`production`): `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`,
+`VITE_SPOTIFY_CLIENT_ID` — las mismas de `.env` local. **Falta
+`VITE_VAPID_PUBLIC_KEY`** (no estaba en el `.env` local para copiarla): en
+este mirror, `/recordatorios` no ofrece notificaciones push web hasta que
+se cargue con `vercel env add VITE_VAPID_PUBLIC_KEY production` y se
+redeploye — el resto de la app funciona igual, es una degradación
+conocida y sin romper nada (mismo criterio que Spotify/anuncios apagados).
+
+Verificado contra el Supabase real: un intento de login con credenciales
+inventadas devolvió `400 invalid_credentials` desde
+`tgdqzapvlnuaemjdvscy.supabase.co/auth/v1/token` — no un error de red ni una
+URL vacía, así que las env vars están bien cargadas.
+
+⚠️ El check de "faltan secrets" de `vite.config.ts` (línea ~20) **no corre**
+acá, porque solo se activa cuando `VITE_BASE_PATH !== '/'` (pensado para el
+build de GitHub Actions). Un secret vacío en este proyecto de Vercel no
+rompe el build, rompe el login en silencio — hay que verificarlo a mano
+como arriba después de cualquier cambio a las env vars.
 
 ---
 
