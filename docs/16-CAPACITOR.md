@@ -108,7 +108,7 @@ se rompió. Los minutos de runner macOS son caros, por eso es manual como
 
 ---
 
-## Live Activities / Dynamic Island (iOS)
+## Live Activities / Dynamic Island (iOS) y su equivalente Android
 
 Tres Live Activities: **descanso entre series** (cuenta regresiva), **entreno
 en curso** (tiempo, ejercicio actual, series hechas/totales) y
@@ -116,11 +116,21 @@ en curso** (tiempo, ejercicio actual, series hechas/totales) y
 opcionales, algunos aparatos de cardio no calculan distancia). Aparecen en la
 pantalla de bloqueo (iOS 16.2+) y en la Dynamic Island (iPhone 14 Pro+).
 
+**Android no tiene Live Activities ni Dynamic Island.** El equivalente es una
+notificación persistente con cronómetro nativo (`Notification.setUsesChronometer`,
+API 24+, el mínimo del proyecto): mismo dato (tiempo transcurrido/restante,
+ejercicio, series), sin widget propio ni foreground service. Solo descanso y
+entreno — **running queda fuera a propósito**: `@capacitor-community/background-geolocation`
+ya deja su propia notificación con foreground service (obligatoria para
+trackear con la pantalla apagada), y una segunda sería duplicada. Ver
+`android/app/src/main/java/com/santiagoritter/gymtracker/WorkoutNotificationPlugin.java`.
+
 ### Piezas
 
 | Archivo | Target | Rol |
 |---|---|---|
-| `src/lib/liveActivity.ts` | web | Puente JS. `registerPlugin('GymTrackerLiveActivity')`. Todo `platform === 'ios'` + `try/catch`: sin la extensión, en Android o web es no-op. |
+| `src/lib/liveActivity.ts` | web | Puente JS. `registerPlugin('GymTrackerLiveActivity')` — mismo nombre en las dos plataformas nativas, así que el resto de la app llama a una sola API. `platform === 'ios' \| 'android'` + `try/catch`: en web, sin el plugin nativo, o con notificaciones/Live Activities desactivadas, es no-op. |
+| `android/app/src/main/java/com/santiagoritter/gymtracker/WorkoutNotificationPlugin.java` | **Android** | Plugin Capacitor embebido (`@CapacitorPlugin(name = "GymTrackerLiveActivity")`), registrado a mano en `MainActivity.onCreate` antes de `super.onCreate` (no es un paquete npm, Capacitor no lo autodescubre). Un canal de importancia baja (`workout_status`, sin sonido), dos ids de notificación (descanso / entreno). `startWorkout` guarda `startedAt` en memoria para que `updateWorkout` (que no recibe la hora) pueda seguir pasándoselo a `setWhen` y el cronómetro no se reinicie. Al cargar (`load()`) cancela cualquier notificación propia que haya quedado huérfana de una corrida anterior del proceso. `startRun`/`updateRun`/`endRun` son no-op deliberado (ver arriba). |
 | `ios/App/GymTrackerWidget/LiveActivityAttributes.swift` | **App + Widget** | Los `ActivityAttributes` compartidos (`RestActivityAttributes`, `WorkoutActivityAttributes`, `RunActivityAttributes`). |
 | `ios/App/App/LiveActivityPlugin.swift` | **App** | Plugin Capacitor embebido (`CAPBridgedPlugin`). `startRest`/`endRest`/`startWorkout`/`updateWorkout`/`endWorkout`/`startRun`/`updateRun`/`endRun`. Cada método es no-op si iOS < 16.2 o si el usuario apagó las Live Activities. |
 | `ios/App/GymTrackerWidget/*.swift` | **Widget** | `WidgetBundle` + las tres `ActivityConfiguration` (lock screen + Dynamic Island compact/minimal/expanded). El timer lo dibuja iOS (`Text(timerInterval:)`), la app no actualiza cada segundo. **Nunca `.fixedSize()` en `compactTrailing` ni en la raíz de la pantalla de bloqueo** — renderiza vacío/colapsa el ancho en este SO; usar `.frame(width:/minWidth:)` (ver `docs/BITACORA.md`, 2026-09-14/15). |

@@ -122,6 +122,12 @@ cableado en `RestTimer.tsx`, `Workout.tsx`, `Run.tsx` y `Cardio.tsx` vía
 `src/lib/liveActivity.ts`. Ver `docs/16` §"Live Activities" y
 `docs/BITACORA.md` (2026-09-16) para los criterios ya probados.
 
+**Equivalente Android hecho (septiembre 2026):** sin Dynamic Island ni Live
+Activity — notificación persistente con cronómetro nativo, plugin propio
+`WorkoutNotificationPlugin.java`, mismo `src/lib/liveActivity.ts`. Cubre
+descanso y entreno; running queda afuera a propósito (la notificación del
+foreground service de ubicación ya cumple ese rol). Ver `docs/16`.
+
 ### Exportar a CSV
 Sacar el historial completo. Cuesta poco y elimina la sensación de que los
 datos quedan encerrados en la app.
