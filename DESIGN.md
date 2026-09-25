@@ -399,6 +399,24 @@ página. Cada badge referencia una feature real, nunca un dato inventado
 revisión — afirmaba un número puntual de esa cuenta sin poder verificarlo).
 `prefers-reduced-motion` apaga el flote (`@media` en `.float-badge`).
 
+**Parallax multi-velocidad**: se profundizó la investigación de
+`fitonist-app.webflow.io` — usa `kinet` (una librería de suavizado por
+física, friction/acceleration hacia un valor objetivo) para que varios
+elementos se muevan a velocidades distintas mientras se scrollea, en vez
+de saltar 1:1 con el scroll nativo. No se sumó esa dependencia: `anime.js`
+ya trae `utils.damp` (suavizado exponencial independiente del framerate),
+así que alcanza. `data-parallax="<velocidad>"` en `main.ts`: un solo loop
+de `requestAnimationFrame` calcula, por elemento, la distancia entre su
+centro y el centro del viewport, y persigue esa distancia × velocidad con
+inercia propia — nunca acumula sobre el scroll total de la página (por eso
+no "se escapa" en una página larga; un elemento vuelve a offset 0 apenas
+vuelve al centro del viewport). Aplicado a los tres glows ambientales, el
+mockup del hero, los pares de capturas de Entrenar/Progreso/Ejercicios (cada
+imagen del par a una velocidad distinta, para que se separen sutilmente al
+scrollear) y la galería horizontal. Se aplica siempre a un hijo del
+elemento que ya tiene `.reveal` (nunca al mismo nodo) — dos animaciones
+tocando el `transform` del mismo elemento se pisan entre sí.
+
 **Capturas**: reales, del dispositivo, con datos de ejemplo — nunca mockups
 vectoriales ni chrome de teléfono de stock. Sin marcos de dispositivo
 alrededor (el borde real de un iPhone 17 Pro en la captura ya cumple ese

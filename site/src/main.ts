@@ -1,4 +1,4 @@
-import { animate, onScroll, splitText, stagger, svg } from 'animejs'
+import { animate, onScroll, splitText, stagger, svg, utils } from 'animejs'
 
 /**
  * Motor de animación del sitio: anime.js v4 (no GSAP — ver BITACORA.md,
@@ -126,6 +126,41 @@ if (!reducedMotion) {
         }
       },
     })
+  }
+
+  // ─── Parallax: varios elementos a velocidades distintas, suavizado ─────
+  // Investigado contra fitonist-app.webflow.io (usa `kinet`, una librería
+  // de suavizado por física — friction/acceleration hacia un valor
+  // objetivo). No sumamos esa dependencia: `utils.damp` de anime.js hace
+  // exactamente lo mismo (suavizado exponencial independiente del
+  // framerate), así que cada elemento con `data-parallax="<velocidad>"`
+  // persigue su posición objetivo con inercia propia en vez de saltar
+  // 1:1 con el scroll — eso es lo que se lee como "vivo" y no como scroll
+  // nativo con un div encima. La velocidad es relativa a la distancia del
+  // elemento al centro del viewport, no al scroll acumulado de la página
+  // entera — así nunca "se escapa" en una página larga, siempre vuelve a
+  // 0 cuando el elemento vuelve al centro.
+  const parallaxEls = [...document.querySelectorAll<HTMLElement>('[data-parallax]')].map((el) => ({
+    el,
+    speed: Number(el.dataset.parallax),
+    current: 0,
+  }))
+  if (parallaxEls.length) {
+    let lastTime = performance.now()
+    const tick = (now: number) => {
+      const deltaTime = Math.min(now - lastTime, 50) / 1000 // clamp: tab en background no debe "saltar"
+      lastTime = now
+      const viewportCenter = window.innerHeight / 2
+      for (const p of parallaxEls) {
+        const rect = p.el.getBoundingClientRect()
+        const distanceFromCenter = rect.top + rect.height / 2 - viewportCenter
+        const target = distanceFromCenter * p.speed
+        p.current = utils.damp(p.current, target, deltaTime, 6)
+        p.el.style.transform = `translateY(${p.current.toFixed(2)}px)`
+      }
+      requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
   }
 }
 
