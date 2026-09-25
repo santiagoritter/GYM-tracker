@@ -325,3 +325,38 @@ cero emojis y cero auras de color en los archivos de `src/`.
 El resto es criterio, y la pregunta de control es siempre la misma: **¿esto
 se ve como algo que decidió una persona, o como el default de un
 generador?** Ante la duda, quitar.
+
+---
+
+## 8. Sitio de marketing (`site/`)
+
+Proyecto autónomo (Vite propio, deploy en Vercel), pero mismos tokens que
+arriba — copiados a mano en `site/tailwind.config.ts` (sin modo claro: la
+landing es siempre oscura, no hay toggle de tema que justifique la
+indirección de variables CSS que usa la app).
+
+**Escala del hero**: un salto, no una escalada — el título del hero es el
+único texto de toda la página por encima de `display` (34px): 56px en
+mobile, 72px en desktop (`clamp(2.75rem, 6vw + 1rem, 4.5rem)`). Todo lo
+demás respeta la escala de §2 sin excepción, para que el salto del hero siga
+leyéndose como una decisión y no como "todo es grande porque es una
+landing".
+
+**Ritmo de secciones**: 96px de separación vertical entre secciones en
+desktop (64px en mobile) — más que los 48px que es el techo de la escala de
+espaciado de la app (§3), a propósito: una landing se lee scrolleando de
+sección en sección, no como una lista de filas.
+
+**Movimiento**: mejora progresiva con GSAP + ScrollTrigger, nunca el
+contenido en sí — sin JS o con `prefers-reduced-motion`, todo es visible de
+entrada (ver `.reveal`/`.js-gsap-ready` en `site/src/style.css`). Se usa
+para un fade + `translateY` sutil al entrar en viewport y el trazado del
+anillo de marca del hero. **Sin pin de scroll**: es exactamente el tipo de
+tic de §0 (el default vistoso de un generador de landings), no una decisión
+que resuelve algo acá.
+
+**Capturas**: reales, del dispositivo, con datos de ejemplo — nunca mockups
+vectoriales ni chrome de teléfono de stock. Sin marcos de dispositivo
+alrededor (el borde real de un iPhone 17 Pro en la captura ya cumple ese
+rol); como mucho una sombra neutra de elevación (§3) para despegarlas del
+fondo.

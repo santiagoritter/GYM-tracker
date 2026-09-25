@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Repe — Entrená, corré y llevá tus alumnos, sin conexión</title>
+    <meta
+      name="description"
+      content="Repe es una app de entrenamiento offline-first: rutinas, progreso, running y modo coach, en iPhone, Android y la web — una sola cuenta, sin depender de señal."
+    />
+    <meta property="og:title" content="Repe — Entrená sin depender de señal" />
+    <meta
+      property="og:description"
+      content="Rutinas, progreso, running y modo coach. Offline-first de verdad: todo funciona en el subsuelo de un gimnasio sin cobertura."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/screenshots/home.webp" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/icons/icon-192.png" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <!--@include nav-->
+
+    <main>
+      <!-- ───────────────────────── Hero ───────────────────────── -->
+      <section class="px-5 pb-20 pt-36 sm:pb-28 sm:pt-44">
+        <div class="mx-auto flex max-w-3xl flex-col items-center text-center">
+          <svg width="72" height="72" viewBox="0 0 100 100" aria-hidden="true" class="mb-8">
+            <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(235,235,245,0.18)" stroke-width="4" />
+            <circle
+              id="hero-ring-progress"
+              cx="50"
+              cy="50"
+              r="40"
+              fill="none"
+              stroke="#E8FF47"
+              stroke-width="16"
+              stroke-linecap="round"
+              stroke-dasharray="175.8 75.4"
+              transform="rotate(-90 50 50)"
+            />
+          </svg>
+          <h1
+            class="text-ink"
+            style="font-size: clamp(2.75rem, 6vw + 1rem, 4.5rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.05"
+          >
+            Entrená sin depender<br class="hidden sm:block" /> de señal
+          </h1>
+          <p class="prose-copy mt-6 text-[18px]">
+            Rutinas, progreso, running y modo coach — en iPhone, Android y la web, con una sola
+            cuenta. Todo se guarda primero en tu dispositivo: la nube sincroniza por debajo,
+            nunca al revés.
+          </p>
+          <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <a href="https://santiagoritter.github.io/GYM-tracker/" class="btn-accent">Abrir la app web</a>
+            <a href="#ecosistema" class="pill-link">Ver cómo funciona</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────────────────────── Demo ─────────────────────── -->
+      <section class="px-5 pb-20 sm:pb-28">
+        <div class="reveal mx-auto flex max-w-xs justify-center" data-reveal-group="demo">
+          <video
+            class="w-full rounded-lg shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)]"
+            poster="/video/hero-poster.webp"
+            preload="none"
+            controls
+            playsinline
+            width="588"
+            height="1280"
+          >
+            <source src="/video/hero-demo.mp4" type="video/mp4" />
+          </video>
+        </div>
+      </section>
+
+      <!-- ───────────────────── Ecosistema ───────────────────── -->
+      <section id="ecosistema" class="border-t border-line-2 px-5 py-24 sm:py-32">
+        <div class="mx-auto max-w-6xl">
+          <div class="reveal max-w-copy" data-reveal-group="eco">
+            <h2 class="section-heading">Una cuenta, todos los lugares donde entrenás</h2>
+            <p class="prose-copy mt-4">
+              Empezás una rutina en el teléfono en el gimnasio, revisás el progreso en la
+              computadora a la noche, y tu coach ve lo mismo que vos. Repe corre nativo en iPhone
+              y Android, y como app web instalable en cualquier otro lugar — mismos datos, misma
+              cuenta.
+            </p>
+          </div>
+          <div class="mt-14 grid gap-4 sm:grid-cols-3">
+            <div class="reveal rounded-md bg-surface p-6" data-reveal-group="eco-cards">
+              <p class="text-[15px] font-semibold text-ink">Offline-first de verdad</p>
+              <p class="mt-2 text-[14px] leading-relaxed text-ink-2">
+                Cada serie se guarda en el dispositivo al toque. Si no hay señal en el subsuelo del
+                gimnasio, la app no lo nota — sincroniza sola apenas vuelve la conexión.
+              </p>
+            </div>
+            <div class="reveal rounded-md bg-surface p-6" data-reveal-group="eco-cards">
+              <p class="text-[15px] font-semibold text-ink">Nativo, no una web disfrazada</p>
+              <p class="mt-2 text-[14px] leading-relaxed text-ink-2">
+                En iPhone, notificaciones puntuales y el descanso en la pantalla de bloqueo. En
+                Android, el mismo cronómetro como notificación persistente. Vibración real, no la
+                que Safari ignora.
+              </p>
+            </div>
+            <div class="reveal rounded-md bg-surface p-6" data-reveal-group="eco-cards">
+              <p class="text-[15px] font-semibold text-ink">Tus datos, tuyos</p>
+              <p class="mt-2 text-[14px] leading-relaxed text-ink-2">
+                Exportás todo en cualquier momento desde Ajustes. Si borrás la cuenta, se borra de
+                verdad — de la nube y del dispositivo.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ───────────────────────── Entrenar ───────────────────────── -->
+      <section id="entrenar" class="border-t border-line-2 px-5 py-24 sm:py-32">
+        <div class="mx-auto max-w-6xl">
+          <div class="grid items-center gap-14 lg:grid-cols-2">
+            <div class="reveal" data-reveal-group="entrenar-copy">
+              <h2 class="section-heading">Cargar una serie no debería costar pensar</h2>
+              <p class="prose-copy mt-4">
+                El peso y las reps que hiciste la vez pasada ya están ahí. Tocás, ajustás si
+                cambió algo, confirmás. Descanso con cronómetro que sigue corriendo aunque
+                cambies de pantalla, y superseries cuando las necesitás.
+              </p>
+              <ul class="prose-copy mt-6 space-y-2 text-[15px]">
+                <li>· Rutinas propias o 6 plantillas clásicas para arrancar</li>
+                <li>· El peso sugerido lo calcula un recomendador, no un número fijo</li>
+                <li>· Series de calentamiento, notas por ejercicio, foto de referencia</li>
+              </ul>
+            </div>
+            <div class="reveal flex justify-center gap-4" data-reveal-group="entrenar-shots">
+              <img
+                src="/screenshots/rutina-editor.webp"
+                alt="Editor de rutina de Repe con los días de la semana y los ejercicios de cada uno"
+                width="640"
+                height="1387"
+                loading="lazy"
+                class="w-[46%] rounded-lg shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)]"
+              />
+              <img
+                src="/screenshots/confirmar-serie.webp"
+                alt="Pantalla de confirmar una serie durante el entrenamiento, con el peso total levantado"
+                width="640"
+                height="1387"
+                loading="lazy"
+                class="mt-10 w-[46%] rounded-lg shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)]"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ───────────────────────── Progreso ───────────────────────── -->
+      <section id="progreso" class="border-t border-line-2 px-5 py-24 sm:py-32">
+        <div class="mx-auto max-w-6xl">
+          <div class="grid items-center gap-14 lg:grid-cols-2">
+            <div class="reveal order-2 flex justify-center gap-4 lg:order-1" data-reveal-group="progreso-shots">
+              <img
+                src="/screenshots/progreso-resumen.webp"
+                alt="Resumen de progreso: peso corporal, grasa corporal, racha y volumen semanal"
+                width="640"
+                height="1387"
+                loading="lazy"
+                class="w-[46%] rounded-lg shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)]"
+              />
+              <img
+                src="/screenshots/progreso-mes.webp"
+                alt="Vista mensual del progreso con distribución de series por grupo muscular"
+                width="640"
+                height="1387"
+                loading="lazy"
+                class="mt-10 w-[46%] rounded-lg shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)]"
+              />
+            </div>
+            <div class="reveal order-1 lg:order-2" data-reveal-group="progreso-copy">
+              <h2 class="section-heading">El dato ya lo tenías, ahora lo ves</h2>
+              <p class="prose-copy mt-4">
+                Cada serie que cargaste se convierte en gráficos: peso por entreno, volumen
+                semanal, distribución por grupo muscular, planeado contra real. Nada de anotarlo
+                aparte en una planilla.
+              </p>
+              <ul class="prose-copy mt-6 space-y-2 text-[15px]">
+                <li>· Récords personales detectados solos, con fecha</li>
+                <li>· Niveles por grupo muscular, con progreso real detrás</li>
+                <li>· Logros que marcan constancia, no vanidad</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ───────────────────────── Ejercicios ───────────────────────── -->
+      <section id="ejercicios" class="border-t border-line-2 px-5 py-24 sm:py-32">
+        <div class="mx-auto max-w-6xl">
+          <div class="grid items-center gap-14 lg:grid-cols-2">
+            <div class="reveal" data-reveal-group="ejercicios-copy">
+              <h2 class="section-heading">Más de 100 ejercicios, con técnica</h2>
+              <p class="prose-copy mt-4">
+                Filtrá por músculo o equipamiento, mirá el video de la técnica antes de cargar
+                peso que no controlás, y guardá una nota propia ("el banco 4 se traba") que viaja
+                con el ejercicio, no con el día.
+              </p>
+            </div>
+            <div class="reveal flex justify-center" data-reveal-group="ejercicios-shot">
+              <img
+                src="/screenshots/ejercicios.webp"
+                alt="Biblioteca de ejercicios con búsqueda, filtros por músculo y ejercicios recientes"
+                width="640"
+                height="1387"
+                loading="lazy"
+                class="w-[60%] rounded-lg shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)] sm:w-[46%]"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ───────────────────────── Herramientas ───────────────────────── -->
+      <section id="herramientas" class="border-t border-line-2 px-5 py-24 sm:py-32">
+        <div class="mx-auto max-w-6xl">
+          <div class="reveal max-w-copy" data-reveal-group="herr-head">
+            <h2 class="section-heading">Las cuentas que normalmente hacés aparte</h2>
+            <p class="prose-copy mt-4">
+              1RM estimado, calorías del día, y running y cardio con GPS — adentro de la misma
+              app, con los mismos datos de entreno.
+            </p>
+          </div>
+          <div class="mt-14 grid gap-8 sm:grid-cols-2">
+            <div class="reveal flex flex-col items-center gap-4 sm:flex-row sm:items-start" data-reveal-group="herr-cards">
+              <img
+                src="/screenshots/calculadora-1rm.webp"
+                alt="Calculadora de 1RM estimado con peso sugerido por objetivo"
+                width="640"
+                height="1387"
+                loading="lazy"
+                class="w-40 shrink-0 rounded-lg shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)]"
+              />
+              <div>
+                <p class="text-[15px] font-semibold text-ink">1RM estimado</p>
+                <p class="mt-2 text-[14px] leading-relaxed text-ink-2">
+                  A partir de una serie de referencia, calcula tu máximo estimado y el peso
+                  sugerido según tu objetivo: fuerza, hipertrofia o resistencia.
+                </p>
+              </div>
+            </div>
+            <div class="reveal flex flex-col items-center gap-4 sm:flex-row sm:items-start" data-reveal-group="herr-cards">
+              <img
+                src="/screenshots/calorias.webp"
+                alt="Contador de calorías con meta diaria y registro de comidas"
+                width="640"
+                height="1387"
+                loading="lazy"
+                class="w-40 shrink-0 rounded-lg shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)]"
+              />
+              <div>
+                <p class="text-[15px] font-semibold text-ink">Calorías</p>
+                <p class="mt-2 text-[14px] leading-relaxed text-ink-2">
+                  Meta diaria y registro rápido de comidas, sin las mil pantallas de una app
+                  dedicada a eso.
+                </p>
+              </div>
+            </div>
+            <div class="reveal flex flex-col items-center gap-4 sm:flex-row sm:items-start" data-reveal-group="herr-cards">
+              <div
+                class="flex h-40 w-40 shrink-0 items-center justify-center rounded-lg bg-surface"
+                aria-hidden="true"
+              >
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#E8FF47" stroke-width="1.8">
+                  <path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </div>
+              <div>
+                <p class="text-[15px] font-semibold text-ink">Correr</p>
+                <p class="mt-2 text-[14px] leading-relaxed text-ink-2">
+                  GPS con mapa del recorrido, splits por kilómetro, ritmo y desnivel. Sigue
+                  trackeando con la pantalla apagada.
+                </p>
+              </div>
+            </div>
+            <div class="reveal flex flex-col items-center gap-4 sm:flex-row sm:items-start" data-reveal-group="herr-cards">
+              <div
+                class="flex h-40 w-40 shrink-0 items-center justify-center rounded-lg bg-surface"
+                aria-hidden="true"
+              >
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#E8FF47" stroke-width="1.8">
+                  <circle cx="12" cy="12" r="9" stroke-linecap="round" />
+                  <path d="M12 7v5l3 3" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </div>
+              <div>
+                <p class="text-[15px] font-semibold text-ink">Cardio</p>
+                <p class="mt-2 text-[14px] leading-relaxed text-ink-2">
+                  Bici, elíptica o remo: tiempo, calorías estimadas y esfuerzo percibido, sin GPS.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ───────────────────────── Coach ───────────────────────── -->
+      <section id="coach" class="border-t border-line-2 px-5 py-24 sm:py-32">
+        <div class="mx-auto max-w-6xl">
+          <div class="reveal max-w-copy" data-reveal-group="coach-head">
+            <h2 class="section-heading">Modo coach, pensado para 20 alumnos a la vez</h2>
+            <p class="prose-copy mt-4">
+              En la computadora es un tablero: último entreno, adherencia semanal y PRs de cada
+              alumno de un vistazo, con no leídos en vivo. En el teléfono de tu alumno es la
+              misma app — vos armás la rutina, él la entrena.
+            </p>
+          </div>
+          <div class="mt-14 grid gap-8 lg:grid-cols-[1.4fr_1fr]">
+            <img
+              src="/screenshots/coach-desktop.webp"
+              alt="Tablero de alumnos del coach en la versión de escritorio, con último entreno y semana de cada uno"
+              width="1600"
+              height="1067"
+              loading="lazy"
+              class="reveal w-full rounded-lg shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)]"
+              data-reveal-group="coach-shots"
+            />
+            <div class="reveal flex flex-col justify-center gap-6" data-reveal-group="coach-shots">
+              <img
+                src="/screenshots/invitar-alumno.webp"
+                alt="Pantalla para invitar a un alumno por QR o link"
+                width="640"
+                height="1387"
+                loading="lazy"
+                class="mx-auto w-40 rounded-lg shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)]"
+              />
+              <p class="text-center text-[14px] leading-relaxed text-ink-2">
+                Invitás por link o QR. Sin apps aparte, sin planillas — el alumno acepta y ya está
+                vinculado.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ───────────────────────── Privacidad ───────────────────────── -->
+      <section id="privacidad" class="border-t border-line-2 px-5 py-24 sm:py-32">
+        <div class="mx-auto max-w-6xl">
+          <div class="grid gap-14 lg:grid-cols-2">
+            <div class="reveal" data-reveal-group="priv">
+              <h2 class="section-heading">Hecha por una persona, no una empresa de datos</h2>
+              <p class="prose-copy mt-4">
+                No hay un equipo de crecimiento decidiendo qué notificación te manda más
+                seguido. Repe la hace una sola persona, y eso cambia los incentivos: nada se
+                vende, nada se comparte de más.
+              </p>
+            </div>
+            <div class="reveal grid gap-4 sm:grid-cols-2" data-reveal-group="priv-cards">
+              <div class="rounded-md bg-surface p-5">
+                <p class="text-[14px] font-semibold text-ink">Tus datos no se venden</p>
+                <p class="mt-1.5 text-[13px] leading-relaxed text-ink-2">
+                  Ni a anunciantes ni a nadie más. El detalle completo está en la
+                  <a class="underline" href="/privacidad.html">política de privacidad</a>.
+                </p>
+              </div>
+              <div class="rounded-md bg-surface p-5">
+                <p class="text-[14px] font-semibold text-ink">Borrás tu cuenta cuando quieras</p>
+                <p class="mt-1.5 text-[13px] leading-relaxed text-ink-2">
+                  Desde la app, en cualquier momento. Ver <a class="underline" href="/borrar-cuenta.html">cómo</a>.
+                </p>
+              </div>
+              <div class="rounded-md bg-surface p-5">
+                <p class="text-[14px] font-semibold text-ink">Exportás lo tuyo</p>
+                <p class="mt-1.5 text-[13px] leading-relaxed text-ink-2">
+                  Un backup completo desde Ajustes, en cualquier momento, sin pedirlo por mail.
+                </p>
+              </div>
+              <div class="rounded-md bg-surface p-5">
+                <p class="text-[14px] font-semibold text-ink">Ubicación, solo para correr</p>
+                <p class="mt-1.5 text-[13px] leading-relaxed text-ink-2">
+                  El GPS se usa exclusivamente en la pantalla de Correr, y nunca sale del
+                  dispositivo.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ───────────────────────── Planes ───────────────────────── -->
+      <section id="planes" class="border-t border-line-2 px-5 py-24 sm:py-32">
+        <div class="mx-auto max-w-4xl text-center">
+          <div class="reveal" data-reveal-group="planes">
+            <h2 class="section-heading">Planes</h2>
+            <p class="prose-copy mx-auto mt-4">Simple: entrenar es gratis, siempre.</p>
+          </div>
+          <div class="mt-12 grid gap-4 sm:grid-cols-2">
+            <div class="reveal rounded-lg border border-line bg-surface p-8 text-left" data-reveal-group="planes-cards">
+              <p class="text-[13px] font-semibold text-ink-3">Entrenar</p>
+              <p class="mt-2 text-3xl font-bold text-ink">Gratis</p>
+              <ul class="prose-copy mt-6 space-y-2 text-[14px]">
+                <li>· Rutinas, progreso, ejercicios ilimitados</li>
+                <li>· Running y cardio con GPS</li>
+                <li>· Calculadora de 1RM y calorías</li>
+                <li>· Sincronización entre tus dispositivos</li>
+              </ul>
+            </div>
+            <div class="reveal rounded-lg border border-accent/40 bg-surface p-8 text-left" data-reveal-group="planes-cards">
+              <p class="text-[13px] font-semibold text-accent">Modo coach</p>
+              <p class="mt-2 text-3xl font-bold text-ink">
+                Gratis <span class="align-middle text-[14px] font-medium text-ink-3">por ahora</span>
+              </p>
+              <ul class="prose-copy mt-6 space-y-2 text-[14px]">
+                <li>· Alumnos ilimitados, vinculados por link o QR</li>
+                <li>· Progreso completo de cada alumno</li>
+                <li>· Armar y asignar rutinas y metas</li>
+                <li>· Chat con adjuntos de ejercicios y rutinas</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ───────────────────────── FAQ ───────────────────────── -->
+      <section id="faq" class="border-t border-line-2 px-5 py-24 sm:py-32">
+        <div class="mx-auto max-w-copy">
+          <h2 class="reveal section-heading" data-reveal-group="faq-head">Preguntas frecuentes</h2>
+          <div class="reveal legal-prose mt-4" data-reveal-group="faq-body">
+            <h2>¿Repe funciona sin internet?</h2>
+            <p>
+              Sí, es la idea. Todo se guarda primero en el teléfono (o el navegador, en la
+              versión web) y sincroniza solo cuando hay señal.
+            </p>
+            <h2>¿Hay una app en la App Store y en Play Store?</h2>
+            <p>
+              La versión web ya está disponible y se instala como una app (Agregar a pantalla de
+              inicio). Las versiones nativas de iPhone y Android están en camino.
+            </p>
+            <h2>¿Puedo usarla sin crear cuenta?</h2>
+            <p>
+              Sí, hay un modo invitado que guarda todo local. Si después querés sincronizar entre
+              dispositivos o usar el modo coach, te registrás cuando quieras sin perder nada.
+            </p>
+            <h2>¿Cómo cancelo o borro mi cuenta?</h2>
+            <p>
+              Las suscripciones se cancelan desde la tienda con la que pagaste. La cuenta se
+              borra desde la app en cualquier momento —
+              <a class="underline" href="/borrar-cuenta.html">ver cómo</a>.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!--@include footer-->
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

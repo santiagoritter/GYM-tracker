@@ -3,6 +3,10 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+    # site/ es un proyecto aparte (deploy en Vercel, no en GitHub Pages) —
+    # un cambio que solo toca la web de marketing no tiene por qué redesplegar
+    # la PWA.
+    paths-ignore: ['site/**']
   workflow_dispatch:
 
 permissions:

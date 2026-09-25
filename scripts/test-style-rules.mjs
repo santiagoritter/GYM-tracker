@@ -15,6 +15,9 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, extname } from 'node:path'
 
 const SRC = new URL('../src/', import.meta.url).pathname
+// `site/` es un proyecto aparte (deploy en Vercel) pero las mismas reglas de
+// §0 de DESIGN.md aplican — nada de emojis ni auras de color tampoco ahí.
+const SITE_SRC = new URL('../site/src/', import.meta.url).pathname
 const fail = []
 
 function walk(dir) {
@@ -27,7 +30,12 @@ function walk(dir) {
   return out
 }
 
-const files = walk(SRC)
+function relPath(file) {
+  if (file.startsWith(SITE_SRC)) return file.replace(SITE_SRC, 'site/src/')
+  return file.replace(SRC, 'src/')
+}
+
+const files = [...walk(SRC), ...walk(SITE_SRC)]
 
 // ── Emojis ────────────────────────────────────────────────────────────────
 // Rangos de pictogramas + dingbats + símbolos misceláneos + selector de
@@ -47,7 +55,7 @@ const GLOW = [
 ]
 
 for (const file of files) {
-  const rel = file.replace(SRC, 'src/')
+  const rel = relPath(file)
   const lines = readFileSync(file, 'utf8').split('\n')
 
   lines.forEach((line, i) => {
@@ -75,7 +83,7 @@ for (const file of files) {
 //      declarar `overscroll-behavior`.
 const cssFiles = files.filter((f) => f.endsWith('.css'))
 for (const file of cssFiles) {
-  const rel = file.replace(SRC, 'src/')
+  const rel = relPath(file)
   const content = readFileSync(file, 'utf8')
   const blockRe = /([^{};]+)\{([^{}]*)\}/g
   let m
