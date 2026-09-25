@@ -1,56 +1,144 @@
-import { gsap } from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { animate, onScroll, splitText, stagger, svg } from 'animejs'
 
 /**
- * Mejora progresiva, no el contenido: sin JS o con `prefers-reduced-motion`,
- * todo el contenido de `index.html` ya es visible (ver `.reveal` en
- * style.css). Acá solo se agrega un fade + translateY sutil al entrar en
- * viewport y el trazado del anillo del hero — nada de pin de scroll
- * (`Redisenio.md`/`DESIGN.md` §0 marcan el scroll-jacking como el mismo
- * tipo de tic que un glow: el default de un generador, no una decisión).
+ * Motor de animación del sitio: anime.js v4 (no GSAP — ver BITACORA.md,
+ * cambio a pedido del dueño después de ver animejs.com). Todo acá es mejora
+ * progresiva, nunca el contenido: sin JS, sin `animejs` cargado, o con
+ * `prefers-reduced-motion`, todo el contenido ya es visible (`.reveal` y
+ * `.kinetic-word` arrancan en `opacity:1` — solo se ocultan si
+ * `js-motion-ready` está en `<html>`, que es lo primero que hace este
+ * archivo si el motion está permitido).
  */
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 if (!reducedMotion) {
-  gsap.registerPlugin(ScrollTrigger)
-  document.documentElement.classList.add('js-gsap-ready')
+  document.documentElement.classList.add('js-motion-ready')
 
-  const groups = new Map<string, Element[]>()
+  // ─── Hero: anillo de marca dibujándose ──────────────────────────────────
+  const ring = document.querySelector<SVGCircleElement>('#hero-ring-progress')
+  if (ring) {
+    const length = ring.getTotalLength()
+    ring.style.strokeDasharray = `${length}`
+    ring.style.strokeDashoffset = `${length}`
+    animate(ring, {
+      strokeDashoffset: [length, length * 0.22], // mismo gap que RepeMark.tsx (175.8/75.4)
+      duration: 1100,
+      ease: 'outExpo',
+      delay: 150,
+    })
+  }
+
+  // ─── Hero: titular cinético (palabra por palabra) al cargar ────────────
+  // Tipografía cinética en vez de imagen estática de hero — tendencia real
+  // de apps fitness 2026 (dribbble/canvasbuilder), no un efecto porque sí.
+  const heroHeading = document.querySelector('#hero-heading')
+  if (heroHeading) {
+    const { words } = splitText(heroHeading, { words: true })
+    for (const w of words) w.classList.add('kinetic-word')
+    animate(words, {
+      opacity: [0, 1],
+      y: ['100%', '0%'],
+      rotate: [4, 0],
+      duration: 900,
+      delay: stagger(45, { start: 250 }),
+      ease: 'outExpo',
+    })
+  }
+
+  // ─── Reveal por scroll, agrupado (fade + translateY con stagger) ───────
+  const groups = new Map<string, HTMLElement[]>()
   for (const el of document.querySelectorAll<HTMLElement>('.reveal')) {
     const key = el.dataset.revealGroup ?? el.dataset.revealId ?? Math.random().toString(36)
     const arr = groups.get(key) ?? []
     arr.push(el)
     groups.set(key, arr)
   }
-
+  // `autoplay: onScroll(...)` pasado directo a `animate()` no engancha de
+  // forma confiable (el linking interno de Timer.init() depende de un
+  // orden que no se puede garantizar acá) — se verificó con Playwright que
+  // el elemento se queda en opacity:0 después de scrollear la página
+  // entera. El patrón que sí funciona, verificado igual: `onScroll`
+  // standalone con `onEnter`, disparando el `animate()` a mano.
   for (const els of groups.values()) {
-    gsap.to(els, {
-      opacity: 1,
-      y: 0,
-      duration: 0.6,
-      ease: 'power2.out',
-      stagger: 0.08,
-      scrollTrigger: {
-        trigger: els[0],
-        start: 'top 85%',
-        once: true,
+    onScroll({
+      target: els[0],
+      sync: false,
+      onEnter: () =>
+        animate(els, {
+          opacity: [0, 1],
+          translateY: [28, 0],
+          duration: 700,
+          ease: 'outExpo',
+          delay: stagger(90),
+        }),
+    })
+  }
+
+  // ─── Títulos de sección: cinéticos al entrar en viewport ────────────────
+  for (const heading of document.querySelectorAll<HTMLElement>('.section-heading')) {
+    if (heading.id === 'hero-heading') continue // ya se animó al cargar
+    const { words } = splitText(heading, { words: true })
+    for (const w of words) w.classList.add('kinetic-word')
+    onScroll({
+      target: heading,
+      sync: false,
+      onEnter: () =>
+        animate(words, {
+          opacity: [0, 1],
+          y: ['100%', '0%'],
+          rotate: [4, 0],
+          duration: 700,
+          delay: stagger(35),
+          ease: 'outExpo',
+        }),
+    })
+  }
+
+  // ─── Anillos de "Números reales" (ver DESIGN.md §8: marco, no gráfico
+  // comparativo — las tres dibujan a la misma fracción fija) + el número
+  // cuenta desde 0 en sincronía. ────────────────────────────────────────
+  for (const card of document.querySelectorAll<HTMLElement>('.stat-ring-card')) {
+    const ringPath = card.querySelector<SVGCircleElement>('.stat-ring-progress')
+    const numberEl = card.querySelector<HTMLElement>('.stat-ring-number')
+    const target = numberEl ? Number(numberEl.dataset.value ?? '0') : 0
+    const counter = { value: 0 }
+
+    const [drawable] = ringPath ? svg.createDrawable(ringPath) : [null]
+    if (drawable) animate(drawable, { draw: '0 0' }) // arranca invisible
+
+    onScroll({
+      target: card,
+      sync: false,
+      onEnter: () => {
+        if (drawable) {
+          animate(drawable, { draw: ['0 0', '0 0.78'], duration: 1200, ease: 'outExpo' })
+        }
+        if (numberEl) {
+          animate(counter, {
+            value: target,
+            duration: 1200,
+            ease: 'outExpo',
+            onUpdate: () => {
+              numberEl.textContent = Math.round(counter.value).toString()
+            },
+          })
+        }
       },
     })
   }
+}
 
-  const ring = document.querySelector<SVGCircleElement>('#hero-ring-progress')
-  if (ring) {
-    const length = ring.getTotalLength()
-    ring.style.strokeDasharray = `${length}`
-    ring.style.strokeDashoffset = `${length}`
-    gsap.to(ring, {
-      strokeDashoffset: length * 0.22, // mismo gap que RepeMark.tsx (175.8/75.4 ≈ 0.7 de vuelta)
-      duration: 1.1,
-      ease: 'power2.out',
-      delay: 0.2,
-    })
-  }
+// ─── Feedback en pointer-down, no en click (apple-design §1) ─────────────
+// Corre siempre, con o sin reduced-motion: es un cambio de estado de 0.1s,
+// no una animación que deba respetar la preferencia.
+for (const el of document.querySelectorAll<HTMLElement>('.btn-accent, .pill-link')) {
+  const press = () => el.classList.add('press')
+  const release = () => el.classList.remove('press')
+  el.addEventListener('pointerdown', press)
+  el.addEventListener('pointerup', release)
+  el.addEventListener('pointerleave', release)
+  el.addEventListener('pointercancel', release)
 }
 
 // Año del footer, sin hardcodear.
@@ -61,7 +149,7 @@ if (yearEl) yearEl.textContent = String(new Date().getFullYear())
 // app (DESIGN.md §3: `.glass` solo resuelve contenido que pasa por debajo).
 const nav = document.querySelector<HTMLElement>('#nav')
 if (nav) {
-  const onScroll = () => nav.classList.toggle('nav-scrolled', window.scrollY > 8)
-  onScroll()
-  window.addEventListener('scroll', onScroll, { passive: true })
+  const onNavScroll = () => nav.classList.toggle('nav-scrolled', window.scrollY > 8)
+  onNavScroll()
+  window.addEventListener('scroll', onNavScroll, { passive: true })
 }

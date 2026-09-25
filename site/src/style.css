@@ -45,12 +45,51 @@
     @apply text-[28px] font-bold tracking-[-0.01em] text-ink sm:text-[34px];
   }
 
+  /* `.press` (apple-design §1: responder en pointer-down, no en click) se
+     agrega desde main.ts como estado, no como pseudo-clase — así el mismo
+     mecanismo sirve para mouse, touch y pen sin duplicar reglas :active. */
   .pill-link {
     @apply inline-flex h-11 items-center justify-center rounded-sm border border-line px-5 text-[14px] font-semibold text-ink transition-colors duration-150 ease-standard hover:border-ink-3;
+  }
+  .pill-link.press {
+    transform: scale(0.96);
   }
 
   .btn-accent {
     @apply inline-flex h-12 items-center justify-center rounded-sm bg-accent px-6 text-[15px] font-bold text-bg transition-colors duration-150 ease-standard hover:bg-accent-dim;
+  }
+  .btn-accent.press {
+    transform: scale(0.96);
+  }
+
+  /* Tarjeta de estadística real con anillo de marca (§8 DESIGN.md nuevo,
+     inspirado en el RingChart de bklit.com pero sin esa dependencia: SVG
+     de mano, mismo lenguaje visual que RepeMark). El anillo NO compara
+     magnitudes entre tarjetas — las tres arrancan vacías y dibujan a la
+     misma fracción fija, es un marco, no un gráfico de proporciones (eso
+     sería mentir con datos de unidades distintas: ejercicios, rutinas,
+     plataformas).*/
+  .stat-ring-card {
+    @apply flex flex-col items-center rounded-lg bg-surface px-6 py-10 text-center;
+  }
+  .stat-ring-number {
+    font-variant-numeric: tabular-nums;
+    @apply text-[44px] font-bold tracking-[-0.02em] text-ink;
+  }
+
+  /* Galería horizontal con scroll-snap nativo (sin JS de carrusel: el
+     browser ya sabe hacer esto bien, en touch y con trackpad). Los bordes
+     dejan asomar la siguiente tarjeta a propósito — es la señal de que se
+     puede seguir scrolleando, sin flechas ni dots. */
+  .h-gallery {
+    @apply flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4;
+    scrollbar-width: none;
+  }
+  .h-gallery::-webkit-scrollbar {
+    display: none;
+  }
+  .h-gallery > * {
+    @apply shrink-0 snap-start;
   }
 
   /* Uno de los dos lugares del proyecto donde el vidrio esmerilado está
@@ -72,15 +111,28 @@
   }
 
   /* Punto de entrada para el reveal por scroll (main.ts): arranca oculto
-     solo si JS corre y GSAP existe — así con JS desactivado o
-     prefers-reduced-motion todo es visible de entrada, nunca un elemento
-     que depende de una animación para aparecer. */
+     solo si JS corre y prefers-reduced-motion lo permite — así con JS
+     desactivado, sin motion, o el fetch de anime.js roto, todo es visible
+     de entrada, nunca un elemento que depende de una animación para
+     aparecer. */
   .reveal {
     opacity: 1;
     transform: none;
   }
-  .js-gsap-ready .reveal {
+  .js-motion-ready .reveal {
     opacity: 0;
-    transform: translateY(24px);
+    transform: translateY(28px);
+  }
+
+  /* Palabras de un .section-heading después de splitText (main.ts): mismo
+     criterio de fallback, visibles por defecto. */
+  .kinetic-word {
+    display: inline-block;
+    opacity: 1;
+    transform: none;
+  }
+  .js-motion-ready .kinetic-word {
+    opacity: 0;
+    transform: translateY(100%) rotate(4deg);
   }
 }

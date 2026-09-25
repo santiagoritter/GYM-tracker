@@ -347,13 +347,44 @@ desktop (64px en mobile) — más que los 48px que es el techo de la escala de
 espaciado de la app (§3), a propósito: una landing se lee scrolleando de
 sección en sección, no como una lista de filas.
 
-**Movimiento**: mejora progresiva con GSAP + ScrollTrigger, nunca el
-contenido en sí — sin JS o con `prefers-reduced-motion`, todo es visible de
-entrada (ver `.reveal`/`.js-gsap-ready` en `site/src/style.css`). Se usa
-para un fade + `translateY` sutil al entrar en viewport y el trazado del
-anillo de marca del hero. **Sin pin de scroll**: es exactamente el tipo de
-tic de §0 (el default vistoso de un generador de landings), no una decisión
-que resuelve algo acá.
+**Movimiento**: mejora progresiva con anime.js v4 (no GSAP — swap a pedido
+del dueño, ver `docs/BITACORA.md`), nunca el contenido en sí — sin JS, con
+`animejs` roto, o con `prefers-reduced-motion`, todo es visible de entrada
+(ver `.reveal`/`.kinetic-word`/`.js-motion-ready` en `site/src/style.css`).
+Patrón verificado con Playwright (`autoplay: onScroll(...)` pasado directo
+a `animate()` no engancha de forma confiable en v4.5 — se usa `onScroll`
+standalone con `onEnter` llamando a `animate()` a mano):
+
+- Fade + `translateY` al entrar en viewport, agrupado con stagger
+  (`.reveal[data-reveal-group]`).
+- Titulares (`.section-heading`, incluido el del hero) con `splitText`,
+  palabra por palabra, mismo criterio que "kinetic typography" de las apps
+  fitness de referencia (dribbble, canvasbuilder 2026) — no un efecto
+  porque sí, es el gancho de atención que reemplaza una imagen de hero
+  estática.
+- El trazado del anillo de marca del hero y de los anillos de "Números
+  reales" (`svg.createDrawable` + atributo `draw`).
+- Feedback en `pointerdown`, no en `click` (`.press`, apple-design §1) en
+  botones/pills — corre siempre, con o sin reduced-motion: es un cambio de
+  estado de 100ms, no una animación.
+
+**Sin pin de scroll**: es exactamente el tipo de tic de §0 (el default
+vistoso de un generador de landings), no una decisión que resuelve algo
+acá.
+
+**"Números reales" (anillos tipo RingChart)**: inspirado en el componente
+`RingChart` de bklit.com, pero de mano (sin esa dependencia) y con una
+regla que bklit no necesita imponerse: el anillo es un **marco**, no un
+**gráfico comparativo**. Ejercicios, rutinas y plataformas son unidades
+distintas — dibujar sus anillos a una fracción "proporcional" entre sí
+sería el tipo de dato engañoso que este proyecto evita (`CLAUDE.md`,
+"verificar, no suponer"). Los tres anillos dibujan a la misma fracción
+fija; lo que cambia es el número real en el centro.
+
+**Galería horizontal** (`.h-gallery`): scroll-snap nativo del navegador,
+sin JS de carrusel — el borde derecho deja asomar la siguiente tarjeta a
+propósito, es la señal de que se puede seguir scrolleando, sin flechas ni
+dots decorativos.
 
 **Capturas**: reales, del dispositivo, con datos de ejemplo — nunca mockups
 vectoriales ni chrome de teléfono de stock. Sin marcos de dispositivo

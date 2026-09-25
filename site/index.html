@@ -42,6 +42,7 @@
             />
           </svg>
           <h1
+            id="hero-heading"
             class="text-ink"
             style="font-size: clamp(2.75rem, 6vw + 1rem, 4.5rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.05"
           >
@@ -110,6 +111,56 @@
                 Exportás todo en cualquier momento desde Ajustes. Si borrás la cuenta, se borra de
                 verdad — de la nube y del dispositivo.
               </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────────────────── Números reales ─────────────────── -->
+      <!-- Anillo como marco (mismo lenguaje visual que RepeMark), no un
+           gráfico comparativo: las tres unidades son distintas (ejercicios,
+           rutinas, plataformas) — comparar sus magnitudes en un mismo
+           gráfico sería el tipo de dato engañoso que este proyecto evita
+           (CLAUDE.md "verificar, no suponer"). Ver DESIGN.md §8. -->
+      <section class="border-t border-line-2 px-5 py-24 sm:py-32">
+        <div class="mx-auto max-w-6xl">
+          <h2 class="section-heading text-center">Números reales, no de marketing</h2>
+          <div class="mt-14 grid gap-4 sm:grid-cols-3">
+            <div class="reveal stat-ring-card" data-reveal-group="stats">
+              <svg width="120" height="120" viewBox="0 0 100 100" aria-hidden="true" class="mb-4">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(235,235,245,0.14)" stroke-width="4" />
+                <circle
+                  class="stat-ring-progress"
+                  cx="50" cy="50" r="40" fill="none" stroke="#E8FF47" stroke-width="10"
+                  stroke-linecap="round" transform="rotate(-90 50 50)"
+                />
+              </svg>
+              <p class="stat-ring-number" data-value="107">0</p>
+              <p class="mt-2 text-[14px] text-ink-2">ejercicios en la biblioteca</p>
+            </div>
+            <div class="reveal stat-ring-card" data-reveal-group="stats">
+              <svg width="120" height="120" viewBox="0 0 100 100" aria-hidden="true" class="mb-4">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(235,235,245,0.14)" stroke-width="4" />
+                <circle
+                  class="stat-ring-progress"
+                  cx="50" cy="50" r="40" fill="none" stroke="#E8FF47" stroke-width="10"
+                  stroke-linecap="round" transform="rotate(-90 50 50)"
+                />
+              </svg>
+              <p class="stat-ring-number" data-value="6">0</p>
+              <p class="mt-2 text-[14px] text-ink-2">rutinas clásicas incluidas</p>
+            </div>
+            <div class="reveal stat-ring-card" data-reveal-group="stats">
+              <svg width="120" height="120" viewBox="0 0 100 100" aria-hidden="true" class="mb-4">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(235,235,245,0.14)" stroke-width="4" />
+                <circle
+                  class="stat-ring-progress"
+                  cx="50" cy="50" r="40" fill="none" stroke="#E8FF47" stroke-width="10"
+                  stroke-linecap="round" transform="rotate(-90 50 50)"
+                />
+              </svg>
+              <p class="stat-ring-number" data-value="3">0</p>
+              <p class="mt-2 text-[14px] text-ink-2">plataformas, una cuenta</p>
             </div>
           </div>
         </div>
@@ -338,6 +389,22 @@
               </p>
             </div>
           </div>
+        </div>
+      </section>
+
+      <!-- ─────────────────── Más pantallas (galería) ─────────────────── -->
+      <section class="border-t border-line-2 py-24 sm:py-32">
+        <div class="mx-auto max-w-6xl px-5">
+          <h2 class="section-heading">Toda la app, en una vuelta de dedo</h2>
+        </div>
+        <div class="h-gallery mt-10 px-5 sm:px-[max(1.25rem,calc((100vw-72rem)/2))]">
+          <img src="screenshots/home.webp" alt="Pantalla de inicio con la racha de entrenamiento y el botón de empezar" width="640" height="1387" loading="lazy" class="w-52 rounded-lg shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)] sm:w-64" />
+          <img src="screenshots/live-activity-lockscreen.webp" alt="Cronómetro de descanso en la pantalla de bloqueo del iPhone, como Live Activity" width="640" height="1387" loading="lazy" class="w-52 rounded-lg shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)] sm:w-64" />
+          <img src="screenshots/logros.webp" alt="Pantalla de logros con insignias de constancia desbloqueadas" width="640" height="1387" loading="lazy" class="w-52 rounded-lg shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)] sm:w-64" />
+          <img src="screenshots/progreso-mes.webp" alt="Vista mensual de progreso con distribución de series por grupo muscular" width="640" height="1387" loading="lazy" class="w-52 rounded-lg shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)] sm:w-64" />
+          <img src="screenshots/rutina-editor.webp" alt="Editor de rutina con los días de la semana" width="640" height="1387" loading="lazy" class="w-52 rounded-lg shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)] sm:w-64" />
+          <img src="screenshots/calculadora-1rm.webp" alt="Calculadora de 1RM estimado" width="640" height="1387" loading="lazy" class="w-52 rounded-lg shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)] sm:w-64" />
+          <img src="screenshots/invitar-alumno.webp" alt="Pantalla para invitar a un alumno por QR" width="640" height="1387" loading="lazy" class="w-52 rounded-lg shadow-[0_20px_60px_-20px_rgba(0,0,0,0.6)] sm:w-64" />
         </div>
       </section>
 
