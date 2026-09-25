@@ -1062,3 +1062,43 @@ título/texto/cronómetro exactos esperados, actualizándose y cerrándose solas
 Publicado a `beta`/`main`, deploy de Pages y build de Android en CI verdes,
 sitio en producción verificado con Playwright (manifest, sin errores de
 consola). Queda: Paso 8 (web promocional en `site/`) y Paso 9 (cierre/docs).
+
+## 2026-09-24/25 — Paso 8: web de marketing (`site/`) y cierre de docs
+
+`site/`: Vite multipágina + Tailwind + GSAP, proyecto autónomo con su propio
+`package.json`, deployado en Vercel (`vercel` CLI, cuenta ya autenticada).
+Nav/footer se inyectan en build desde `site/src/partials/` vía un plugin
+chico de Vite (`transformIndexHtml`) — evita mantener 5 archivos HTML
+sincronizados a mano. Legales (`privacidad.html`, `terminos.html`)
+generados desde `src/lib/legalText.ts` — la MISMA fuente que usa la app y
+`docs/legal/*.md` — con `test:legal-site` (`scripts/gen-legal-site.mts`)
+para que no se desincronicen solos.
+
+Contenido real: 11 capturas curadas del simulador (de las 35 con etiqueta
+amarilla) más una del tablero de coach en desktop, capturada con Playwright
+inyectando una sesión de coach falsa (`localStorage` + `page.route` sobre
+las RPCs `coach_client_summaries`/`coach_roster`, alumnos ficticios
+inventados — nada de datos reales). Video de 15s recortado con `avconvert`
+del screen recording real de 83s: se probaron varios offsets generando
+posters de prueba con `qlmanage -t` (decodificador real del SO — el
+Chromium de Playwright resultó no traer códecs H.264/AAC, típico de un
+build open-source sin licencia propietaria) antes de elegir un segmento
+coherente (Ejercicios → Progreso → gráfico de distribución muscular) en vez
+del primer tramo disponible, que caía en una pantalla vacía de "entreno
+terminado".
+
+**Bug real encontrado en la propia verificación**: el primer screenshot
+full-page con Playwright mostró la página en blanco debajo del hero. No era
+un bug de la landing — `page.screenshot({ fullPage: true })` captura sin
+disparar eventos de scroll reales, y el reveal por `ScrollTrigger` depende
+de exactamente eso. Se confirmó simulando un scroll real
+(`window.scrollTo` en pasos) antes de la captura: ahí sí reveló todo. Sin
+esa segunda verificación se podría haber reportado "andaba" con una captura
+que en realidad mostraba una página rota.
+
+Cierre de Paso 9: `docs/09-DESPLIEGUE.md` reescrito entero — describía
+deployar la app completa en Vercel con buckets de Storage que nunca
+existieron (el mismo tipo de doc fantasma que `CLAUDE.md` ya marca para
+`docs/03/05/06`). Reemplazado por el pipeline real verificado contra
+`.github/workflows/*.yml`: PWA por GitHub Pages, Android/iOS/Supabase por
+workflows manuales, `site/` por Vercel aparte.
