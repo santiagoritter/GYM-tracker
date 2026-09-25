@@ -21,10 +21,19 @@ function includePartials(): Plugin {
   }
 }
 
+// Base configurable por env, mismo patrón que la app principal
+// (vite.config.ts de la raíz): en Vercel el sitio se sirve desde la raíz
+// del dominio (default '/'), pero un mirror en GitHub Pages (repo de
+// proyecto) lo sirve bajo /<repo>/ — ver el workflow de ese repo. El resto
+// de las rutas del sitio (nav, footer, links entre páginas, imágenes de
+// `public/`) son todas relativas, no absolutas, así que no dependen de esto.
+const BASE_PATH = process.env.VITE_BASE_PATH ?? '/'
+
 // Multipágina con HTML estático de verdad (no una SPA con router): cada
 // archivo es contenido visible sin JS, bueno para SEO/OG y para que Play
 // Store / App Store puedan crawlear las páginas legales sin ejecutar nada.
 export default defineConfig({
+  base: BASE_PATH,
   plugins: [includePartials()],
   build: {
     rollupOptions: {

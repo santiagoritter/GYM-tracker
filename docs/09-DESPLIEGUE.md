@@ -17,6 +17,7 @@
 | iOS | Sin distribución todavía — solo verificación de build | Manual: `Actions → Verify iOS build` (no genera `.ipa`, sin firma) |
 | Backend | Supabase Cloud, proyecto ya creado | Manual: `Actions → Deploy Supabase → Run workflow` |
 | Web de marketing (`site/`) | Vercel, proyecto `site`, `https://site-kohl-rho-85.vercel.app` (dominio propio pendiente) | Manual con la CLI de Vercel, ver abajo |
+| Web de marketing, mirror | GitHub Pages, repo aparte [`repe-landing`](https://github.com/santiagoritter/repe-landing), `https://santiagoritter.github.io/repe-landing/` | Automático en ese repo (push a `main`), pero copiar los archivos ahí es manual — ver abajo |
 
 **Por qué dos hosts para la misma app:** GitHub Pages es el original, con el
 link ya guardado/instalado por quien la usa hoy — no se toca. El mirror en
@@ -172,7 +173,7 @@ como arriba después de cualquier cambio a las env vars.
 
 ---
 
-## Web de marketing (`site/`) → Vercel
+## Web de marketing (`site/`) → Vercel + mirror en GitHub Pages
 
 Proyecto **autónomo**, deploy **manual** (todavía no hay CI para esto — es
 contenido, no código de producto, cambia con otro ritmo):
@@ -183,13 +184,67 @@ vercel            # deploy de preview
 vercel --prod     # promueve a producción
 ```
 
-Primer deploy: la CLI ya tiene sesión (`vercel whoami` → `santiagoritter`,
-team `cita-app`) y linkeó el proyecto en `site/.vercel/` (gitignored). URL
-actual: `https://site-kohl-rho-85.vercel.app` — dominio propio pendiente de
-que el usuario decida y lo compre.
+URL: `https://site-kohl-rho-85.vercel.app` — dominio propio pendiente de que
+el usuario decida y lo compre. El proyecto **NO** está conectado al repo de
+GitHub a propósito (se desconectó después del incidente de abajo) — el
+único deploy es el manual de arriba.
 
 `site/` no pasa por `deploy.yml` (`paths-ignore: ['site/**']`): tocar la
 landing no tiene por qué redesplegar la PWA, y viceversa.
+
+### Incidente 2026-09-25: el proyecto de Vercel rompió dos veces
+
+1. **Root Directory mal seteado.** Al crear el proyecto, Vercel conectó el
+   repo de GitHub solo con `Root Directory: .` (la raíz) en vez de `site`.
+   Cualquier push a `main` (de cualquier cosa, no solo de `site/`) hacía que
+   la integración de GitHub reconstruyera el proyecto **desde la raíz** —
+   es decir, publicaba la app entera pisando la landing en la misma URL.
+   El deploy manual (`vercel --prod` corrido desde adentro de `site/`) no
+   mostraba el problema porque sube el directorio actual directo, sin pasar
+   por esa configuración — por eso parecía andar bien hasta el próximo push.
+2. **Vercel Authentication (SSO) del team activada por default.** Encima,
+   el team `cita-app` tiene protección SSO activada para toda URL que no
+   sea un dominio propio (`all_except_custom_domains`, ver
+   `vercel project protection <nombre>`). Un visitante sin sesión en esa
+   cuenta de Vercel chocaba contra el login **de Vercel**, no el de la app
+   — se leía como "no anda el login" sin serlo.
+
+**Arreglo aplicado**: se desconectó el repo de GitHub del proyecto `site`
+(`DELETE /v9/projects/{id}/link` — no hay comando de CLI para esto, es API
+o dashboard) y se desactivó SSO (`vercel project protection site --sso`
+con `disable`). Con eso, el único disparador de deploy es el manual de
+arriba, y no hay muro de login de por medio.
+
+**Lección**: verificar un fix de infra *sin cookies de sesión propia* —
+`curl -I` sin auth, o un contexto de Playwright nuevo (`browser.newContext()`
+sin heredar cookies) — porque con sesión propia en el navegador estos dos
+problemas pasan desapercibidos: la cookie de SSO ya está puesta, y la
+CLI resuelve el proyecto sin pasar por el flujo de la integración de Git.
+
+### Mirror independiente: repo `repe-landing` → GitHub Pages
+
+Copia standalone de `site/` en <https://github.com/santiagoritter/repe-landing>,
+publicada en `https://santiagoritter.github.io/repe-landing/` — mismo
+contenido, cero dependencia de Vercel/del team `cita-app`. Se armó como
+respaldo después del incidente de arriba, para tener una URL que no dependa
+de esa cuenta ni de su configuración.
+
+Es una copia manual, no un submódulo ni un mirror automático: al cambiar
+`site/` acá, hay que copiar los archivos a mano al otro repo (`rsync -a
+--exclude .git --exclude node_modules --exclude dist --exclude .vercel
+site/ ../repe-landing/`), regenerar los legales si cambiaron
+(`npm run docs:legal-site` acá, después copiar `site/privacidad.html` y
+`site/terminos.html`), commitear y pushear allá — `deploy.yml` de ese repo
+hace el resto.
+
+Todas las rutas del sitio (nav, footer, links entre páginas legales,
+imágenes/video de `public/`) son **relativas**, no absolutas — a propósito,
+para que el mismo build sirva tanto en la raíz de un dominio (Vercel) como
+en un subpath de GitHub Pages (`/repe-landing/`, vía
+`VITE_BASE_PATH=/repe-landing/` en su workflow) sin tocar nada. Los únicos
+absolutos son `/src/style.css` y `/src/main.ts` en las etiquetas
+`<link>`/`<script type="module">`, que Vite reescribe solo con el `base`
+correcto — esos si hace falta que empiecen con `/`.
 
 ---
 

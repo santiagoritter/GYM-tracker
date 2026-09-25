@@ -43,7 +43,7 @@ function page(doc: LegalDoc, description: string): string {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>${escapeHtml(doc.title)} — Repe</title>
     <meta name="description" content="${escapeHtml(description)}" />
-    <link rel="icon" href="/icons/icon-192.png" />
+    <link rel="icon" href="icons/icon-192.png" />
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
