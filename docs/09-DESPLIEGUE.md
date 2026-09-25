@@ -109,6 +109,40 @@ Supabase, no esta).
 
 ---
 
+## ⚠️ Gotcha del team de Vercel (`cita-app`): dos trampas en cada proyecto nuevo
+
+Pasaron las dos con `site` y `repe-app` al crearlos — anotado para no
+repetirlo con el próximo proyecto de este team:
+
+1. **Root Directory por defecto es la raíz del repo, no la carpeta desde la
+   que corriste `vercel`.** Si el proyecto vive en un subdirectorio
+   (`site/`), hay que fijarlo a mano — si no, el deploy manual (CLI) sale
+   bien la primera vez, pero en cuanto la integración de GitHub reacciona a
+   un push construye desde la raíz y pisa la producción con otra cosa.
+   ```bash
+   TOKEN=$(python3 -c "import json; print(json.load(open('$HOME/Library/Application Support/com.vercel.cli/auth.json'))['token'])")
+   curl -X PATCH "https://api.vercel.com/v9/projects/<projectId>?teamId=<orgId>" \
+     -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+     -d '{"rootDirectory":"site"}'
+   ```
+   (`projectId`/`orgId` están en `.vercel/project.json` de cada carpeta). No
+   hay flag de `vercel link`/`vercel project` para esto — es API o dashboard.
+
+2. **El team tiene "Vercel Authentication" (SSO) activada por defecto** para
+   toda URL que no sea un dominio propio (`all_except_custom_domains`) —
+   cualquier visitante sin sesión en la cuenta de Vercel del team choca
+   contra el login de **Vercel**, no el de la app, así que parece "el login
+   no anda" cuando en realidad nunca llegó a la app. Se desactiva por
+   proyecto:
+   ```bash
+   vercel project protection disable <nombre-proyecto> --sso
+   ```
+   Verificar sin cookies (`curl -I` a la URL o un contexto de Playwright
+   nuevo) — con sesión propia en el navegador esto pasa desapercibido
+   porque el browser ya tiene la cookie de SSO válida.
+
+---
+
 ## PWA, mirror → Vercel (proyecto `repe-app`)
 
 Mismo `dist/` que GitHub Pages, pero servido desde la raíz del dominio (sin
