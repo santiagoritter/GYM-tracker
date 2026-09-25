@@ -47,11 +47,16 @@ Si algo falla, decilo con el output. No lo maquilles.
 | Rama | Para qué |
 |---|---|
 | `alpha` | Versión estable previa al rediseño. Referencia. |
-| `beta` | Todo el rediseño y las features nuevas. **Acá se trabaja.** |
-| `main` | Producción. Solo recibe merges validados. |
+| `beta` | Integración fast-forward de `ios-nativo`. Ya no es donde se escribe código. |
+| `ios-nativo` | Rama activa real. **Acá se trabaja.** |
+| `main` | Producción. Solo recibe merges validados (fast-forward de `ios-nativo`). |
 
-El workflow de GitHub Pages solo despliega desde `main`. Trabajar en `beta`
-no toca lo que el usuario tiene en el teléfono.
+`beta` quedó de la tanda del rediseño; cuando el trabajo pasó a incluir
+iOS/Android nativo, `ios-nativo` se volvió la rama de trabajo real y `beta`
+pasó a ser un peldaño intermedio que se actualiza a la par de `main` (mismo
+commit, sin divergencia). El workflow de GitHub Pages solo despliega desde
+`main`. Trabajar en `ios-nativo` no toca lo que el usuario tiene en el
+teléfono hasta que se publica.
 
 ---
 
@@ -103,8 +108,10 @@ Verificado, no aspiracional:
 - Dexie.js (IndexedDB) — **la fuente de verdad local**
 - Lucide React para iconos
 - Capacitor para empaquetar iOS/Android
-- Supabase: diseñado, SQL en `supabase/migrations/`, **todavía sin proyecto
-  creado**. Ver `docs/13-BACKEND-SUPABASE.md`.
+- Supabase: **proyecto en producción**, vinculado vía CLI
+  (`supabase/.temp/project-ref`, fuera del repo), con las migraciones de
+  `supabase/migrations/` aplicadas (0001 en adelante) y 6 Edge Functions
+  desplegadas. Ver `docs/13-BACKEND-SUPABASE.md` y `docs/09-DESPLIEGUE.md`.
 
 TanStack Query está en `package.json` pero **no se usa**: no hay
 `QueryClientProvider`. No lo asumas disponible.
@@ -176,9 +183,9 @@ usuario.
 ## 7. Documentación
 
 `docs/` tiene material aspiracional viejo mezclado con lo real. Los
-confiables: `13-BACKEND-SUPABASE.md`, `14-SYNC.md`, `15-RECOMENDADOR.md`,
-`DESIGN.md`, `Redisenio.md`. El resto, verificalo contra el código antes de
-creerle.
+confiables: `09-DESPLIEGUE.md`, `13-BACKEND-SUPABASE.md`, `14-SYNC.md`,
+`15-RECOMENDADOR.md`, `16-CAPACITOR.md`, `21-COACH.md`, `DESIGN.md`,
+`Redisenio.md`. El resto, verificalo contra el código antes de creerle.
 
 Cuando cambies algo que un doc describe, actualizá el doc en el mismo
 commit. Un documento que miente es peor que ninguno.
