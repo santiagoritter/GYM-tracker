@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useReminderScheduler } from '@/lib/reminders'
 import { useWorkoutActivityReconciler } from '@/hooks/useWorkoutActivityReconciler'
+import { useAndroidBackButton } from '@/hooks/useAndroidBackButton'
 import { useAuthStore } from '@/stores/authStore'
 import { cn } from '@/lib/utils'
 import { getTabs } from '@/lib/navTabs'
@@ -18,6 +19,7 @@ export default function LayoutDesktop() {
   const tabs = getTabs(role)
   useReminderScheduler()
   useWorkoutActivityReconciler()
+  useAndroidBackButton()
   const [headerRef, headerHeight] = useElementHeight<HTMLDivElement>()
 
   return (

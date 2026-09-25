@@ -19,7 +19,7 @@ import {
   formatRunNotes,
   summarizeRun,
 } from '@/lib/run'
-import { hapticSuccess, hapticTick } from '@/lib/native'
+import { hapticSuccess, hapticTick, isNative } from '@/lib/native'
 import { uid } from '@/lib/utils'
 import { toast } from '@/stores/toastStore'
 import HoldButton from '@/components/ui/HoldButton'
@@ -345,6 +345,14 @@ export default function Run() {
           <p className="flex items-center gap-1.5 text-[13px] text-warning">
             <MapPin size={13} /> Sin señal de GPS
           </p>
+        )}
+        {/* Solo web: en nativo el recorrido sigue igual con la pantalla
+            apagada (background geolocation real); en el navegador, si se
+            bloquea la pantalla, el tab se suspende y el recorrido queda con
+            huecos — wakeLock (runTracker.ts) ayuda mientras la pestaña
+            siga visible, pero no reemplaza el aviso. */}
+        {!isNative && (
+          <p className="text-[12px] text-ink-3">No bloquees la pantalla para no perder el recorrido.</p>
         )}
 
         {target && (

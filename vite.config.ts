@@ -63,6 +63,14 @@ export default defineConfig(({ mode }) => {
           rollupFormat: 'iife',
         },
         manifest: {
+          // Faltaban `lang` e `id` — el manifest de un build viejo (`main`,
+          // previo al rebrand) todavía decía "GymTracker" con `lang: "en"`
+          // por default de la herramienta que lo generó la primera vez.
+          // `id` = el `start_url` de siempre: es lo que identifica a esta
+          // PWA como "la misma app" entre instalaciones — si cambiara,
+          // alguien que ya la tiene instalada quedaría con dos íconos.
+          id: BASE_PATH,
+          lang: 'es',
           name: 'Repe',
           short_name: 'Repe',
           description: 'Registro de entrenamientos minimalista y offline-first',
@@ -76,7 +84,12 @@ export default defineConfig(({ mode }) => {
           icons: [
             { src: `${BASE_PATH}icons/icon-192.png`, sizes: '192x192', type: 'image/png' },
             { src: `${BASE_PATH}icons/icon-512.png`, sizes: '512x512', type: 'image/png' },
-            { src: `${BASE_PATH}icons/icon-512.png`, sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+            // Maskable dedicado, no el mismo icon-512 de arriba: ese está
+            // pensado para mostrarse cuadrado completo, sin zona segura —
+            // un launcher que recorta a círculo se comía parte del anillo.
+            // Generado con el mismo criterio que el ícono adaptativo de
+            // Android (logo al 42% de la caja, con margen real).
+            { src: `${BASE_PATH}icons/icon-512-maskable.png`, sizes: '512x512', type: 'image/png', purpose: 'maskable' },
           ],
         },
       }),

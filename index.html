@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#0B0B0C" />
+    <!-- Sin esto, el navegador pedía /favicon.ico igual (404 en Pages) y
+         iOS Safari no tenía nada para "Agregar a inicio" salvo una captura
+         de pantalla genérica. `%BASE_URL%` lo resuelve Vite solo (build
+         nativo → '/', Pages → '/GYM-tracker/'). -->
+    <link rel="icon" href="%BASE_URL%icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="%BASE_URL%icons/icon-512.png" />
     <!--
       CSP (B7). Acota a lo que la app realmente usa: Supabase (auth + sync),
       la API/login de Spotify, las carátulas de Spotify y los tiles de

@@ -1,9 +1,10 @@
-import type { ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import Portal from '@/components/ui/Portal'
 import { useSheetDrag } from '@/hooks/useSheetDrag'
 import { useIsDesktop } from '@/hooks/useMediaQuery'
 import { useScrollLock } from '@/hooks/useScrollLock'
+import { pushBackHandler } from '@/lib/backStack'
 import { cn } from '@/lib/utils'
 import {
   sheetPanelVariantsFlex,
@@ -52,6 +53,14 @@ export default function ResponsiveSheet({
   // muerto el scroll de toda la app); con ese bug arreglado, hace falta
   // este bloqueo explícito.
   useScrollLock()
+
+  // Botón atrás de Android (useAndroidBackButton.ts, Layout.tsx): registra
+  // este sheet como "lo próximo para cerrar" mientras esté montado. Con un
+  // ref para no sacar/volver a poner la entrada en cada render si `onClose`
+  // cambia de identidad (arrow function inline en el caller, lo más común).
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
+  useEffect(() => pushBackHandler(() => onCloseRef.current()), [])
 
   const variants = isDesktop
     ? reduced

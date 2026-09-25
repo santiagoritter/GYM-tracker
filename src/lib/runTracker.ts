@@ -3,6 +3,7 @@ import { startWatch, type GeoWatch } from '@/lib/geo'
 import { useRunStore } from '@/stores/runStore'
 import { summarizeRun } from '@/lib/run'
 import { endRunActivity, startRunActivity, updateRunActivity } from '@/lib/liveActivity'
+import { isNative } from '@/lib/native'
 
 /**
  * Seguimiento de una salida a correr, DESACOPLADO de la pantalla.
@@ -28,6 +29,41 @@ let unsubscribe: (() => void) | null = null
  * asíncrono que ya no corresponde (paró mientras arrancaba). */
 let generation = 0
 let running = false
+let wakeLock: WakeLockSentinel | null = null
+
+/**
+ * Solo web: en nativo el seguimiento sigue igual con la pantalla apagada
+ * (servicio en primer plano + permiso de ubicación en background); en un
+ * navegador no hay nada parecido — si el usuario bloquea el teléfono, el
+ * tab se suspende y el recorrido queda con huecos. `wakeLock` mantiene la
+ * pantalla prendida mientras la pestaña esté visible (no evita que el
+ * usuario decida bloquearla a mano, por eso el aviso en Run.tsx). El
+ * propio SO puede soltarlo solo (cambiar de app, poca batería) — se
+ * reintenta al volver a foreground.
+ */
+async function acquireWakeLock(): Promise<void> {
+  if (isNative || !('wakeLock' in navigator)) return
+  try {
+    wakeLock = await navigator.wakeLock.request('screen')
+    wakeLock.addEventListener('release', () => {
+      wakeLock = null
+    })
+  } catch {
+    // Denegado o no soportado en este momento (ej. tab no visible): no es
+    // un error del usuario, no hay nada para reportar acá.
+  }
+}
+
+function releaseWakeLock(): void {
+  void wakeLock?.release().catch(() => undefined)
+  wakeLock = null
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && running && !wakeLock) void acquireWakeLock()
+  })
+}
 
 export function isTracking(): boolean {
   return running
@@ -41,6 +77,7 @@ export function startTracking(): void {
   running = true
   const mine = ++generation
   useRunSignal.setState({ hasFix: false })
+  void acquireWakeLock()
 
   void startRunActivity('Corriendo', new Date(session.startedAt).getTime())
 
@@ -80,5 +117,6 @@ export function stopTracking(): void {
   unsubscribe?.()
   unsubscribe = null
   useRunSignal.setState({ hasFix: false })
+  releaseWakeLock()
   void endRunActivity()
 }
