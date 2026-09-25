@@ -1036,3 +1036,29 @@ Detalle del estado y de lo que depende del dueño en `docs/APP-STORE-REVIEW.md`.
 `RAISE EXCEPTION` es una forma de correr pruebas contra la base real sin dejar
 rastro — pero `RESET ROLE` cae al rol temporal de la CLI (sin privilegios sobre las
 tablas); hay que usar `SET LOCAL ROLE postgres`.
+
+## 2026-09-24/25 — Paso 7 del cierre a producción: paridad Android completa
+
+Con el tablero de coach en PC ya publicado (Paso 6 P0), se terminó la paridad
+Android/PWA: botón atrás nativo (`backStack.ts`), manifest de PWA completo
+(`lang`, `id`, ícono maskable dedicado, favicon/apple-touch-icon), `wakeLock`
+en Correr desde web, compras y anuncios con paridad real Android (antes solo
+gateaban por iOS; `Paywall.tsx` no matcheaba el `productId` compuesto de Play
+Billing — `gymtracker.coach.monthly:monthly-base` — porque comparaba exacto
+contra el id pelado), y el equivalente Android de la Live Activity de iOS:
+notificación persistente con `setUsesChronometer`/`setChronometerCountDown`
+(`WorkoutNotificationPlugin.java`), mismo nombre de plugin que iOS así que
+`liveActivity.ts` no se ramifica por plataforma. Running queda afuera a
+propósito (el foreground service de ubicación ya tiene su propia notificación).
+
+**Verificado de verdad, no en el commit**: se levantó el AVD, se instaló el
+APK release-signed que genera `android.yml`, y se llamó al plugin nativo vía
+Chrome DevTools Protocol directo sobre la página real cargada en el WebView
+(sin pasar por la UI, que en este AVD `aosp_atd` renderiza negro en captura
+— limitación conocida del emulador, no bug de la app). `dumpsys notification`
+mostró las dos notificaciones (9101 descanso, 9102 entreno) con el
+título/texto/cronómetro exactos esperados, actualizándose y cerrándose solas.
+
+Publicado a `beta`/`main`, deploy de Pages y build de Android en CI verdes,
+sitio en producción verificado con Playwright (manifest, sin errores de
+consola). Queda: Paso 8 (web promocional en `site/`) y Paso 9 (cierre/docs).
