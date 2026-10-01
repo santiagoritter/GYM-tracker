@@ -1102,3 +1102,37 @@ existieron (el mismo tipo de doc fantasma que `CLAUDE.md` ya marca para
 `docs/03/05/06`). Reemplazado por el pipeline real verificado contra
 `.github/workflows/*.yml`: PWA por GitHub Pages, Android/iOS/Supabase por
 workflows manuales, `site/` por Vercel aparte.
+
+## 2026-09-30 — Testers reales: pérdida de historial al pasar a la nube
+
+Un tester reportó que perdió gran parte de sus datos "tras la migración".
+Hay un solo mecanismo real de migración en la app: pasar el historial de una
+cuenta local (modo invitado o cuenta local vieja) a la cuenta de Supabase al
+loguearse (`remapUserData`, `src/db/migrateLocalUserToSupabase.ts`). Se
+encontraron dos formas de perder datos ahí:
+
+1. **No se reintentaba.** Login, Registro y ForgotPassword abren la sesión de
+   Supabase y recién después remapean. El remapeo es una transacción de Dexie
+   (si falla no deja nada a medias: los datos quedan intactos bajo el id
+   viejo), pero si fallaba una vez la sesión ya quedaba guardada, esas
+   pantallas no volvían a aparecer y el historial quedaba invisible para
+   siempre (`scoped.ts` filtra por el `userId` activo). Ahora
+   `retryPendingMigrations` corre en cada arranque con sesión, antes del
+   primer sync. Es seguro: no hace nada si no hay nada que mover.
+2. **Pisaba datos reales.** `profile`, `personalRecords` y `exercisePhotos`
+   tienen un id derivado del userId. Si la cuenta real ya tenía esa fila
+   (bajada de otro dispositivo), el `put` la pisaba con el dato local viejo:
+   un PR real reemplazado por uno peor, o el perfil del servidor por el del
+   invitado, que después se subía. Ahora en el PR gana el mayor 1RM y en lo
+   demás gana el más nuevo; ante la duda, el que ya estaba.
+
+Para quien ya lo sufrió: Ajustes → Datos muestra "Recuperar historial
+anterior" cuando en el dispositivo queda historial de un invitado o de una
+cuenta local vieja. Nunca ofrece datos de otra cuenta real de Supabase (son
+de otra persona). Límite honesto: una cuenta local nunca subió nada, así que
+si se borraron los datos del navegador o se desinstaló la app, no hay copia.
+
+**Lección**: el test de remapeo pasaba, pero siempre arrancaba con la cuenta
+destino vacía, justo el caso donde no hay colisión. Se agregaron colisión,
+reintento y `dirty: 0` heredado. Antes de confiar en el test se comprobó que
+falla contra el código viejo.

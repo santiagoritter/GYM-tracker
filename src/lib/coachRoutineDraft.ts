@@ -115,3 +115,35 @@ export function draftToRpcPayload(draft: RoutineDraft) {
     })),
   }
 }
+
+/**
+ * Enlaza o desenlaza el ejercicio `index` en superserie con el anterior. Misma
+ * regla que `toggleSupersetWithPrevious` (db/routines.ts) para la rutina
+ * propia, pero sobre el borrador en memoria: usa el grupo del anterior o crea
+ * uno nuevo, y un grupo que queda con un solo miembro se limpia.
+ */
+export function toggleDraftSuperset(exercises: DraftExercise[], index: number): DraftExercise[] {
+  if (index <= 0 || index >= exercises.length) return exercises
+  const entry = exercises[index]!
+  const prev = exercises[index - 1]!
+  if (entry.supersetGroup !== undefined && entry.supersetGroup === prev.supersetGroup) {
+    const group = entry.supersetGroup
+    const next = exercises.map((e, i) => (i === index ? { ...e, supersetGroup: undefined } : e))
+    return clearSingletonGroups(next, group)
+  }
+  const group = prev.supersetGroup ?? Math.max(0, ...exercises.map((e) => e.supersetGroup ?? 0)) + 1
+  return exercises.map((e, i) => (i === index || i === index - 1 ? { ...e, supersetGroup: group } : e))
+}
+
+/** Saca un ejercicio y limpia su grupo si queda con un solo miembro. */
+export function removeDraftExercise(exercises: DraftExercise[], key: string): DraftExercise[] {
+  const removed = exercises.find((e) => e.key === key)
+  const next = exercises.filter((e) => e.key !== key)
+  return removed?.supersetGroup !== undefined ? clearSingletonGroups(next, removed.supersetGroup) : next
+}
+
+function clearSingletonGroups(exercises: DraftExercise[], group: number): DraftExercise[] {
+  const members = exercises.filter((e) => e.supersetGroup === group)
+  if (members.length !== 1) return exercises
+  return exercises.map((e) => (e.supersetGroup === group ? { ...e, supersetGroup: undefined } : e))
+}

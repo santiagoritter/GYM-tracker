@@ -16,8 +16,10 @@
       OpenStreetMap (mapa de running). `'unsafe-inline'` en script es por el
       bootstrap de tema de acá abajo; en style, por los estilos inline de
       React/Tailwind/Leaflet. Endurecer script-src a hashes es un follow-up
-      que necesita verificación en navegador. Bloquea framing, plugins y
-      destinos de red/formulario desconocidos.
+      que necesita verificación en navegador. Bloquea plugins y destinos de
+      red/formulario desconocidos. NO bloquea que la página se cargue dentro
+      de un iframe: `frame-ancestors` no tiene efecto en un <meta>, solo como
+      header HTTP (ver docs/19-SEGURIDAD.md).
     -->
     <meta
       http-equiv="Content-Security-Policy"

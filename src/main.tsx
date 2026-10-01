@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { supabase } from '@/lib/supabaseClient'
 import { runSync } from '@/lib/sync'
 import { isGuestUserId } from '@/lib/guest'
+import { retryPendingMigrations } from '@/db/migrateLocalUserToSupabase'
 import { identifyPurchasesUser, initPurchases, resetPurchasesUser } from '@/lib/purchases'
 import type { UserRole } from '@/types'
 import { initNativeShell, isNative, platform } from '@/lib/native'
@@ -105,7 +106,12 @@ if (supabase) {
       const role = (session.user.app_metadata?.role as UserRole | undefined) ?? 'user'
       const name = (session.user.user_metadata?.name as string | undefined) ?? ''
       useAuthStore.getState().setSession(session.user.id, role, name, session.user.email ?? '')
-      triggerSync()
+      // Antes de sincronizar: si un remapeo de historial local quedó sin
+      // hacer (falló en el login y nunca se reintentó), se hace ahora.
+      const user = session.user
+      void retryPendingMigrations(user.id, user.email ?? '')
+        .catch((e: unknown) => console.warn('[migración] reintento fallido', e))
+        .finally(triggerSync)
       void identifyPurchasesUser(session.user.id).catch(() => undefined)
       if (!syncInterval) syncInterval = setInterval(triggerSync, SYNC_INTERVAL_MS)
     } else {

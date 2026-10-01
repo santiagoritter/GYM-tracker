@@ -3,6 +3,8 @@ import {
   emptyDraft,
   newExercise,
   payloadToDraft,
+  removeDraftExercise,
+  toggleDraftSuperset,
   validateDraft,
 } from '@/lib/coachRoutineDraft'
 import { ROUTINE_TEMPLATES } from '@/data/routineTemplates'
@@ -73,6 +75,23 @@ check(
   noSg.days[0]!.exercises.every((e) => e.supersetGroup === null),
   'un ejercicio sin superset debería mandar null explícito, no omitirlo'
 )
+
+// Superseries en el borrador (antes no había UI para armarlas).
+{
+  const exs = [newExercise('bench-press'), newExercise('row'), newExercise('curl')]
+  const linked = toggleDraftSuperset(exs, 1)
+  check(linked[0]!.supersetGroup !== undefined && linked[0]!.supersetGroup === linked[1]!.supersetGroup, 'superserie: no enlazó con el anterior')
+  check(linked[2]!.supersetGroup === undefined, 'superserie: tocó un ejercicio que no correspondía')
+  const three = toggleDraftSuperset(linked, 2)
+  check(three.every((e) => e.supersetGroup === linked[0]!.supersetGroup), 'superserie: el tercero no se sumó al grupo existente')
+  const unlinked = toggleDraftSuperset(toggleDraftSuperset(exs, 1), 1)
+  check(unlinked.every((e) => e.supersetGroup === undefined), 'superserie: desenlazar dejó un grupo de un solo ejercicio')
+  check(toggleDraftSuperset(exs, 0) === exs, 'superserie: el primero no tiene anterior, no debería cambiar nada')
+  const afterRemove = removeDraftExercise(toggleDraftSuperset(exs, 1), exs[0]!.key)
+  check(afterRemove.every((e) => e.supersetGroup === undefined), 'superserie: quitar un ejercicio dejó un grupo huérfano')
+  const rpc = draftToRpcPayload({ name: 'SS', days: [{ key: 'k', name: 'D', isRest: false, exercises: linked }] })
+  check(rpc.days[0]!.exercises[0]!.supersetGroup === rpc.days[0]!.exercises[1]!.supersetGroup && rpc.days[0]!.exercises[0]!.supersetGroup !== null, 'superserie: no llega a la RPC')
+}
 
 if (fail.length) {
   console.error('❌ Borrador de rutina del coach:\n - ' + fail.join('\n - '))

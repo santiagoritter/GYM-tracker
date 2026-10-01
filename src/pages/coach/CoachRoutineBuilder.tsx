@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ArrowDown, ArrowLeft, ArrowUp, Moon, Plus, Trash2, X } from 'lucide-react'
+import { ArrowDown, ArrowLeft, ArrowUp, Link2, Moon, Plus, Trash2, X } from 'lucide-react'
 import { db } from '@/db/schema'
 import { routinesFor } from '@/db/scoped'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
@@ -15,6 +15,8 @@ import {
   newDay,
   newExercise,
   payloadToDraft,
+  removeDraftExercise,
+  toggleDraftSuperset,
   validateDraft,
   type DraftDay,
   type DraftExercise,
@@ -320,11 +322,17 @@ export default function CoachRoutineBuilder() {
                       exercise={exerciseMap.get(ex.exerciseId)}
                       isFirst={exIndex === 0}
                       isLast={exIndex === day.exercises.length - 1}
+                      linkedWithPrev={
+                        exIndex > 0 &&
+                        ex.supersetGroup !== undefined &&
+                        day.exercises[exIndex - 1]!.supersetGroup === ex.supersetGroup
+                      }
                       onChange={(patch) => patchExercise(day.key, ex.key, patch)}
                       onMove={(dir) => patchDay(day.key, { exercises: move(day.exercises, exIndex, dir) })}
-                      onRemove={() =>
-                        patchDay(day.key, { exercises: day.exercises.filter((x) => x.key !== ex.key) })
+                      onToggleSuperset={() =>
+                        patchDay(day.key, { exercises: toggleDraftSuperset(day.exercises, exIndex) })
                       }
+                      onRemove={() => patchDay(day.key, { exercises: removeDraftExercise(day.exercises, ex.key) })}
                     />
                   ))
                 )}
@@ -410,16 +418,20 @@ function ExerciseRow({
   exercise,
   isFirst,
   isLast,
+  linkedWithPrev,
   onChange,
   onMove,
+  onToggleSuperset,
   onRemove,
 }: {
   ex: DraftExercise
   exercise?: Exercise
   isFirst: boolean
   isLast: boolean
+  linkedWithPrev: boolean
   onChange: (patch: Partial<DraftExercise>) => void
   onMove: (dir: -1 | 1) => void
+  onToggleSuperset: () => void
   onRemove: () => void
 }) {
   const customRest = !REST_OPTIONS.includes(ex.restSeconds)
@@ -430,6 +442,14 @@ function ExerciseRow({
       <div className="flex w-full items-center justify-between gap-2">
         <p className="min-w-0 flex-1 truncate font-medium">{exercise?.name ?? 'Ejercicio'}</p>
         <div className="flex shrink-0 items-center">
+          <IconButton
+            label="Superserie con el ejercicio anterior"
+            disabled={isFirst}
+            active={linkedWithPrev}
+            onClick={onToggleSuperset}
+          >
+            <Link2 size={16} />
+          </IconButton>
           <IconButton label="Mover arriba" disabled={isFirst} onClick={() => onMove(-1)}>
             <ArrowUp size={16} />
           </IconButton>

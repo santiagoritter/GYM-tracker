@@ -14,6 +14,7 @@ import {
   Flame,
   GraduationCap,
   HelpCircle,
+  History,
   Music,
   Moon,
   Palette,
@@ -87,6 +88,7 @@ import { useSpotifyStore } from '@/stores/spotifyStore'
 import { isSpotifyConfigured, startSpotifyLogin } from '@/lib/spotifyAuth'
 import { isSupabaseAuthConfigured } from '@/lib/supabaseAuth'
 import { runSync } from '@/lib/sync'
+import { findRecoverableAccounts, remapUserData, type RecoverableAccount } from '@/db/migrateLocalUserToSupabase'
 import { useSyncStore } from '@/stores/syncStore'
 import { Card, Row, SectionHeader } from '@/components/ui/Card'
 import DraftNumberInput from '@/components/ui/DraftNumberInput'
@@ -203,6 +205,26 @@ export default function Ajustes() {
       toast.success('Datos importados', 'Volvé a entrar a cada pantalla para verlos actualizados.')
     } catch (err) {
       toast.error('No se pudo importar', err instanceof Error ? err.message : 'Revisá que sea un backup válido.')
+    }
+  }
+
+  // Historial que quedó en este dispositivo bajo el modo invitado o una cuenta
+  // local vieja (ver findRecoverableAccounts): pasa a esta cuenta y se sube.
+  const recoverable = useLiveQuery(
+    () => (userId && !isGuest ? findRecoverableAccounts(userId) : Promise.resolve([])),
+    [userId, isGuest]
+  )
+
+  const handleRecover = async (acc: RecoverableAccount) => {
+    if (!userId) return
+    const plural = acc.workouts === 1 ? 'entreno' : 'entrenos'
+    if (!confirm(`Pasar ${acc.workouts} ${plural} (${acc.label}) a esta cuenta y subirlos a la nube. ¿Continuar?`)) return
+    try {
+      await remapUserData(acc.id, userId)
+      runSync(userId)
+      toast.success('Historial recuperado', 'Ya está en tu cuenta y se está subiendo a la nube.')
+    } catch (e) {
+      toast.error('No se pudo recuperar', e instanceof Error ? e.message : 'Probá de nuevo.')
     }
   }
 
@@ -597,6 +619,17 @@ export default function Ajustes() {
                 <p className="text-[13px] text-ink-3">Desde un backup exportado antes</p>
               </div>
             </Row>
+            {recoverable?.map((acc) => (
+              <Row key={acc.id} onClick={() => void handleRecover(acc)}>
+                <History size={18} className="shrink-0 text-accent" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[15px]">Recuperar historial anterior</p>
+                  <p className="text-[13px] text-ink-3">
+                    {acc.workouts} {acc.workouts === 1 ? 'entreno' : 'entrenos'} de {acc.label}, en este dispositivo
+                  </p>
+                </div>
+              </Row>
+            ))}
           </Card>
           <input
             ref={fileRef}

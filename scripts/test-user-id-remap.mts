@@ -10,7 +10,8 @@
 import 'fake-indexeddb/auto'
 import { db } from '@/db/schema'
 import { installSyncHooks, setSyncUser } from '@/db/syncHooks'
-import { migrateLocalUserToSupabase, remapUserData } from '@/db/migrateLocalUserToSupabase'
+import { findRecoverableAccounts, migrateLocalUserToSupabase, remapUserData, retryPendingMigrations } from '@/db/migrateLocalUserToSupabase'
+import { useAuthStore } from '@/stores/authStore'
 
 const OLD_UID = '11111111-1111-4111-8111-111111111111'
 const NEW_UID = '22222222-2222-4222-8222-222222222222'
@@ -150,6 +151,48 @@ check(guestRuns.length === 1 && guestRuns[0]?.route.length === 1, 'invitado: la 
 check((await db.runs.where('userId').equals(GUEST).count()) === 0, 'invitado: quedó una salida huérfana')
 await remapUserData(GUEST, ACCOUNT) // idempotente: ya no hay nada bajo GUEST
 check((await db.workouts.where('userId').equals(ACCOUNT).toArray()).filter((w) => w.id === 'gw1').length === 1, 'invitado: correr dos veces duplicó filas')
+
+// ── Colisión: la cuenta real ya tiene filas con el mismo id destino ────────
+// (perfil y PRs bajados del servidor antes de remapear). Antes el `put` las
+// pisaba en silencio con el dato local viejo — así se perdía historial real.
+const G2 = 'guest-55555555-5555-4555-8555-555555555555'
+const REAL = '66666666-6666-4666-8666-666666666666'
+await db.profile.put({ id: REAL, units: 'kg', restTimerDefault: 120, bodyWeightKg: 90, updatedAt: '2026-05-01T00:00:00Z', dirty: 0 })
+await db.profile.put({ id: G2, units: 'kg', restTimerDefault: 60, bodyWeightKg: 70, updatedAt: '2026-01-01T00:00:00Z', dirty: 1 })
+// PR real mejor que el local → se queda el real
+await db.personalRecords.put({ id: `${REAL}_deadlift`, userId: REAL, exerciseId: 'deadlift', weightKg: 180, reps: 3, oneRmKg: 190, achievedAt: '2026-05-01T00:00:00Z', workoutId: 'x', updatedAt: '2026-05-01T00:00:00Z', dirty: 0 })
+await db.personalRecords.put({ id: `${G2}_deadlift`, userId: G2, exerciseId: 'deadlift', weightKg: 140, reps: 3, oneRmKg: 150, achievedAt: '2026-01-01T00:00:00Z', workoutId: 'y', updatedAt: '2026-01-01T00:00:00Z', dirty: 1 })
+// PR local mejor que el real → gana el local
+await db.personalRecords.put({ id: `${REAL}_ohp`, userId: REAL, exerciseId: 'ohp', weightKg: 50, reps: 5, oneRmKg: 58, achievedAt: '2026-05-01T00:00:00Z', workoutId: 'x', updatedAt: '2026-05-01T00:00:00Z', dirty: 0 })
+await db.personalRecords.put({ id: `${G2}_ohp`, userId: G2, exerciseId: 'ohp', weightKg: 60, reps: 5, oneRmKg: 70, achievedAt: '2026-01-01T00:00:00Z', workoutId: 'y', updatedAt: '2026-01-01T00:00:00Z', dirty: 1 })
+// Fila que llega con dirty: 0 heredado: igual tiene que subir con su nuevo dueño
+await db.workouts.put({ id: 'g2w', userId: G2, name: 'Push', startedAt: '2026-01-02T00:00:00Z', finishedAt: '2026-01-02T01:00:00Z', updatedAt: '2026-01-02T01:00:00Z', dirty: 0 })
+
+await remapUserData(G2, REAL)
+check((await db.profile.get(REAL))?.bodyWeightKg === 90, 'colisión: el perfil local viejo pisó al perfil real más nuevo')
+check(!(await db.profile.get(G2)), 'colisión: quedó el perfil del invitado')
+check((await db.personalRecords.get(`${REAL}_deadlift`))?.oneRmKg === 190, 'colisión: un PR local peor pisó al PR real')
+check((await db.personalRecords.get(`${REAL}_ohp`))?.oneRmKg === 70, 'colisión: el PR local mejor no reemplazó al real')
+check((await db.personalRecords.where('userId').equals(G2).count()) === 0, 'colisión: quedaron PRs huérfanos del invitado')
+check((await db.workouts.get('g2w'))?.dirty === 1, 'una fila remapeada con dirty: 0 no se marcó para subir')
+
+// ── Recuperación manual: qué historial ofrece reclamar ────────────────────
+const OTHER_REAL = '77777777-7777-4777-8777-777777777777'
+const G3 = 'guest-88888888-8888-4888-8888-888888888888'
+await db.workouts.put({ id: 'ow', userId: OTHER_REAL, name: 'Ajeno', startedAt: '2026-03-01T00:00:00Z' })
+await db.workouts.put({ id: 'g3w', userId: G3, name: 'Huérfano', startedAt: '2026-03-01T00:00:00Z' })
+const recoverable = await findRecoverableAccounts(REAL)
+check(recoverable.some((r) => r.id === G3 && r.workouts === 1), 'recuperación: no ofrece el historial del invitado huérfano')
+check(!recoverable.some((r) => r.id === OTHER_REAL), 'recuperación: ofrece datos de OTRA cuenta real (de otra persona)')
+check(!recoverable.some((r) => r.id === REAL), 'recuperación: se ofrece a sí misma')
+
+// ── Reintento al arrancar: guestId pendiente en el store ──────────────────
+useAuthStore.setState({ guestId: G3 })
+await retryPendingMigrations(REAL, 'otra@example.com')
+check((await db.workouts.get('g3w'))?.userId === REAL, 'reintento: el invitado pendiente no se migró al arrancar')
+check(useAuthStore.getState().guestId === null, 'reintento: no limpió el guestId tras migrar')
+await retryPendingMigrations(REAL, 'otra@example.com') // no-op
+check((await db.workouts.where('userId').equals(REAL).count()) === 2, 'reintento: correrlo dos veces cambió algo')
 
 if (fail.length) {
   console.error('\n❌ FALLOS:')

@@ -90,7 +90,24 @@ de OSM) y bloquea `object`, `base-uri` y `form-action` fuera de `self`. `script-
 Leaflet). **Follow-up**: pasar `script-src` a hashes en vez de
 `'unsafe-inline'` — necesita verificación en navegador. GitHub Pages no deja
 mandar headers, así que `frame-ancestors` (solo válido por header) no se
-puede aplicar acá.
+puede aplicar acá. El mirror de Vercel (`repe-app`) sí podría mandarlo, pero
+queda sin aplicar a propósito: hay un reporte de scroll roto con la app
+abierta "dentro de Google", que puede ser justamente un iframe, y bloquear el
+embed sin entender el caso primero cambiaría el bug por una página en blanco.
+
+## Datos en tránsito y en reposo (auditoría 2026-09-30)
+
+- **En tránsito**: el sync sube y baja las filas en claro sobre HTTPS/TLS. No
+  hay cifrado de punta a punta, y es a propósito: el modo coach necesita que
+  el coach lea los datos del alumno (`is_coach_of()` en RLS). Cifrar de punta
+  a punta rompería esa función.
+- **En reposo**: lo cifra Supabase (disco del proveedor). Lo único cifrado por
+  la app es el backup exportable (AES-GCM-256, `src/lib/crypto.ts`), opcional.
+- **RLS**: las 29 tablas `public.*` la tienen habilitada. Las únicas políticas
+  `using (true)` son de lectura y deliberadas (rutina compartida por código,
+  ficha pública de coach, reseñas, `app_config`). Ninguna de escritura.
+- **Migración de cuenta local → nube**: se encontraron y arreglaron dos formas
+  de perder historial. Ver `docs/BITACORA.md` (2026-09-30).
 
 ## Checklist manual en el dashboard de Supabase
 

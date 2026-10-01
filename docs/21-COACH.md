@@ -76,11 +76,13 @@ leer `auth.users` ni `profiles` ajenos — este RPC le devuelve solo lo suyo
 ### Compromisos de núcleo (a completar en fase 2)
 
 - **Asignar rutina** = elegir una de las 6 plantillas de
-  `ROUTINE_TEMPLATES` y empujarla como copia. Armar una rutina a medida
-  para un alumno desde `RoutineEditor` queda pendiente.
+  `ROUTINE_TEMPLATES` y empujarla como copia. (En esta fase. El constructor
+  a medida llegó después: `CoachRoutineBuilder.tsx`, migración 0021.)
 - **Metas** del alumno se muestran en su Perfil (`MyCoachCard`), no en una
   sección nueva de Progreso.
-- Sin `used_count`/`max_uses` enforcement en las invitaciones.
+- Las invitaciones no validaban `used_count`/`max_uses` en esta fase. Se
+  arregló en 0016 (`accept_coach_invite`) y 0022 (aceptar dos veces la
+  misma invitación de un solo uso).
 
 ## Fase 2 — chat, reseñas, DNI, maqueta de pago
 
