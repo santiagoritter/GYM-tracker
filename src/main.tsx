@@ -100,6 +100,26 @@ const triggerSync = () => {
   if (userId && !isGuestUserId(userId) && !document.hidden && navigator.onLine) runSync(userId)
 }
 
+// El rol (coach/user) viaja en el JWT. `become-coach` refresca el token solo
+// en el dispositivo que lo pidió: en los demás el rol viejo seguía hasta
+// cerrar sesión (bug reportado por un tester). Pedir un token nuevo trae el
+// rol actual del servidor, y el onAuthStateChange de abajo lo guarda.
+// Nunca desde adentro de ese callback (supabase-js puede trabarse) y como
+// mucho cada 5 min.
+const ROLE_REFRESH_MS = 5 * 60 * 1000
+let lastRoleRefresh = 0
+const refreshRole = () => {
+  const { userId } = useAuthStore.getState()
+  if (!supabase || !userId || isGuestUserId(userId) || document.hidden || !navigator.onLine) return
+  if (Date.now() - lastRoleRefresh < ROLE_REFRESH_MS) return
+  lastRoleRefresh = Date.now()
+  void supabase.auth.refreshSession().catch(() => undefined)
+}
+const onWake = () => {
+  triggerSync()
+  refreshRole()
+}
+
 if (supabase) {
   supabase.auth.onAuthStateChange((_event, session) => {
     if (session?.user) {
@@ -113,7 +133,12 @@ if (supabase) {
         .catch((e: unknown) => console.warn('[migración] reintento fallido', e))
         .finally(triggerSync)
       void identifyPurchasesUser(session.user.id).catch(() => undefined)
-      if (!syncInterval) syncInterval = setInterval(triggerSync, SYNC_INTERVAL_MS)
+      if (!syncInterval) {
+        syncInterval = setInterval(onWake, SYNC_INTERVAL_MS)
+        // Arranque en frío con la sesión guardada: el JWT restaurado puede
+        // traer un rol viejo. Un refresco, fuera de este callback.
+        setTimeout(refreshRole, 1500)
+      }
     } else {
       // Sin sesión de Supabase pero en modo sin cuenta: NO se limpia (el evento
       // inicial de onAuthStateChange llega con `session = null` en cada
@@ -131,9 +156,9 @@ if (supabase) {
     }
   })
 
-  window.addEventListener('online', triggerSync)
+  window.addEventListener('online', onWake)
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) triggerSync()
+    if (!document.hidden) onWake()
   })
 } else {
   // Sin Supabase (modo 100% local): no hay sesión viva que esperar, la

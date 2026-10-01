@@ -39,7 +39,7 @@ clientsClaim()
  */
 self.addEventListener('push', (event: PushEvent) => {
   if (!event.data) return
-  let payload: { title?: string; body?: string }
+  let payload: { title?: string; body?: string; url?: string }
   try {
     payload = event.data.json()
   } catch {
@@ -51,6 +51,9 @@ self.addEventListener('push', (event: PushEvent) => {
       body: payload.body ?? '',
       icon: `${self.registration.scope}icons/icon-192.png`,
       badge: `${self.registration.scope}icons/icon-192.png`,
+      // Ruta relativa al scope (p. ej. el chat de coach). Solo rutas internas:
+      // nunca una URL absoluta que venga en el payload.
+      data: { path: typeof payload.url === 'string' ? payload.url.replace(/^\/+/, '') : '' },
     })
   )
 })
@@ -58,11 +61,17 @@ self.addEventListener('push', (event: PushEvent) => {
 self.addEventListener('notificationclick', (event: NotificationEvent) => {
   event.notification.close()
   const scope = self.registration.scope
+  const path = (event.notification.data as { path?: string } | null)?.path ?? ''
+  const target = new URL(path, scope)
+  const url = target.href.startsWith(scope) ? target.href : scope
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
       const existing = clients.find((c) => c.url.startsWith(scope))
-      if (existing) return existing.focus()
-      return self.clients.openWindow(scope)
+      if (existing) {
+        if (path) void existing.navigate(url).catch(() => undefined)
+        return existing.focus()
+      }
+      return self.clients.openWindow(url)
     })
   )
 })

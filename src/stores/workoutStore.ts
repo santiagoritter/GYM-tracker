@@ -49,7 +49,9 @@ interface WorkoutStore {
   addSet: (workoutId: string, exerciseId: string, template?: Partial<WorkoutSet>) => Promise<void>
   updateSet: (setId: string, patch: Partial<WorkoutSet>) => Promise<void>
   removeSet: (setId: string) => Promise<void>
-  finishWorkout: (userId: string, workoutId: string, notes?: string) => Promise<PersonalRecord[]>
+  /** `finishedAt`: por defecto ahora. Un entreno vencido se cierra con la hora
+   * de su última actividad, así la duración guardada es la real. */
+  finishWorkout: (userId: string, workoutId: string, notes?: string, finishedAt?: string) => Promise<PersonalRecord[]>
   discardWorkout: (workoutId: string) => Promise<void>
 }
 
@@ -250,12 +252,13 @@ export const useWorkoutStore = create<WorkoutStore>()(
         await softDelete('workoutSets', setId)
       },
 
-      finishWorkout: async (userId, workoutId, notes) => {
+      finishWorkout: async (userId, workoutId, notes, finishedAt) => {
         const sets = await db.workoutSets.where('workoutId').equals(workoutId).toArray()
         const totalVolumeKg = computeVolumeKg(sets)
+        const endedAt = finishedAt ?? nowIso()
 
         await db.workouts.update(workoutId, {
-          finishedAt: nowIso(),
+          finishedAt: endedAt,
           notes,
           totalVolumeKg,
         })
@@ -273,7 +276,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
             weightKg: c.weightKg,
             reps: c.reps,
             oneRmKg: c.oneRmKg,
-            achievedAt: nowIso(),
+            achievedAt: endedAt,
             workoutId,
             dirty: 1,
             updatedAt: nowIso(),

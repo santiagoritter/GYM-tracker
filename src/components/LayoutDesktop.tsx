@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import { getTabs } from '@/lib/navTabs'
 import AppHeader from '@/components/gym/AppHeader'
 import { useElementHeight } from '@/hooks/useElementHeight'
+import { useCoachMessageNotifier } from '@/hooks/useCoachMessageNotifier'
 
 /**
  * Layout de escritorio (≥1024px): sidebar fijo en vez de tab bar inferior,
@@ -20,6 +21,7 @@ export default function LayoutDesktop() {
   useReminderScheduler()
   useWorkoutActivityReconciler()
   useAndroidBackButton()
+  useCoachMessageNotifier()
   const [headerRef, headerHeight] = useElementHeight<HTMLDivElement>()
 
   return (

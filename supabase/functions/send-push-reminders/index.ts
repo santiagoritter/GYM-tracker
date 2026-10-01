@@ -25,15 +25,11 @@
 // en vez de tener el acceso total que da la service_role.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import webpush from 'npm:web-push@3.6.7'
+import { sendPush } from '../_shared/webPush.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY')!
-const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY')!
 const CRON_SECRET = Deno.env.get('CRON_SECRET')!
-
-webpush.setVapidDetails('mailto:santiagoritter26@gmail.com', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
 
 // Tiene que coincidir con la frecuencia del cron (ver docs/13 §5). Si se
 // redespliega esta función sin haber reprogramado el cron a */15 * * * *
@@ -122,20 +118,10 @@ Deno.serve(async (req) => {
 
     const body = quoteForHour(nowLocal.getHours())
 
-    try {
-      await webpush.sendNotification(
-        { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-        JSON.stringify({ title: 'Hora de entrenar', body })
-      )
+    // sendPush borra la suscripción si el navegador la invalidó (404/410).
+    if (await sendPush(supabase, sub, { title: 'Hora de entrenar', body })) {
       await supabase.from('push_subscriptions').update({ last_sent_on: today }).eq('id', sub.id)
       sent++
-    } catch (err) {
-      // 404/410 = el navegador invalidó la suscripción (desinstaló la PWA,
-      // limpió datos, etc.) — se borra en vez de reintentar para siempre.
-      const status = (err as { statusCode?: number }).statusCode
-      if (status === 404 || status === 410) {
-        await supabase.from('push_subscriptions').delete().eq('id', sub.id)
-      }
     }
   }
 

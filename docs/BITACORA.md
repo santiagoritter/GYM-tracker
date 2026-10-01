@@ -1166,3 +1166,30 @@ Además:
 (doble toque llegando al servidor) y apuntó al bug que importaba. Ninguno de
 los dos tests nuevos se dio por bueno sin comprobar antes que falla contra el
 código viejo.
+
+## 2026-09-30 — Sesión fantasma, rol de coach, scroll "dentro de Google", avisos del chat
+
+- **Entreno de 5 h**: un entreno sin terminar contaba `ahora - startedAt` sin
+  tope. Ahora, pasadas 3 h sin actividad real (última serie editada, no el
+  inicio), Inicio, el header y la pantalla de entreno muestran "Entreno sin
+  terminar" con Terminar / Seguir / Descartar. "Terminar" guarda la duración
+  hasta la última actividad. Verificado con Playwright a 393 px con un entreno
+  sembrado de hace 5 h: ningún contador corriendo y la duración guardada es
+  la real.
+- **Rol de coach en otro dispositivo**: el rol sale del JWT y solo se
+  refrescaba donde se hizo el cambio. Ahora se refresca al abrir la app, al
+  volver a ella y cada 5 min.
+- **Scroll en PC "dentro de Google"**: no se reproduce. Con la app dentro de un
+  `<iframe>` (Chromium, 1440 px), la rueda scrollea la página entera (1550 de
+  1550 px). No hay headers que bloqueen el embed. No se tocó código; lo más
+  probable es una versión vieja en caché (el fix de scroll es del 24/9) o el
+  navegador interno de la app de Google, que no se puede emular acá. Hay que
+  pedirle al tester el flujo exacto.
+- **Avisos del chat de coach**: Web Push (`notify-coach-message`), entrada en
+  la campana y contador de no leídos del alumno. El push nativo falta, ver
+  `docs/21-COACH.md`.
+
+**Lección del test de iframe**: el primer intento "falló" con
+`chrome-error://` y parecía un bloqueo de embed. Era `vite preview`
+escuchando solo en `localhost` (IPv6) mientras la página externa se servía en
+`127.0.0.1`. Comprobado con `curl` antes de concluir nada.

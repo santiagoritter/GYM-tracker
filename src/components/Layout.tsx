@@ -10,6 +10,7 @@ import { getTabs, type NavTab } from '@/lib/navTabs'
 import AppHeader from '@/components/gym/AppHeader'
 import AdBanner from '@/components/gym/AdBanner'
 import { BANNER_SPACE_PX, useAdsState } from '@/lib/ads'
+import { useCoachMessageNotifier } from '@/hooks/useCoachMessageNotifier'
 
 // Margen fijo a cada lado de la pastilla dentro de su columna — sin esto,
 // en el primer y último tab tocaba el borde de la cápsula exterior.
@@ -33,6 +34,7 @@ export default function Layout() {
   useReminderScheduler()
   useWorkoutActivityReconciler()
   useAndroidBackButton()
+  useCoachMessageNotifier()
 
   // Ancho de cada columna de la tab bar, medido en vivo: hace falta en
   // píxeles reales para poder animar/arrastrar la pastilla por posición

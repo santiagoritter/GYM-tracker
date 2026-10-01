@@ -82,15 +82,27 @@ export async function sendMessage(
   const { data: session } = await supabase.auth.getUser()
   const senderId = session.user?.id
   if (!senderId) throw new Error('Sin sesión.')
-  const { error } = await supabase.from('coach_messages').insert({
-    coach_id: coachId,
-    client_id: clientId,
-    sender_id: senderId,
-    body: maskProfanity(input.body.trim()).slice(0, 2000),
-    attachment_kind: input.attachmentKind ?? null,
-    attachment_ref: input.attachmentRef ?? null,
-  })
+  const { data, error } = await supabase
+    .from('coach_messages')
+    .insert({
+      coach_id: coachId,
+      client_id: clientId,
+      sender_id: senderId,
+      body: maskProfanity(input.body.trim()).slice(0, 2000),
+      attachment_kind: input.attachmentKind ?? null,
+      attachment_ref: input.attachmentRef ?? null,
+    })
+    .select('id')
+    .single()
   if (error) throw error
+  // Push a la otra parte (notify-coach-message). Best-effort: si falla, el
+  // mensaje ya está enviado y llega igual al abrir el chat. Solo se manda el
+  // id: quién avisa a quién lo resuelve el servidor.
+  if (data?.id) {
+    void supabase.functions
+      .invoke('notify-coach-message', { body: { messageId: data.id } })
+      .catch(() => undefined)
+  }
 }
 
 /** Marca como leídos los mensajes del hilo que NO mandó el que llama. */
@@ -202,5 +214,22 @@ export async function fetchUnreadCount(coachId: string, clientId: string, meId: 
     .neq('sender_id', meId)
     .is('read_at', null)
   if (error) return 0
+  return count ?? 0
+}
+
+/** Mensajes sin leer del coach para el alumno que llama (lado alumno: un solo
+ * hilo). El equivalente del coach es fetchUnreadByClient. */
+export async function fetchMyUnreadFromCoach(): Promise<number> {
+  if (!supabase) return 0
+  const { data: session } = await supabase.auth.getUser()
+  const me = session.user?.id
+  if (!me) return 0
+  const { count, error } = await supabase
+    .from('coach_messages')
+    .select('id', { count: 'exact', head: true })
+    .eq('client_id', me)
+    .neq('sender_id', me)
+    .is('read_at', null)
+  if (error) throw error
   return count ?? 0
 }

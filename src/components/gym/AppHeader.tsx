@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Bell, Flame, Shield, Timer } from 'lucide-react'
+import { Bell, Clock, Flame, Shield, Timer } from 'lucide-react'
 import { db } from '@/db/schema'
 import { workoutsFor } from '@/db/scoped'
 import { useAuthStore } from '@/stores/authStore'
 import { useWorkoutStore } from '@/stores/workoutStore'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useElapsedDuration } from '@/hooks/useElapsedDuration'
+import { useStaleWorkout } from '@/hooks/useStaleWorkout'
 import { useCountdown } from '@/hooks/useCountdown'
 import { activeWorkoutRoute } from '@/lib/cardio'
 import CalorieHeaderBadge from '@/components/gym/CalorieHeaderBadge'
@@ -40,6 +41,8 @@ export default function AppHeader() {
     [userId]
   )
   const elapsed = useElapsedDuration(activeWorkout?.startedAt)
+  // Entreno abandonado: no seguir contando horas acá; Inicio pregunta qué hacer.
+  const { stale } = useStaleWorkout(activeWorkout)
   // Store global, no atado a esta pantalla: si hay un descanso corriendo
   // (arrancado desde el entreno activo) se ve acá aunque se haya
   // navegado a otra parte de la app — RestTimer.tsx sigue siendo el único
@@ -82,7 +85,17 @@ export default function AppHeader() {
         )}
       </button>
       <div className="flex items-center gap-1.5">
-        {activeWorkout && (
+        {activeWorkout && stale && (
+          <button
+            onClick={() => navigate('/')}
+            aria-label="Entreno sin terminar"
+            className="flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-fill px-2.5 text-[12px] font-semibold text-warning"
+          >
+            <Clock size={13} />
+            Sin terminar
+          </button>
+        )}
+        {activeWorkout && !stale && (
           <button
             onClick={() => navigate(activeWorkoutRoute(activeWorkout.id, activeWorkout.kind))}
             aria-label="Entreno en curso"

@@ -5,6 +5,8 @@ import { fetchMyCoach, fetchMyGoals, type CoachPublic, type Goal } from '@/lib/c
 import { endBond, fetchMyShareCalories, setShareCalories } from '@/lib/coachMutations'
 import { fetchMyReviewFor, submitReview } from '@/lib/coachReviews'
 import { toast } from '@/stores/toastStore'
+import { fetchMyUnreadFromCoach } from '@/lib/coachChat'
+import { COACH_MESSAGE_EVENT } from '@/hooks/useCoachMessageNotifier'
 import { Card, Row, SectionHeader } from '@/components/ui/Card'
 import { cn } from '@/lib/utils'
 import VerifiedBadge from '@/components/gym/VerifiedBadge'
@@ -25,6 +27,23 @@ export default function MyCoachCard({ userId }: { userId: string }) {
   const [rating, setRating] = useState(0)
   const [comment, setComment] = useState('')
   const [hasReview, setHasReview] = useState(false)
+  // Mensajes del coach sin leer. Se recalcula al montar (volver del chat ya
+  // los marcó leídos) y cuando llega uno nuevo (notificación in-app nueva).
+  const [unread, setUnread] = useState(0)
+  useEffect(() => {
+    let alive = true
+    const refresh = () => {
+      fetchMyUnreadFromCoach()
+        .then((n) => alive && setUnread(n))
+        .catch(() => undefined)
+    }
+    refresh()
+    window.addEventListener(COACH_MESSAGE_EVENT, refresh)
+    return () => {
+      alive = false
+      window.removeEventListener(COACH_MESSAGE_EVENT, refresh)
+    }
+  }, [])
 
   const load = useCallback(() => {
     fetchMyCoach(userId)
@@ -126,6 +145,14 @@ export default function MyCoachCard({ userId }: { userId: string }) {
         <Row onClick={() => navigate('/mi-coach/chat')}>
           <MessageSquare size={18} className="shrink-0 text-ink-3" />
           <span className="min-w-0 flex-1 text-[15px]">Mensajes</span>
+          {unread > 0 && (
+            <span
+              aria-label={`${unread} sin leer`}
+              className="flex h-6 min-w-6 items-center justify-center rounded-full bg-accent px-1.5 text-[12px] font-bold tabular-nums text-bg"
+            >
+              {unread > 99 ? '99+' : unread}
+            </span>
+          )}
         </Row>
 
         <Row onClick={() => setReviewOpen((o) => !o)}>

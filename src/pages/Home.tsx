@@ -11,6 +11,8 @@ import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { getQuoteForNow } from '@/lib/quotes'
 import { activeWorkoutRoute } from '@/lib/cardio'
 import { useElapsedDuration } from '@/hooks/useElapsedDuration'
+import { useStaleWorkout } from '@/hooks/useStaleWorkout'
+import StaleWorkoutCard from '@/components/gym/StaleWorkoutCard'
 import CalendarHeatmap from '@/components/gym/CalendarHeatmap'
 import SpotifyNowPlaying from '@/components/gym/SpotifyNowPlaying'
 import RoutineDaysSheet from '@/components/gym/RoutineDaysSheet'
@@ -34,6 +36,7 @@ export default function Home() {
     [userId]
   )
   const activeElapsed = useElapsedDuration(activeWorkout?.startedAt)
+  const staleWorkout = useStaleWorkout(activeWorkout)
   const activeRoutine = useLiveQuery(
     () =>
       userId
@@ -102,7 +105,16 @@ export default function Home() {
       {/* El header global (Layout.tsx) ya muestra un indicador chico del
           entreno en curso, visible desde cualquier pantalla — este botón
           grande es el CTA principal de Inicio específicamente. */}
-      {activeWorkout ? (
+      {activeWorkout && staleWorkout.stale && staleWorkout.lastActivity ? (
+        <StaleWorkoutCard
+          workout={activeWorkout}
+          lastActivity={staleWorkout.lastActivity}
+          onKeep={() => {
+            staleWorkout.keep()
+            navigate(activeWorkoutRoute(activeWorkout.id, activeWorkout.kind))
+          }}
+        />
+      ) : activeWorkout ? (
         <button
           onClick={() => navigate(activeWorkoutRoute(activeWorkout.id, activeWorkout.kind))}
           className="flex w-full items-center justify-between rounded-2xl border border-accent/40 bg-accent/10 p-5 text-left"

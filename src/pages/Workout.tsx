@@ -12,6 +12,8 @@ import {
   routineExercisesOf,
 } from '@/db/scoped'
 import { useWorkoutStore } from '@/stores/workoutStore'
+import { useStaleWorkout } from '@/hooks/useStaleWorkout'
+import StaleWorkoutCard from '@/components/gym/StaleWorkoutCard'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { ExercisePicker } from '@/components/gym/ExercisePicker'
 import { RestTimer } from '@/components/gym/RestTimer'
@@ -76,6 +78,7 @@ export default function Workout() {
     [workoutId]
   )
   const exercises = useLiveQuery(() => db.exercises.toArray(), []) ?? []
+  const staleWorkout = useStaleWorkout(workout)
   const profile = useLiveQuery(
     () => (userId ? db.profile.get(userId) : undefined),
     [userId]
@@ -157,13 +160,20 @@ export default function Workout() {
     }
   }
 
+  // Entreno abandonado: el reloj queda congelado en la última actividad en
+  // vez de sumar las horas que pasó la app cerrada.
+  const frozenAt = staleWorkout.stale ? staleWorkout.lastActivity : null
   useEffect(() => {
     if (!workout) return
+    if (frozenAt) {
+      setElapsed(formatDuration(workout.startedAt, frozenAt))
+      return
+    }
     const tick = () => setElapsed(formatDuration(workout.startedAt))
     tick()
     const i = setInterval(tick, 1000)
     return () => clearInterval(i)
-  }, [workout])
+  }, [workout, frozenAt])
 
   // Datos para la Live Activity del entreno (iOS). El nombre del ejercicio
   // actual = el primero con una serie pendiente; si están todas hechas, el
@@ -441,6 +451,14 @@ export default function Workout() {
       </header>
 
       <div className="space-y-4 px-4 py-4">
+        {workout && staleWorkout.stale && staleWorkout.lastActivity && (
+          <StaleWorkoutCard
+            workout={workout}
+            lastActivity={staleWorkout.lastActivity}
+            onKeep={staleWorkout.keep}
+            onResolved={() => navigate('/', { replace: true })}
+          />
+        )}
         {exerciseUnits.flatMap((unit) =>
           unit.members.map((m) => (
             <ExerciseCard

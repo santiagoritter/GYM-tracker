@@ -343,6 +343,9 @@ export type NotificationType =
   | 'rest_recommendation'
   | 'update'
   | 'coach'
+  /** Mensaje nuevo del chat de coach. `exerciseId` guarda el clientId del
+   * hilo (clave de deduplicación: una sola sin leer por hilo). */
+  | 'coach_message'
 
 /**
  * Notificación in-app: feed persistido de eventos ("superaste tu peso",
