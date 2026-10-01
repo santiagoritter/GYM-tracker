@@ -1193,3 +1193,22 @@ código viejo.
 `chrome-error://` y parecía un bloqueo de embed. Era `vite preview`
 escuchando solo en `localhost` (IPv6) mientras la página externa se servía en
 `127.0.0.1`. Comprobado con `curl` antes de concluir nada.
+
+## 2026-10-01 — Botones más limpios en Correr, Cardio y Ajustes; filtros de notificaciones
+
+- **Filtros cortados en Notificaciones** (y en el selector de ejercicios): la
+  fila de chips es hija de un flex en columna con `overflow-x-auto`, y un hijo
+  con overflow distinto de `visible` puede encogerse por debajo de su
+  contenido. Con muchas notificaciones la fila se aplastaba y cortaba los
+  chips abajo. Fix: `shrink-0`. Reproducido a 393 px antes de tocarlo.
+- **Botones "feos" (tester)**: en Inicio, Cardio / Correr / Ajustes eran tres
+  tarjetas cuadradas con el ícono en un círculo teñido. Ahora son una lista
+  estilo Ajustes de iOS: ícono monocromo, descripción y chevron.
+- El mismo control tenía 3–4 radios según la pantalla (`rounded-2xl` en
+  Correr y Cardio, `rounded-md` en el entreno; selectores `rounded-full` o
+  con borde). Nuevo `SegmentedControl` único, botones principales `rounded-md`
+  sin `card-shine`, botones de cerrar a 44×44 (eran 36), íconos del
+  reproductor de Cardio a 24, chips de aparato a 44 px de alto. Reglas
+  agregadas a `DESIGN.md §5`.
+- Verificado con Playwright a 393 px, tema oscuro y claro: Inicio, hoja de
+  Cardio, Correr (pasando el permiso de GPS) y Ajustes, sin errores de consola.

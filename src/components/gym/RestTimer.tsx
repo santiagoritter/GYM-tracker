@@ -135,7 +135,7 @@ export function RestTimer() {
         <div className="flex shrink-0 gap-2">
           <button
             onClick={() => extendRest(30)}
-            className="flex h-11 items-center gap-1 rounded-sm border border-line-2 px-3.5 text-sm font-medium text-ink-2 active:bg-surface-2"
+            className="flex h-11 items-center gap-1 rounded-sm bg-fill px-3.5 text-sm font-semibold text-ink active:bg-fill-2"
           >
             <Plus size={16} /> 30s
           </button>

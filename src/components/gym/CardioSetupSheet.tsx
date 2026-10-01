@@ -76,7 +76,7 @@ export default function CardioSetupSheet({ onClose }: { onClose: () => void }) {
           <button
             onClick={onClose}
             aria-label="Cerrar"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-fill text-ink-2 active:bg-fill-2"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-fill text-ink-2 active:bg-fill-2"
           >
             <X size={16} />
           </button>
@@ -95,7 +95,7 @@ export default function CardioSetupSheet({ onClose }: { onClose: () => void }) {
                 key={m.id}
                 onClick={() => setMachineId(m.id)}
                 className={cn(
-                  'flex h-10 shrink-0 items-center whitespace-nowrap rounded-full px-4 text-[13px] font-medium transition-colors',
+                  'flex h-11 shrink-0 items-center whitespace-nowrap rounded-sm px-4 text-[13px] font-medium transition-colors',
                   machineId === m.id ? 'bg-accent text-bg' : 'bg-fill text-ink-2 active:bg-fill-2'
                 )}
               >
@@ -105,7 +105,7 @@ export default function CardioSetupSheet({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        <div className="space-y-4 rounded-xl bg-surface-2 p-4">
+        <div className="space-y-4 rounded-md bg-surface-2 p-4">
           <div>
             <p className="mb-0.5 text-[14px] font-semibold">¿Cuánto tiempo vas a estar?</p>
             <p className="mb-2 text-[12px] text-ink-3">
@@ -155,7 +155,7 @@ export default function CardioSetupSheet({ onClose }: { onClose: () => void }) {
         <HoldButton
           onComplete={handleStart}
           holdDuration={500}
-          className="card-shine flex w-full flex-col items-center gap-0.5 rounded-2xl bg-accent py-4 font-bold text-bg active:bg-accent-dim"
+          className="flex h-16 w-full flex-col items-center justify-center gap-0.5 rounded-md bg-accent font-bold text-bg active:bg-accent-dim"
         >
           <span className="flex items-center gap-2 text-lg">
             <Play size={20} fill="currentColor" /> Comenzar

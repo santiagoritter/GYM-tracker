@@ -292,6 +292,12 @@ Base en `src/components/ui/`, dominio en `src/components/gym/`.
   (fill), `ghost`. Padding horizontal mayor que el vertical.
 - **Tarjeta**: `surface`, radio `md`, padding 16px. Sin borde si tiene
   sombra; sin sombra si tiene borde.
+  El principal de ancho completo es `h-14`/`h-16`, radio `md`, sin sombra
+  ni brillo (Inicio, Correr, Cardio, entreno).
+- **Selector de opciones** (`SegmentedControl`): 2–6 opciones en un riel
+  `fill` con radio `sm`; cada opción 44px de alto, radio `xs`, la activa en
+  acento. Es el único: nada de `rounded-full` en Correr y bordes en Ajustes.
+- **Botón de cerrar**: 44×44, `rounded-full bg-fill`, icono `X` 16.
 - **Fila de lista**: alto mínimo 44px, hairline entre filas, chevron a la
   derecha solo si navega.
 - **Input**: alto 44px, `body` (16px, obligatorio para no disparar el zoom

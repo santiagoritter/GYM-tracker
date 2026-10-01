@@ -23,6 +23,7 @@ import { hapticSuccess, hapticTick, isNative } from '@/lib/native'
 import { uid } from '@/lib/utils'
 import { toast } from '@/stores/toastStore'
 import HoldButton from '@/components/ui/HoldButton'
+import SegmentedControl from '@/components/ui/SegmentedControl'
 import NumberStepper from '@/components/ui/NumberStepper'
 import RunPermissionGate from '@/components/gym/RunPermissionGate'
 import RunSplits from '@/components/gym/RunSplits'
@@ -234,22 +235,17 @@ export default function Run() {
             </p>
           </div>
 
-          <div className="space-y-3 rounded-xl bg-surface-2 p-4">
+          <div className="space-y-3 rounded-md bg-surface-2 p-4">
             <p className="text-[14px] font-semibold">Objetivo (opcional)</p>
-            <div className="flex gap-2">
-              {(['none', 'distance', 'time'] as const).map((k) => (
-                <button
-                  key={k}
-                  onClick={() => setTargetKind(k)}
-                  className={
-                    'h-10 flex-1 rounded-full text-[13px] font-medium transition-colors ' +
-                    (targetKind === k ? 'bg-accent text-bg' : 'bg-fill text-ink-2 active:bg-fill-2')
-                  }
-                >
-                  {k === 'none' ? 'Libre' : k === 'distance' ? 'Distancia' : 'Tiempo'}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              options={[
+                { value: 'none', label: 'Libre' },
+                { value: 'distance', label: 'Distancia' },
+                { value: 'time', label: 'Tiempo' },
+              ]}
+              value={targetKind}
+              onChange={setTargetKind}
+            />
             {targetKind === 'distance' && (
               <NumberStepper label="km" value={targetDistanceKm} step={0.5} min={1} max={50} decimals={1} onChange={setTargetDistanceKm} />
             )}
@@ -262,7 +258,7 @@ export default function Run() {
         <HoldButton
           onComplete={handleStart}
           holdDuration={500}
-          className="card-shine flex w-full flex-col items-center gap-0.5 rounded-2xl bg-accent py-4 font-bold text-bg active:bg-accent-dim"
+          className="flex h-16 w-full flex-col items-center justify-center gap-0.5 rounded-md bg-accent font-bold text-bg active:bg-accent-dim"
         >
           <span className="flex items-center gap-2 text-lg">
             <Play size={20} fill="currentColor" /> Empezar
@@ -393,7 +389,7 @@ export default function Run() {
               hapticTick()
               paused ? resumeRun() : pauseRun()
             }}
-            className="flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl bg-fill text-lg font-bold text-ink active:bg-fill-2"
+            className="flex h-14 flex-1 items-center justify-center gap-2 rounded-md bg-fill text-lg font-bold text-ink active:bg-fill-2"
           >
             {paused ? <Play size={20} fill="currentColor" /> : <Pause size={20} fill="currentColor" />}
             {paused ? 'Reanudar' : 'Pausar'}
@@ -401,7 +397,7 @@ export default function Run() {
           <HoldButton
             onComplete={handleFinish}
             holdDuration={600}
-            className="flex h-14 flex-1 flex-col items-center justify-center rounded-2xl bg-accent font-bold text-bg active:bg-accent-dim"
+            className="flex h-14 flex-1 flex-col items-center justify-center rounded-md bg-accent font-bold text-bg active:bg-accent-dim"
           >
             <span className="flex items-center gap-2 text-lg">
               <Square size={18} fill="currentColor" /> Terminar

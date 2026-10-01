@@ -93,6 +93,7 @@ import { useSyncStore } from '@/stores/syncStore'
 import { Card, Row, SectionHeader } from '@/components/ui/Card'
 import DraftNumberInput from '@/components/ui/DraftNumberInput'
 import type { LocalProfile } from '@/types'
+import SegmentedControl from '@/components/ui/SegmentedControl'
 import { cn } from '@/lib/utils'
 import { REST_OPTIONS } from '@/lib/constants'
 import { backupNeedsPassphrase, exportBackup, importBackup } from '@/lib/backup'
@@ -381,30 +382,15 @@ export default function Ajustes() {
               <div className="min-w-0 flex-1">
                 <p className="text-[15px]">Tema</p>
               </div>
-              <div className="flex shrink-0 gap-1 rounded-sm bg-surface-2 p-1">
-                <button
-                  onClick={() => setTheme('dark')}
-                  aria-label="Tema oscuro"
-                  aria-pressed={theme === 'dark'}
-                  className={cn(
-                    'flex h-9 items-center gap-1.5 rounded-xs px-3 text-[13px] font-medium',
-                    theme === 'dark' ? 'bg-surface-3 text-ink' : 'text-ink-3'
-                  )}
-                >
-                  <Moon size={14} /> Oscuro
-                </button>
-                <button
-                  onClick={() => setTheme('light')}
-                  aria-label="Tema claro"
-                  aria-pressed={theme === 'light'}
-                  className={cn(
-                    'flex h-9 items-center gap-1.5 rounded-xs px-3 text-[13px] font-medium',
-                    theme === 'light' ? 'bg-surface-3 text-ink' : 'text-ink-3'
-                  )}
-                >
-                  <Sun size={14} /> Claro
-                </button>
-              </div>
+              <SegmentedControl
+                className="w-[200px] shrink-0"
+                options={[
+                  { value: 'dark', label: <span className="flex items-center justify-center gap-1.5"><Moon size={14} /> Oscuro</span> },
+                  { value: 'light', label: <span className="flex items-center justify-center gap-1.5"><Sun size={14} /> Claro</span> },
+                ]}
+                value={theme}
+                onChange={setTheme}
+              />
             </Row>
           </Card>
         </section>
@@ -417,56 +403,36 @@ export default function Ajustes() {
                 <Scale size={18} className="shrink-0 text-ink-3" />
                 Unidades
               </span>
-              <div className="flex gap-2">
-                {(['kg', 'lbs'] as const).map((u) => (
-                  <button
-                    key={u}
-                    onClick={() => update({ units: u })}
-                    className={cn(
-                      'h-11 flex-1 rounded-xs border text-sm font-semibold',
-                      profile.units === u
-                        ? 'border-accent bg-accent text-bg'
-                        : 'border-line-2 text-ink-2'
-                    )}
-                  >
-                    {u === 'kg' ? 'Kilos' : 'Libras'}
-                  </button>
-                ))}
-              </div>
+              <SegmentedControl
+                options={[
+                  { value: 'kg', label: 'Kilos' },
+                  { value: 'lbs', label: 'Libras' },
+                ]}
+                value={profile.units}
+                onChange={(u) => update({ units: u })}
+              />
             </Row>
             <Row className="flex-col items-stretch gap-2">
               <span className="flex items-center gap-3 text-[15px]">
                 <Timer size={18} className="shrink-0 text-ink-3" />
                 Descanso por defecto
               </span>
-              <div className="flex gap-2">
-                {REST_OPTIONS.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => {
-                      setRestCustomOpen(false)
-                      update({ restTimerDefault: s })
-                    }}
-                    className={cn(
-                      'h-11 flex-1 rounded-xs border font-mono text-sm font-semibold tabular-nums',
-                      !restCustomOpen && profile.restTimerDefault === s
-                        ? 'border-accent bg-accent text-bg'
-                        : 'border-line-2 text-ink-2'
-                    )}
-                  >
-                    {s}s
-                  </button>
-                ))}
-                <button
-                  onClick={() => setRestCustomOpen((v) => !v)}
-                  className={cn(
-                    'h-11 flex-1 rounded-xs border text-sm font-semibold',
-                    restCustomOpen ? 'border-accent bg-accent text-bg' : 'border-line-2 text-ink-2'
-                  )}
-                >
-                  Otro
-                </button>
-              </div>
+              <SegmentedControl
+                mono
+                options={[
+                  ...REST_OPTIONS.map((s) => ({ value: s, label: `${s}s` })),
+                  { value: -1, label: <span className="font-sans">Otro</span> },
+                ]}
+                value={restCustomOpen ? -1 : profile.restTimerDefault}
+                onChange={(s) => {
+                  if (s === -1) {
+                    setRestCustomOpen((v) => !v)
+                    return
+                  }
+                  setRestCustomOpen(false)
+                  update({ restTimerDefault: s })
+                }}
+              />
               {restCustomOpen && (
                 <div className="flex items-center gap-2">
                   <DraftNumberInput
@@ -483,22 +449,12 @@ export default function Ajustes() {
                 <Target size={18} className="shrink-0 text-ink-3" />
                 Meta semanal (entrenos)
               </span>
-              <div className="flex gap-2">
-                {[2, 3, 4, 5, 6].map((n) => (
-                  <button
-                    key={n}
-                    onClick={() => update({ weeklyGoal: n })}
-                    className={cn(
-                      'h-11 flex-1 rounded-xs border font-mono text-sm font-semibold tabular-nums',
-                      (profile.weeklyGoal ?? 3) === n
-                        ? 'border-accent bg-accent text-bg'
-                        : 'border-line-2 text-ink-2'
-                    )}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
+              <SegmentedControl
+                mono
+                options={[2, 3, 4, 5, 6].map((n) => ({ value: n, label: n }))}
+                value={profile.weeklyGoal ?? 3}
+                onChange={(n) => update({ weeklyGoal: n })}
+              />
             </Row>
             <Row onClick={() => setLevelSheetOpen(true)}>
               <Trophy size={18} className="shrink-0 text-ink-3" />

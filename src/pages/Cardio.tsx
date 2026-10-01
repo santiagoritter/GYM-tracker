@@ -197,7 +197,7 @@ export default function Cardio() {
                 aria-label="Anterior"
                 className="flex h-14 w-14 items-center justify-center text-ink-2 active:text-ink"
               >
-                <SkipBack size={26} fill="currentColor" />
+                <SkipBack size={24} fill="currentColor" />
               </button>
               <button
                 onClick={() => runCommand(playback.isPlaying ? 'pause' : 'play')}
@@ -205,9 +205,9 @@ export default function Cardio() {
                 className="flex h-16 w-16 items-center justify-center rounded-full bg-fill text-ink active:bg-fill-2"
               >
                 {playback.isPlaying ? (
-                  <Pause size={28} fill="currentColor" />
+                  <Pause size={24} fill="currentColor" />
                 ) : (
-                  <Play size={28} fill="currentColor" />
+                  <Play size={24} fill="currentColor" />
                 )}
               </button>
               <button
@@ -215,7 +215,7 @@ export default function Cardio() {
                 aria-label="Siguiente"
                 className="flex h-14 w-14 items-center justify-center text-ink-2 active:text-ink"
               >
-                <SkipForward size={26} fill="currentColor" />
+                <SkipForward size={24} fill="currentColor" />
               </button>
             </div>
           </div>
@@ -223,7 +223,7 @@ export default function Cardio() {
       ) : (
         <button
           onClick={() => navigate('/ajustes')}
-          className="flex items-center justify-center gap-2 rounded-xl bg-fill py-3 text-sm font-semibold text-ink-2 active:bg-fill-2"
+          className="flex h-12 items-center justify-center gap-2 rounded-md bg-fill text-sm font-semibold text-ink-2 active:bg-fill-2"
         >
           <Music size={16} /> Conectar Spotify para manejar la música
         </button>
@@ -232,7 +232,7 @@ export default function Cardio() {
       <HoldButton
         onComplete={handleFinish}
         holdDuration={500}
-        className="flex w-full flex-col items-center gap-0.5 rounded-2xl bg-fill py-5 font-bold text-ink active:bg-fill-2"
+        className="flex h-16 w-full flex-col items-center justify-center gap-0.5 rounded-md bg-fill font-bold text-ink active:bg-fill-2"
       >
         <span className="flex items-center gap-2 text-lg">
           <Square size={20} fill="currentColor" /> Finalizar entreno
@@ -291,7 +291,7 @@ export default function Cardio() {
             <button
               onClick={() => setAdjustOpen(false)}
               aria-label="Cerrar"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-fill text-ink-2 active:bg-fill-2"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-fill text-ink-2 active:bg-fill-2"
             >
               <X size={16} />
             </button>

@@ -90,7 +90,7 @@ export function ExercisePicker({ onSelect, onClose, excludeIds = [] }: Props) {
           </button>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto px-4 pt-3 [scrollbar-width:none]">
+        <div className="flex shrink-0 gap-2 overflow-x-auto px-4 pt-3 [scrollbar-width:none]">
           {MUSCLE_FILTERS.map((m) => (
             <button
               key={m}
@@ -107,7 +107,7 @@ export function ExercisePicker({ onSelect, onClose, excludeIds = [] }: Props) {
           ))}
         </div>
 
-        <div className="flex gap-2 overflow-x-auto px-4 py-3 [scrollbar-width:none]">
+        <div className="flex shrink-0 gap-2 overflow-x-auto px-4 py-3 [scrollbar-width:none]">
           {EQUIPMENT_FILTERS.map((eq) => (
             <button
               key={eq}

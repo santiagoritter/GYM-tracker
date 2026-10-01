@@ -1,8 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { motion } from 'motion/react'
-import { Activity, ChevronRight, Footprints, Play, Flame, Settings } from 'lucide-react'
+import { Bike, ChevronRight, Play, Flame, Route, Settings } from 'lucide-react'
 import { routinesFor, routineDaysOf, workoutsFor } from '@/db/scoped'
 import { nextRoutineDay, startWorkoutFromDay } from '@/db/routines'
 import { useWorkoutStore } from '@/stores/workoutStore'
@@ -18,6 +17,7 @@ import SpotifyNowPlaying from '@/components/gym/SpotifyNowPlaying'
 import RoutineDaysSheet from '@/components/gym/RoutineDaysSheet'
 import CardioSetupSheet from '@/components/gym/CardioSetupSheet'
 import HoldButton from '@/components/ui/HoldButton'
+import { Card, Row } from '@/components/ui/Card'
 
 export default function Home() {
   const navigate = useNavigate()
@@ -133,7 +133,7 @@ export default function Home() {
           <HoldButton
             onComplete={handleStart}
             holdDuration={500}
-            className="card-shine flex w-full flex-col items-center gap-0.5 rounded-2xl bg-accent py-5 font-bold text-bg active:bg-accent-dim"
+            className="flex h-[72px] w-full flex-col items-center justify-center gap-0.5 rounded-md bg-accent font-bold text-bg active:bg-accent-dim"
           >
             <span className="flex items-center gap-2 text-lg">
               <Play size={22} fill="currentColor" /> Iniciar entrenamiento
@@ -196,46 +196,46 @@ export default function Home() {
           activo (de cualquier tipo), llevan a retomarlo en vez de crear uno
           nuevo — antes solo el CTA grande de arriba tenía esta protección;
           estos tiles podían crear un segundo Workout concurrente. */}
-      <div className="grid grid-cols-3 gap-3">
-        <motion.button
-          whileTap={{ scale: 0.96 }}
+      {/* Accesos rápidos como una lista estilo Ajustes de iOS (DESIGN.md §3):
+          antes eran tres tarjetas cuadradas con el ícono en un círculo de
+          color — el "icon tile stack" de impeccable.style, reportado como
+          feo por un tester. Ícono monocromo, descripción y chevron. */}
+      <Card>
+        <Row
           onClick={() =>
             activeWorkout
               ? navigate(activeWorkoutRoute(activeWorkout.id, activeWorkout.kind))
               : setCardioSheetOpen(true)
           }
-          className="flex aspect-square flex-col items-center justify-center gap-2 rounded-2xl bg-surface"
         >
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-accent/15">
-            <Activity size={20} className="text-accent" />
+          <Bike size={20} strokeWidth={1.8} className="shrink-0 text-ink-2" />
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] font-medium">Cardio</p>
+            <p className="text-[13px] text-ink-3">Bici, elíptica, remo o cinta</p>
           </div>
-          <span className="text-[12px] font-semibold text-ink-2">Cardio</span>
-        </motion.button>
-        <motion.button
-          whileTap={{ scale: 0.96 }}
+          <ChevronRight size={18} className="shrink-0 text-ink-4" />
+        </Row>
+        <Row
           onClick={() =>
-            navigate(
-              activeWorkout ? activeWorkoutRoute(activeWorkout.id, activeWorkout.kind) : '/correr'
-            )
+            navigate(activeWorkout ? activeWorkoutRoute(activeWorkout.id, activeWorkout.kind) : '/correr')
           }
-          className="flex aspect-square flex-col items-center justify-center gap-2 rounded-2xl bg-surface"
         >
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-accent/15">
-            <Footprints size={20} className="text-accent" />
+          <Route size={20} strokeWidth={1.8} className="shrink-0 text-ink-2" />
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] font-medium">Correr</p>
+            <p className="text-[13px] text-ink-3">Recorrido con GPS, ritmo y parciales</p>
           </div>
-          <span className="text-[12px] font-semibold text-ink-2">Correr</span>
-        </motion.button>
-        <motion.button
-          whileTap={{ scale: 0.96 }}
-          onClick={() => navigate('/perfil')}
-          className="flex aspect-square flex-col items-center justify-center gap-2 rounded-2xl bg-surface"
-        >
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-fill">
-            <Settings size={20} className="text-ink-2" />
+          <ChevronRight size={18} className="shrink-0 text-ink-4" />
+        </Row>
+        <Row onClick={() => navigate('/perfil')}>
+          <Settings size={20} strokeWidth={1.8} className="shrink-0 text-ink-2" />
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] font-medium">Ajustes</p>
+            <p className="text-[13px] text-ink-3">Perfil, unidades, recordatorios y datos</p>
           </div>
-          <span className="text-[12px] font-semibold text-ink-2">Ajustes</span>
-        </motion.button>
-      </div>
+          <ChevronRight size={18} className="shrink-0 text-ink-4" />
+        </Row>
+      </Card>
 
       {cardioSheetOpen && <CardioSetupSheet onClose={() => setCardioSheetOpen(false)} />}
     </div>

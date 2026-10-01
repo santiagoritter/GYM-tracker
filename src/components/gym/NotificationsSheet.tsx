@@ -90,7 +90,11 @@ export default function NotificationsSheet({ onClose }: { onClose: () => void })
       </div>
 
       {presentTypes.length > 1 && (
-        <div className="-mx-1 flex gap-1.5 overflow-x-auto px-6 pb-2 [scrollbar-width:none]">
+        // shrink-0: es un hijo flex con overflow-x, así que podía achicarse por
+        // debajo de su contenido. Con muchas notificaciones la lista empujaba
+        // contra el max-h de la hoja y la fila quedaba en ~27px, cortando los
+        // chips a la mitad (bug reportado por un tester).
+        <div className="-mx-1 flex shrink-0 gap-1.5 overflow-x-auto px-6 pb-2 [scrollbar-width:none]">
           <button
             onClick={() => setFilter('all')}
             className={cn(
