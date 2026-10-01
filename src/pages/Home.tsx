@@ -12,6 +12,7 @@ import { activeWorkoutRoute } from '@/lib/cardio'
 import { useElapsedDuration } from '@/hooks/useElapsedDuration'
 import { useStaleWorkout } from '@/hooks/useStaleWorkout'
 import StaleWorkoutCard from '@/components/gym/StaleWorkoutCard'
+import NewsCard from '@/components/gym/NewsCard'
 import CalendarHeatmap from '@/components/gym/CalendarHeatmap'
 import SpotifyNowPlaying from '@/components/gym/SpotifyNowPlaying'
 import RoutineDaysSheet from '@/components/gym/RoutineDaysSheet'
@@ -158,6 +159,8 @@ export default function Home() {
       {/* Actividad (Redisenio.md §3.3): debajo del CTA principal, no
           compite con "qué entreno hoy" por la primera mirada. */}
       <CalendarHeatmap />
+
+      <NewsCard />
 
       {activeRoutine && !activeWorkout && (routineDays?.length ?? 0) > 0 && (
         <button

@@ -268,7 +268,7 @@ function isRecent(updatedAt: string): boolean {
   return ageDays >= 0 && ageDays <= RECENT_WINDOW_DAYS
 }
 
-function bestEpley1RM(sets: WorkoutSet[]): number {
+export function bestEpley1RM(sets: WorkoutSet[]): number {
   let best = 0
   for (const s of sets) {
     if (s.completed !== 1 || s.isWarmup === 1) continue

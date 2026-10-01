@@ -1212,3 +1212,22 @@ escuchando solo en `localhost` (IPv6) mientras la página externa se servía en
   agregadas a `DESIGN.md §5`.
 - Verificado con Playwright a 393 px, tema oscuro y claro: Inicio, hoja de
   Cardio, Correr (pasando el permiso de GPS) y Ajustes, sin errores de consola.
+
+## 2026-10-01 — Card "Noticias" en Inicio (Paso 3)
+
+- Card de ancho completo debajo de la actividad, con tres tarjetas que se
+  pasan deslizando (scroll-snap nativo) o con las flechas: pesos de la
+  comunidad (top 3 + barras), descansos sugeridos para vos y tus PRs que más
+  subieron en 30 días (1RM Epley, contra la marca de hace más de 30 días).
+- Comunidad: RPC `popular_exercise_weights()` (migración `0026`, **escrita
+  pero sin aplicar a producción**). Security definer, mediana por usuario y
+  después entre usuarios, solo ejercicios con ≥ 5 usuarios, redondeo a 0,5 kg,
+  sin parámetros, `grant` solo a `authenticated`. Prueba de RLS en
+  `supabase/tests/popular_weights_smoke.sql` (todavía sin correr).
+- Offline: el último resultado queda en localStorage y se refresca cada 6 h.
+  Invitados no la piden (la RPC exige sesión): ven una invitación a crear
+  cuenta. Mientras la migración no esté aplicada, la slide muestra el estado
+  de error con "Reintentar"; las otras dos funcionan.
+- Verificado a 393 px: slides de descansos y PRs, flechas, sin scroll
+  horizontal de página ni errores de consola. La slide de comunidad con
+  datos cacheados todavía no se verificó visualmente.
