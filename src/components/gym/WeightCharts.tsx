@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ChevronDown, TrendingUp, Trophy } from 'lucide-react'
+import { ArrowUpRight, ChevronDown, TrendingUp, Trophy } from 'lucide-react'
 import {
   Bar,
   BarChart,
@@ -17,7 +17,9 @@ import { db } from '@/db/schema'
 import { workoutsFor } from '@/db/scoped'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useChartColors } from '@/hooks/useChartColors'
-import { EmptyState, SectionHeader } from '@/components/ui/Card'
+import { Card, EmptyState, Row, SectionHeader } from '@/components/ui/Card'
+import { suggestionFor, weightSuggestions } from '@/lib/progressSuggestions'
+import { cn } from '@/lib/utils'
 import ExerciseSelectSheet from '@/components/gym/ExerciseSelectSheet'
 
 /**
@@ -65,6 +67,21 @@ export default function WeightCharts() {
   )
 
   const effectiveExercise = selectedExercise || trainedExercises[0]?.id || ''
+
+  // Sugerencias de peso: las mismas que manda la notificación, acá a la vista.
+  const profile = useLiveQuery(() => (userId ? db.profile.get(userId) : undefined), [userId])
+  const userSets = useLiveQuery(
+    () => (userId ? db.workoutSets.where('userId').equals(userId).toArray() : []),
+    [userId]
+  )
+  const suggestions = useMemo(
+    () => (userSets ? weightSuggestions(trainedExercises, profile, userSets) : []),
+    [trainedExercises, profile, userSets]
+  )
+  const selectedSuggestion = useMemo(() => {
+    const ex = trainedExercises.find((e) => e.id === effectiveExercise)
+    return ex && userSets ? suggestionFor(ex, profile, userSets) : null
+  }, [trainedExercises, effectiveExercise, profile, userSets])
 
   // Solo los sets del ejercicio seleccionado, vía índice
   const exerciseSets = useLiveQuery(
@@ -145,6 +162,33 @@ export default function WeightCharts() {
 
   return (
     <div className="space-y-6">
+      {suggestions.length > 0 && (
+        <section className="animate-fade-up">
+          <SectionHeader title="Pesos sugeridos" />
+          <Card>
+            {suggestions.slice(0, 6).map((sg) => (
+              <Row key={sg.exerciseId} onClick={() => setSelectedExercise(sg.exerciseId)}>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[15px] font-medium">{sg.name}</p>
+                  <p className="text-[13px] text-ink-3">
+                    {sg.isIncrease ? `Subí: tu mejor marca es ${sg.prevBestKg} kg` : `Tu mejor marca: ${sg.prevBestKg} kg`}
+                  </p>
+                </div>
+                <p
+                  className={cn(
+                    'flex shrink-0 items-center gap-1 font-mono text-[15px] font-bold tabular-nums',
+                    sg.isIncrease ? 'text-accent' : 'text-ink'
+                  )}
+                >
+                  {sg.isIncrease && <ArrowUpRight size={16} />}
+                  {sg.weightKg} kg
+                </p>
+              </Row>
+            ))}
+          </Card>
+        </section>
+      )}
+
       <section className="animate-fade-up">
         <SectionHeader title="Mejor peso por entreno" />
         <button
@@ -187,6 +231,18 @@ export default function WeightCharts() {
             </LineChart>
           </ResponsiveContainer>
         </div>
+        {selectedSuggestion && (
+          <div className="mt-3 rounded-md bg-surface p-4">
+            <p className="text-[13px] text-ink-3">Próximo entreno</p>
+            <p className="mt-0.5 font-mono text-[20px] font-bold tabular-nums">
+              {selectedSuggestion.weightKg} kg
+              <span className="ml-2 text-[14px] font-medium text-ink-2">
+                × {selectedSuggestion.rec.repsMin}–{selectedSuggestion.rec.repsMax}, {selectedSuggestion.rec.sets} series
+              </span>
+            </p>
+            <p className="mt-1 text-[13px] leading-relaxed text-ink-2">{selectedSuggestion.rec.note}</p>
+          </div>
+        )}
       </section>
 
       <section className="animate-fade-up">

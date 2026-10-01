@@ -15,6 +15,8 @@ import ResponsiveSheet from '@/components/ui/ResponsiveSheet'
 import DraftNumberInput from '@/components/ui/DraftNumberInput'
 import { EmptyState, SectionHeader } from '@/components/ui/Card'
 import type { RestLog } from '@/types'
+import { toast } from '@/stores/toastStore'
+import { restSuggestions, type RestSuggestionRow } from '@/lib/progressSuggestions'
 
 /**
  * Analytics de descanso (TimeCounter): gráfico planeado vs. real por
@@ -96,6 +98,25 @@ export function RestAnalytics() {
         db.routineExercises.update(e.id, { restSeconds: suggestion.medianSeconds })
       )
     )
+  }
+
+  // Lista completa al pie: las mismas sugerencias que manda la notificación,
+  // para todos los ejercicios con descansos registrados.
+  const allSuggestions = useMemo(
+    () => restSuggestions(allLogs, allRoutineExercises, profile?.restTimerDefault ?? 90),
+    [allLogs, allRoutineExercises, profile?.restTimerDefault]
+  )
+  const applyRow = async (row: RestSuggestionRow) => {
+    try {
+      await Promise.all(
+        row.routineEntryIds.map((id) =>
+          db.routineExercises.update(id, { restSeconds: row.suggestion.medianSeconds })
+        )
+      )
+      toast.success('Descanso actualizado', `${exerciseMap.get(row.exerciseId)?.name ?? 'Ejercicio'}: ${formatHms(row.suggestion.medianSeconds)}`)
+    } catch (e) {
+      toast.error('No se pudo actualizar', e instanceof Error ? e.message : 'Probá de nuevo.')
+    }
   }
 
   const chartData = useMemo(
@@ -190,6 +211,40 @@ export function RestAnalytics() {
             </BarChart>
           </ResponsiveContainer>
         </div>
+      </section>
+
+      <section>
+        <SectionHeader title="Descansos sugeridos" />
+        {allSuggestions.length === 0 ? (
+          <p className="rounded-xl bg-surface px-4 py-3 text-[14px] text-ink-2">
+            Todavía nada para cambiar. Hacen falta al menos 3 descansos recientes de un ejercicio, y
+            que tu promedio se aleje de lo que tenés fijado.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {allSuggestions.map((row) => (
+              <div key={row.exerciseId} className="flex items-center gap-3 rounded-xl bg-surface px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium">{exerciseMap.get(row.exerciseId)?.name ?? 'Ejercicio'}</p>
+                  <p className="text-[13px] text-ink-3">
+                    Fijado {formatHms(row.suggestion.currentSeconds)} · descansás{' '}
+                    <span className="font-mono tabular-nums text-ink">{formatHms(row.suggestion.medianSeconds)}</span>
+                  </p>
+                </div>
+                {row.routineEntryIds.length > 0 ? (
+                  <button
+                    onClick={() => void applyRow(row)}
+                    className="h-11 shrink-0 rounded-sm bg-accent px-3 text-[13px] font-bold text-bg active:bg-accent-dim"
+                  >
+                    Actualizar
+                  </button>
+                ) : (
+                  <span className="shrink-0 text-[12px] text-ink-3">No está en tus rutinas</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section>
