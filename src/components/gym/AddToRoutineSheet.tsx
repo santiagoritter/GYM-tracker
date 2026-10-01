@@ -36,6 +36,9 @@ export default function AddToRoutineSheet({
   const [query, setQuery] = useState('')
   const [creatingRoutine, setCreatingRoutine] = useState(false)
   const [newRoutineName, setNewRoutineName] = useState('')
+  // Día con una escritura en curso: sin esto, un doble toque llegaba antes de
+  // que el liveQuery viera la primera y agregaba el ejercicio dos veces.
+  const [busyDayId, setBusyDayId] = useState<string | null>(null)
 
   const routines = useLiveQuery(
     () => (userId ? routinesFor(userId).filter((r) => r.isArchived === 0).toArray() : []),
@@ -81,14 +84,22 @@ export default function AddToRoutineSheet({
   }, [routines, daysByRoutine, query])
 
   const handleToggleDay = async (day: RoutineDay) => {
-    if (dayIdsWithExercise.has(day.id)) {
-      const entry = entries.find((e) => e.dayId === day.id)
-      if (entry) await softDelete('routineExercises', entry.id)
-      toast.success('Quitado', `${exercise.name} ya no está en "${day.name}"`)
-    } else {
-      if (!userId) return
-      await addExerciseToDay(day.id, userId, exercise.id)
-      toast.success('Agregado', `${exercise.name} se sumó a "${day.name}"`)
+    if (busyDayId) return
+    setBusyDayId(day.id)
+    try {
+      if (dayIdsWithExercise.has(day.id)) {
+        const entry = entries.find((e) => e.dayId === day.id)
+        if (entry) await softDelete('routineExercises', entry.id)
+        toast.success('Quitado', `${exercise.name} ya no está en "${day.name}"`)
+      } else {
+        if (!userId) return
+        await addExerciseToDay(day.id, userId, exercise.id)
+        toast.success('Agregado', `${exercise.name} se sumó a "${day.name}"`)
+      }
+    } catch (e) {
+      toast.error('No se pudo guardar', e instanceof Error ? e.message : 'Probá de nuevo.')
+    } finally {
+      setBusyDayId(null)
     }
   }
 
@@ -181,8 +192,9 @@ export default function AddToRoutineSheet({
                       return (
                         <button
                           key={day.id}
-                          onClick={() => handleToggleDay(day)}
-                          className="flex w-full items-center gap-3 rounded-xl bg-surface-2 px-4 py-3 text-left active:bg-surface-3"
+                          onClick={() => void handleToggleDay(day)}
+                          disabled={busyDayId !== null}
+                          className="flex w-full items-center gap-3 rounded-xl bg-surface-2 px-4 py-3 text-left active:bg-surface-3 disabled:opacity-60"
                         >
                           <span className="min-w-0 flex-1 truncate text-[15px]">{day.name}</span>
                           {checked ? (

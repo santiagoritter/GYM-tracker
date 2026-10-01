@@ -97,6 +97,9 @@ export default function LogPastWorkout() {
       if (existingIds.has(entry.exerciseId)) continue
       const exercise = exerciseMap.get(entry.exerciseId)
       if (!exercise) continue
+      // El set se calculaba una vez antes del loop: si la rutina traía el mismo
+      // ejercicio dos veces, entraban las dos copias al borrador.
+      existingIds.add(entry.exerciseId)
       const history = historyByExercise.get(entry.exerciseId) ?? []
       const rec = recommend(exercise, profile, history, allHistory)
       newDrafts.push({

@@ -2,6 +2,8 @@ import { supabase } from '@/lib/supabaseClient'
 import { db, SYNC_ORDER } from '@/db/schema'
 import { useSyncStore } from '@/stores/syncStore'
 import { pushNotification } from '@/lib/notifications'
+import { upsertResilient } from '@/lib/syncBatch'
+import { repairRoutineExercises } from '@/db/routines'
 import type { LocalProfile, SyncedTable } from '@/types'
 
 /**
@@ -144,17 +146,23 @@ export async function pushDirtyRows(userId: string): Promise<boolean> {
     if (dirtyRows.length === 0) continue
 
     const remoteRows = dirtyRows.map((r) => toRemoteRow(table, r as unknown as Record<string, unknown>))
-    const { error } = await supabase.from(REMOTE_TABLE[table]).upsert(remoteRows)
-    if (error) {
-      hadError = true // best-effort: se reintenta en el próximo sync
-      continue
+    const client = supabase
+    const { okIndexes, failed } = await upsertResilient(
+      async (rows) => client.from(REMOTE_TABLE[table]).upsert(rows),
+      remoteRows
+    )
+    if (failed.length) {
+      hadError = true // best-effort: lo que falló se reintenta en el próximo sync
+      for (const f of failed.slice(0, 3)) {
+        console.warn(`[sync] ${table} ${dirtyRows[f.index]!.id} rechazada:`, f.error.code, f.error.message)
+      }
     }
 
     // Solo se marca limpia la fila que sigue igual a la que se mandó: si el
     // usuario la editó mientras viajaba el upsert, su `updatedAt` cambió y
     // tiene que volver a subirse — antes se marcaba limpia igual y el
     // cambio nuevo quedaba sin sincronizar.
-    for (const row of dirtyRows) {
+    for (const row of okIndexes.map((i) => dirtyRows[i]!)) {
       await db.transaction('rw', t, async () => {
         const current = await t.get(row.id)
         if (current && current.updatedAt === row.updatedAt) {
@@ -327,6 +335,8 @@ export async function runSync(userId: string): Promise<void> {
       syncQueued = false
       useSyncStore.getState().setSyncing()
       try {
+        // Antes del push: lo que se borra acá viaja como lápida en este mismo sync.
+        await repairRoutineExercises(userId).catch((e: unknown) => console.warn('[sync] reparación de rutinas', e))
         const pushFailed = await pushDirtyRows(userId)
         const pullFailed = await pullRemoteChanges(userId)
         if (pushFailed || pullFailed) useSyncStore.getState().setError()

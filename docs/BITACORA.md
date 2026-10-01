@@ -1136,3 +1136,33 @@ si se borraron los datos del navegador o se desinstaló la app, no hay copia.
 destino vacía, justo el caso donde no hay colisión. Se agregaron colisión,
 reintento y `dirty: 0` heredado. Antes de confiar en el test se comprobó que
 falla contra el código viejo.
+
+## 2026-09-30 — Ejercicios duplicados y una fila mala que bloqueaba todo el sync
+
+Un tester vio ejercicios repetidos en su rutina, con el nombre genérico
+"Ejercicio". Antes de tocar código se consultó la base real (solo conteos
+agregados, sin datos personales): 381 filas vivas en `routine_exercises`, cero
+duplicados y cero ids fuera del catálogo. Lo que vio el tester existía solo en
+su navegador y nunca había llegado al servidor.
+
+Eso llevó al bug de fondo: el push subía todas las filas sucias de una tabla
+en un solo `upsert`, que en PostgREST es todo o nada. Una sola fila que
+violara una restricción (por ejemplo `exercise_id` vacío, que es `not null`)
+hacía fallar el lote entero en cada sync, para siempre: ninguna fila nueva de
+esa tabla volvía a subir. Desde otro dispositivo eso se ve como pérdida de
+datos. Ahora `upsertResilient` (`src/lib/syncBatch.ts`) reintenta fila por fila
+cuando el lote falla con un error del servidor: suben todas las buenas y solo
+la mala queda pendiente. Con un error de red no reintenta fila por fila.
+
+Además:
+- `addExerciseToDay` es idempotente (un ejercicio va una sola vez por día) y
+  corre en una transacción. El doble toque creaba dos filas.
+- El botón de cada día se bloquea mientras guarda.
+- `repairRoutineExercises` corre antes de cada push: deja un ejercicio por
+  día y saca filas sin ejercicio válido, con lápida para que el borrado llegue
+  a los otros dispositivos.
+
+**Lección**: la base real descartó en un minuto la hipótesis más obvia
+(doble toque llegando al servidor) y apuntó al bug que importaba. Ninguno de
+los dos tests nuevos se dio por bueno sin comprobar antes que falla contra el
+código viejo.

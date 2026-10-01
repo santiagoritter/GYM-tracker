@@ -4,6 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { ArrowDown, ArrowLeft, ArrowUp, Link2, Moon, Plus, Trash2, X } from 'lucide-react'
 import { db } from '@/db/schema'
 import { softDelete } from '@/db/mutations'
+import { toast } from '@/stores/toastStore'
 import {
   ROUTINE_COLORS,
   addDay,
@@ -44,7 +45,12 @@ export default function RoutineEditor() {
   if (!routineId || !routine) return null
 
   const handleSelectExercise = (exercise: Exercise) => {
-    if (pickerDayId && routine) addExerciseToDay(pickerDayId, routine.userId, exercise.id)
+    // addExerciseToDay es idempotente: un doble toque en el picker no duplica.
+    if (pickerDayId && routine) {
+      void addExerciseToDay(pickerDayId, routine.userId, exercise.id).catch((e: unknown) =>
+        toast.error('No se pudo agregar', e instanceof Error ? e.message : 'Probá de nuevo.')
+      )
+    }
     setPickerDayId(null)
   }
 

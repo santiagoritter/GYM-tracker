@@ -76,26 +76,73 @@ export async function deleteDay(dayId: string): Promise<void> {
   await softDelete('routineDays', dayId)
 }
 
+/**
+ * Idempotente: si el ejercicio ya está en ese día, no agrega otro. Antes un
+ * doble toque (la UI decide con un liveQuery que tarda en enterarse de la
+ * escritura) creaba dos filas iguales, y lo mismo dos dispositivos que
+ * agregaban el mismo ejercicio antes de sincronizar. En una rutina un
+ * ejercicio va una sola vez por día: el entreno agrupa las series por
+ * ejercicio, así que una segunda fila nunca significa nada útil.
+ */
 export async function addExerciseToDay(
   dayId: string,
   userId: string,
   exerciseId: string
-): Promise<void> {
-  const existing = await db.routineExercises.where('dayId').equals(dayId).toArray()
-  const entry: RoutineExercise = {
-    id: uid(),
-    dayId,
-    userId,
-    exerciseId,
-    exerciseOrder: existing.length + 1,
-    setsTarget: 3,
-    repsMin: 8,
-    repsMax: 12,
-    restSeconds: 90,
-    dirty: 1,
-    updatedAt: nowIso(),
+): Promise<string> {
+  return db.transaction('rw', db.routineExercises, async () => {
+    const existing = await db.routineExercises.where('dayId').equals(dayId).toArray()
+    const already = existing.find((e) => e.exerciseId === exerciseId)
+    if (already) return already.id
+    const entry: RoutineExercise = {
+      id: uid(),
+      dayId,
+      userId,
+      exerciseId,
+      exerciseOrder: Math.max(0, ...existing.map((e) => e.exerciseOrder)) + 1,
+      setsTarget: 3,
+      repsMin: 8,
+      repsMax: 12,
+      restSeconds: 90,
+      dirty: 1,
+      updatedAt: nowIso(),
+    }
+    await db.routineExercises.add(entry)
+    return entry.id
+  })
+}
+
+/**
+ * Reparación de lo que ya quedó mal en un dispositivo. Corre después de cada
+ * sync (idempotente, barata: solo las rutinas del usuario):
+ * - el mismo ejercicio repetido en un día: queda el primero, el resto se
+ *   borra con lápida para que el borrado llegue a los otros dispositivos;
+ * - filas con un ejercicio que no existe en el catálogo (se ven como
+ *   "Ejercicio" y el servidor nunca las acepta: `exercise_id` es not null).
+ * Devuelve cuántas filas sacó.
+ */
+export async function repairRoutineExercises(userId: string): Promise<number> {
+  const catalog = new Set(await db.exercises.toCollection().primaryKeys())
+  const rows = await db.routineExercises.where('userId').equals(userId).toArray()
+  const byDay = new Map<string, RoutineExercise[]>()
+  for (const r of rows) {
+    const list = byDay.get(r.dayId) ?? []
+    list.push(r)
+    byDay.set(r.dayId, list)
   }
-  await db.routineExercises.add(entry)
+
+  const toDelete: string[] = []
+  for (const list of byDay.values()) {
+    const seen = new Set<string>()
+    for (const r of [...list].sort((a, b) => a.exerciseOrder - b.exerciseOrder || a.id.localeCompare(b.id))) {
+      if (!r.exerciseId || !catalog.has(r.exerciseId) || seen.has(r.exerciseId)) toDelete.push(r.id)
+      else seen.add(r.exerciseId)
+    }
+  }
+  // Sin catálogo cargado (primer arranque a medias) no se toca nada: todo
+  // parecería "desconocido".
+  if (catalog.size === 0) return 0
+  await softDeleteMany('routineExercises', toDelete)
+  return toDelete.length
 }
 
 /**
