@@ -7,8 +7,10 @@ import { isNative } from '@/lib/native'
  * que no le sirve a nadie fuera de este teléfono, así que ahí se usa esta.
  * En web se usa el origen real (con su base path).
  */
+// `||` y no `??`: el CI pasa la variable aunque esté sin definir, y una cadena
+// vacía daba una URL pública "/" rota.
 export const PUBLIC_APP_URL: string = (
-  (import.meta.env.VITE_PUBLIC_APP_URL as string | undefined) ??
+  (import.meta.env.VITE_PUBLIC_APP_URL as string | undefined) ||
   'https://santiagoritter.github.io/GYM-tracker/'
 ).replace(/\/?$/, '/')
 

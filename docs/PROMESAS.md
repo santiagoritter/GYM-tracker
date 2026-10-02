@@ -56,5 +56,25 @@ está bien y la presentación dice otra cosa).
 | "1.3 h" | OK | `formatTotalDuration`: "1 h 18 min"; toneladas con coma |
 | Racha 0 arriba y 1 en Progreso | MITIGADO | una sola fuente (`computeStreak`); el 0 de "cargando" ahora es "—" (`useTrainingStats`) |
 | Voseo ("Revisa") | AJUSTAR TEXTO | ya corregido en `src/` |
-| Links de invitación con dominio propio | PARCIAL | configurable por `VITE_PUBLIC_APP_URL`, default github.io |
+| Links de invitación con dominio propio | PARCIAL | configurable por `VITE_PUBLIC_APP_URL` (ahora el CI de iOS/Android la pasa; una variable vacía ya no rompe la URL). Falta comprar el dominio, `VITE_BASE_PATH=/`, CNAME y Associated Domains |
 | App Store y después Android | PARCIAL | sin lane de archive ni TestFlight; sin push nativo |
+
+
+## Para salir: lo que depende de vos (no se puede hacer desde el código)
+
+1. App Store Connect / Play Console: productos `gymtracker.premium.monthly`
+   ($1.990), `gymtracker.premium.annual` ($17.990) y `gymtracker.coach.monthly`
+   ($9.990). RevenueCat: entitlements `premium` y `coach`, y el offering.
+2. Variables del repo (Settings → Variables): `VITE_PURCHASES_ENABLED=on`;
+   secretos: `VITE_REVENUECAT_IOS_KEY`, `VITE_REVENUECAT_ANDROID_KEY`.
+3. Prender `coach_billing_required` y correr `enforce-coach-billing` **solo
+   después** de publicar las builds de iOS, Android y PWA.
+4. Si se muestran anuncios: IDs reales de AdMob, categorías bloqueadas en la
+   consola (suplementos, dietas, productos para bajar de peso) y actualizar
+   `PrivacyInfo.xcprivacy` (ver `docs/APP-STORE-REVIEW.md` §5).
+5. Revisión de un abogado: política de privacidad y términos (menores, tutor,
+   Ley 25.326) y clasificación por edad en las tiendas.
+6. Un perfil de producción tiene una fecha de nacimiento anterior a la regla de
+   13 años: decidir qué se hace con esa cuenta.
+7. Push nativo con la app cerrada: cuenta de Apple Developer y proyecto de
+   Firebase.

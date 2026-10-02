@@ -34,6 +34,13 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
+          # Compras y anuncios: apagados por defecto. Se prenden con variables
+          # (Settings > Variables) y claves (Secrets) del repo; vacío = apagado.
+          VITE_PURCHASES_ENABLED: ${{ vars.VITE_PURCHASES_ENABLED }}
+          VITE_REVENUECAT_IOS_KEY: ${{ secrets.VITE_REVENUECAT_IOS_KEY }}
+          VITE_ADS_ENABLED: ${{ vars.VITE_ADS_ENABLED }}
+          VITE_ADMOB_BANNER_ID_IOS: ${{ secrets.VITE_ADMOB_BANNER_ID_IOS }}
+          VITE_PUBLIC_APP_URL: ${{ vars.VITE_PUBLIC_APP_URL }}
 
       - name: Capacitor sync (iOS)
         run: npx cap sync ios

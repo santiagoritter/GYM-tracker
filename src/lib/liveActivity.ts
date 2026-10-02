@@ -47,10 +47,13 @@ async function nativeOnly(run: () => Promise<unknown>): Promise<void> {
   if (platform !== 'ios' && platform !== 'android') return
   try {
     await run()
-  } catch {
+  } catch (e) {
     // Plugin ausente (Widget Extension sin agregar en iOS, build vieja sin
     // el plugin en Android), Live Activities/notificaciones desactivadas
-    // por el usuario, o iOS < 16.2: no es un error de la app.
+    // por el usuario, o iOS < 16.2: no es un error de la app y no se le
+    // muestra nada al usuario. Pero tragarlo en silencio dejaba sin diagnóstico
+    // el caso "no aparece la Isla Dinámica": queda en el log del dispositivo.
+    console.warn('[liveActivity]', e instanceof Error ? e.message : e)
   }
 }
 

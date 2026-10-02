@@ -1324,3 +1324,15 @@ builds nativas y es una decisión del dueño (`docs/21-COACH.md`).
   coma. Test: `scripts/test-format-stats.mts`.
 - Racha: una sola fuente de cálculo; lo que se veía como "0" arriba era el estado
   de carga. Ahora se muestra "—" hasta que Dexie responde.
+
+## 2026-10-02 — Cableado de producción (Bloque 6)
+
+- CI de iOS y Android: pasan `VITE_PURCHASES_ENABLED`, `VITE_ADS_ENABLED` y
+  `VITE_PUBLIC_APP_URL` (variables del repo) y las claves de RevenueCat y AdMob
+  (secretos). Sin definir = apagado: nada cambia hasta que se configuren. Hasta
+  ahora las builds salían sin compras ni anuncios aunque se quisieran.
+- `PUBLIC_APP_URL` usaba `??`: con la variable pasada pero vacía daba "/" y
+  rompía los enlaces de invitación y de tutor. Ahora `||`.
+- `liveActivity.ts` deja un `console.warn` en vez de tragar el error en
+  silencio (no se le muestra nada al usuario).
+- `docs/PROMESAS.md` cierra con la lista de lo que solo puede hacer el dueño.

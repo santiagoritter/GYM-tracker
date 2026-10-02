@@ -50,6 +50,13 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
+          # Compras y anuncios: apagados por defecto. Se prenden con variables
+          # (Settings > Variables) y claves (Secrets) del repo; vacío = apagado.
+          VITE_PURCHASES_ENABLED: ${{ vars.VITE_PURCHASES_ENABLED }}
+          VITE_REVENUECAT_ANDROID_KEY: ${{ secrets.VITE_REVENUECAT_ANDROID_KEY }}
+          VITE_ADS_ENABLED: ${{ vars.VITE_ADS_ENABLED }}
+          VITE_ADMOB_BANNER_ID_ANDROID: ${{ secrets.VITE_ADMOB_BANNER_ID_ANDROID }}
+          VITE_PUBLIC_APP_URL: ${{ vars.VITE_PUBLIC_APP_URL }}
 
       - name: Fail early if the signing keystore secret is missing
         if: ${{ env.HAS_ANDROID_KEYSTORE != 'true' }}
