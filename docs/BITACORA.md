@@ -1265,3 +1265,16 @@ código mostró que no había ninguna regla por edad. Se agregó `docs/PROMESAS.
 - Se decidió NO excluir `weight_kg`/`notes` de las fotos del sync (el pull
   podría pisarlos con null); se corrigió el texto: las imágenes no salen del
   teléfono, esos dos datos sí viajan bajo RLS y el coach no los ve.
+
+## 2026-10-02 — Consentimiento del tutor y verificación de coaches (Bloque 2)
+
+- Migración `0028`: `guardian_consents`, `is_minor`, `request_guardian_consent`,
+  `guardian_consent_info`, `confirm_guardian_consent` y un `accept_coach_invite`
+  que a menores les exige coach verificado y consentimiento confirmado.
+- Se resolvió sin Edge Function (el plan decía `confirm-guardian`): el token de
+  244 bits hace innecesario limitar intentos, y una RPC `anon` acotada tiene
+  menos piezas que desplegar. La página `/tutor/:token` verificada contra el
+  servidor real con un token falso ("Enlace no válido").
+- `coach_rls_smoke.sql` tuvo que dejar de asumir que un usuario sin fecha de
+  nacimiento es adulto (ahora cuenta como menor). Las dos pruebas pasan.
+- Panel de admin: sección "Verificación de coaches" con el DNI cargado.

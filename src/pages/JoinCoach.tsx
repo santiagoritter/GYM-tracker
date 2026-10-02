@@ -1,9 +1,18 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Star, UserCheck } from 'lucide-react'
+import { Copy, MessageCircle, Star, UserCheck } from 'lucide-react'
 import { fetchInvitePreview, type CoachPublic } from '@/lib/coachQueries'
 import { fetchCoachReviews } from '@/lib/coachReviews'
 import { acceptInvite } from '@/lib/coachMutations'
+import {
+  classifyAcceptError,
+  guardianLink,
+  guardianWhatsappUrl,
+  requestGuardianConsent,
+  type AcceptBlock,
+} from '@/lib/guardianConsent'
+import { runSync } from '@/lib/sync'
+import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { toast } from '@/stores/toastStore'
 import { useAuthStore } from '@/stores/authStore'
 import VerifiedBadge from '@/components/gym/VerifiedBadge'
@@ -22,6 +31,11 @@ export default function JoinCoach() {
   >({ s: 'loading' })
   const [rating, setRating] = useState<{ average: number | null; count: number }>({ average: null, count: 0 })
   const [busy, setBusy] = useState(false)
+  const userId = useCurrentUserId()
+  // Reglas de menores (migración 0028): qué falta para poder aceptar y el enlace
+  // para el tutor, una vez generado.
+  const [block, setBlock] = useState<AcceptBlock>(null)
+  const [link, setLink] = useState<string | null>(null)
 
   useEffect(() => {
     if (isGuest) return
@@ -41,13 +55,41 @@ export default function JoinCoach() {
   const accept = async () => {
     setBusy(true)
     try {
+      // El servidor decide si sos menor por la fecha de nacimiento sincronizada:
+      // se sube antes de aceptar para no tratar como menor a un adulto cuyo
+      // perfil todavía no llegó.
+      if (userId) await runSync(userId).catch(() => undefined)
       await acceptInvite(code)
       toast.success('Vínculo aceptado', 'Tu coach ya puede ver tu progreso.')
       navigate('/perfil', { replace: true })
     } catch (e) {
-      toast.error('No se pudo aceptar', e instanceof Error ? e.message : 'Error')
+      const message = e instanceof Error ? e.message : 'Error'
+      const blocked = classifyAcceptError(message)
+      if (blocked) setBlock(blocked)
+      else toast.error('No se pudo aceptar', message)
     } finally {
       setBusy(false)
+    }
+  }
+
+  const makeLink = async () => {
+    setBusy(true)
+    try {
+      setLink(guardianLink(await requestGuardianConsent(code)))
+    } catch (e) {
+      toast.error('No se pudo generar el enlace', e instanceof Error ? e.message : 'Error')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const copyLink = async () => {
+    if (!link) return
+    try {
+      await navigator.clipboard.writeText(link)
+      toast.success('Enlace copiado')
+    } catch {
+      toast.error('No se pudo copiar', 'Mantené apretado el enlace para copiarlo.')
     }
   }
 
@@ -136,18 +178,72 @@ export default function JoinCoach() {
             vos lo habilitás; las fotos de progreso nunca se comparten. Podés cortar el vínculo
             cuando quieras desde tu perfil.
           </p>
-          <div className="space-y-2">
-            <button
-              onClick={accept}
-              disabled={busy}
-              className="h-12 w-full rounded-sm bg-accent text-sm font-bold text-bg disabled:opacity-50"
-            >
-              {busy ? 'Aceptando…' : 'Aceptar'}
-            </button>
-            <button onClick={() => navigate('/')} className="h-11 w-full text-[13px] font-medium text-ink-3">
-              Ahora no
-            </button>
-          </div>
+          {block === 'unverified' ? (
+            <div className="space-y-3 rounded-md bg-surface p-4">
+              <p className="text-[15px] font-semibold">Este entrenador todavía no está verificado</p>
+              <p className="text-[14px] leading-relaxed text-ink-2">
+                Para menores de 18 solo se puede entrenar con entrenadores verificados. Pedile a tu entrenador que
+                complete la verificación y volvé a abrir el enlace.
+              </p>
+              <button onClick={() => navigate('/')} className="h-11 w-full text-[13px] font-medium text-ink-3">
+                Volver
+              </button>
+            </div>
+          ) : block === 'consent' ? (
+            <div className="space-y-3 rounded-md bg-surface p-4">
+              <p className="text-[15px] font-semibold">Necesitamos el permiso de tu mamá, papá o tutor</p>
+              <p className="text-[14px] leading-relaxed text-ink-2">
+                Como sos menor de 18, tu madre, padre o tutor tiene que autorizar este vínculo. Generá un enlace y
+                mandáselo: lo abre sin cuenta y confirma.
+              </p>
+              {link ? (
+                <div className="space-y-2">
+                  <a
+                    href={guardianWhatsappUrl(link, state.coach.displayName ?? '')}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex h-12 w-full items-center justify-center gap-2 rounded-sm bg-accent text-sm font-bold text-bg"
+                  >
+                    <MessageCircle size={18} /> Enviar por WhatsApp
+                  </a>
+                  <button
+                    onClick={copyLink}
+                    className="flex h-12 w-full items-center justify-center gap-2 rounded-sm bg-fill text-sm font-semibold text-ink"
+                  >
+                    <Copy size={16} /> Copiar enlace
+                  </button>
+                  <button
+                    onClick={accept}
+                    disabled={busy}
+                    className="h-11 w-full text-[13px] font-semibold text-accent disabled:opacity-50"
+                  >
+                    {busy ? 'Revisando…' : 'Ya lo autorizaron: continuar'}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={makeLink}
+                  disabled={busy}
+                  className="h-12 w-full rounded-sm bg-accent text-sm font-bold text-bg disabled:opacity-50"
+                >
+                  {busy ? 'Generando…' : 'Generar enlace para mi tutor'}
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <button
+                onClick={accept}
+                disabled={busy}
+                className="h-12 w-full rounded-sm bg-accent text-sm font-bold text-bg disabled:opacity-50"
+              >
+                {busy ? 'Aceptando…' : 'Aceptar'}
+              </button>
+              <button onClick={() => navigate('/')} className="h-11 w-full text-[13px] font-medium text-ink-3">
+                Ahora no
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>

@@ -17,7 +17,7 @@ está bien y la presentación dice otra cosa).
 | Peso sugerido "por serie" | AJUSTAR TEXTO | un solo peso por ejercicio (`workoutStore.ts:197`) |
 | Sin cuenta y migra al registrarse | OK | `guest.ts`, `migrateLocalUserToSupabase.ts` |
 | Modo coach: rutinas, seguimiento, chat, invitación por link/QR, corte por ambas partes | OK | migraciones 0012–0025 |
-| Alta de coach verificada con DNI | PARCIAL | DNI único; `verified` lo da un admin y no bloquea nada |
+| Alta de coach verificada con DNI | PARCIAL | DNI único; el admin verifica desde `AdminCoachVerification` y para menores es obligatorio; el DNI no se coteja con un registro oficial |
 
 ## Comercial (slides 6–8)
 
@@ -36,7 +36,7 @@ está bien y la presentación dice otra cosa).
 | Promesa | Estado | Evidencia / nota |
 |---|---|---|
 | Edad obligatoria al registrarse, también invitado | OK | `Registro.tsx`, `Onboarding.tsx` (rango 13–100), `src/lib/age.ts`; servidor: trigger 0027 |
-| Vínculo con coach solo con consentimiento de madre/padre | FALTA | `accept_coach_invite` no consulta la edad |
+| Vínculo con coach solo con consentimiento de madre/padre | OK | migración 0028, `GuardianConsent.tsx`, `JoinCoach.tsx`; probado en `supabase/tests/guardian_consent_smoke.sql` |
 | Sin adjuntos libres en el chat | OK | solo ejercicio o rutina |
 | Reporte visible en el chat | OK | `ChatThread.tsx:169` |
 | Fotos de progreso nunca salen del teléfono | OK (texto ajustado) | las imágenes no suben; el peso y las notas de cada foto sí se sincronizan, bajo RLS y sin acceso del coach |

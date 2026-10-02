@@ -243,3 +243,31 @@ con la app cerrada; con la app abierta se ve el contador de "Mensajes".
 **Rol entre dispositivos:** el rol viaja en el JWT. `become-coach` refresca el
 token solo en el dispositivo que lo pidió; ahora los demás lo refrescan al
 abrir la app, al volver a ella y cada 5 minutos (`refreshRole`, `main.tsx`).
+
+
+## Menores (migración 0028)
+
+Un menor de 18 años, **o sin fecha de nacimiento válida** (`is_minor`, mismo
+criterio que `src/lib/age.ts`), no puede aceptar la invitación de un coach si
+no se cumplen dos cosas, que `accept_coach_invite` verifica en el servidor:
+
+1. El coach está **verificado** (`coaches.verified`). Antes era solo una
+   insignia. El admin lo marca desde el panel (`AdminCoachVerification`),
+   comparando el DNI cargado; no se coteja contra ningún registro oficial.
+2. Un tutor confirmó el vínculo con **ese** coach.
+
+Flujo: el menor abre el enlace del coach, la app muestra "Necesitamos el permiso
+de tu mamá, papá o tutor" y le genera un enlace (`request_guardian_consent`).
+Lo manda por WhatsApp o lo copia; el tutor lo abre en `/tutor/:token` **sin
+cuenta**, lee qué ve el coach y confirma (`confirm_guardian_consent`). El menor
+vuelve y acepta.
+
+- El token tiene 244 bits y la base solo guarda su sha256; por eso las RPC de
+  lectura y confirmación pueden ser `anon` sin limitar intentos. Vence a los 7
+  días sin usar; confirmado, no vence (se corta terminando el vínculo, que puede
+  hacer cualquiera de las dos partes).
+- Los vínculos activos que ya existían no se tocan.
+- Los adultos no ven nada de esto. Para no tratar como menor a un adulto cuyo
+  perfil todavía no sincronizó, `JoinCoach` sube los cambios antes de aceptar.
+- Pendiente a propósito: que el tutor pueda revocar sin la app, y la copia de
+  los mensajes al tutor.

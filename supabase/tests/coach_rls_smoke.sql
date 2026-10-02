@@ -42,6 +42,8 @@ begin
   insert into public.coaches (id, display_name) values (coach, 'Coach T'), (other, 'Otro T');
   insert into public.coach_invites (coach_id, code, max_uses) values (coach, 'TMPCODE1', 1);
   insert into public.profiles (id, display_name) values (student, 'Alumno T') on conflict (id) do update set display_name = 'Alumno T', body_weight_kg = 80, sex = 'male', dob = '1995-01-01', units = 'kg';
+  -- 0028: sin fecha de nacimiento un usuario cuenta como menor; `other` es adulto para que 1c siga probando max_uses.
+  insert into public.profiles (id, display_name, dob) values (other, 'Otro T', '1990-01-01') on conflict (id) do update set dob = '1990-01-01';
   insert into public.workouts (id, user_id, name, started_at, finished_at, total_volume_kg, updated_at)
     values ('w-tmp-1', student, 'Push', now(), now(), 1000, now());
   insert into public.calorie_entries (id, user_id, logged_at, kcal, updated_at)

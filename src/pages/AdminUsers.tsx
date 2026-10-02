@@ -23,6 +23,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { useChartColors } from '@/hooks/useChartColors'
 import { toast } from '@/stores/toastStore'
 import { Card, EmptyState, Row, SectionHeader } from '@/components/ui/Card'
+import AdminCoachVerification from '@/components/gym/AdminCoachVerification'
 import { cn } from '@/lib/utils'
 
 const ACTIVE_WINDOW_DAYS = 30
@@ -142,6 +143,8 @@ export default function AdminUsers() {
               value={String(state.users.filter((u) => u.role === 'coach').length)}
             />
           </div>
+
+          <AdminCoachVerification />
 
           <section>
             <div className="mb-2 flex items-center justify-between">

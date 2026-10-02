@@ -27,6 +27,7 @@ const ImportRoutine = lazy(() => import('@/pages/ImportRoutine'))
 const Cardio = lazy(() => import('@/pages/Cardio'))
 const Run = lazy(() => import('@/pages/Run'))
 const Legal = lazy(() => import('@/pages/Legal'))
+const GuardianConsent = lazy(() => import('@/pages/GuardianConsent'))
 const FAQ = lazy(() => import('@/pages/FAQ'))
 const RoutineEditor = lazy(() => import('@/pages/RoutineEditor'))
 const Profile = lazy(() => import('@/pages/Profile'))
@@ -74,6 +75,9 @@ export default function App() {
       {/* Legal: accesible también antes de loguearse (linkeado desde el registro) */}
       <Route path="/legal" element={<Suspense fallback={lazyFallback}><Legal /></Suspense>} />
       <Route path="/legal/:doc" element={<Suspense fallback={lazyFallback}><Legal /></Suspense>} />
+
+      {/* Permiso de madre/padre/tutor para un menor: el tutor no tiene cuenta */}
+      <Route path="/tutor/:token" element={<Suspense fallback={lazyFallback}><GuardianConsent /></Suspense>} />
 
       {/* Onboarding: requiere auth pero no perfil completo */}
       <Route element={<ProtectedRoute />}>
