@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { ONBOARDING_MESSAGES, getRandomMessage } from '@/lib/motivational'
 import { GOAL_OPTIONS as GOALS, LEVEL_OPTIONS as LEVELS } from '@/lib/strengthStandards'
 import { cn, nowIso } from '@/lib/utils'
+import { dobBounds, dobError } from '@/lib/age'
 import { toast } from '@/stores/toastStore'
 import type { FitnessGoal, ExperienceLevel } from '@/types'
 
@@ -65,7 +66,7 @@ export default function Onboarding() {
       const profile = await db.profile.get(userId)
       const patch = {
         ...(sex && { sex }),
-        ...(dob && { dob }),
+        ...(dob && !dobError(dob) && { dob }),
         ...(weightKg && { bodyWeightKg: Number(weightKg) }),
         ...(heightCm && { heightCm: Number(heightCm) }),
         ...(goal && { goal }),
@@ -82,7 +83,7 @@ export default function Onboarding() {
           units: 'kg',
           restTimerDefault: 90,
           onboardingComplete: 1,
-          calorieTrackingEnabled: 1,
+          calorieTrackingEnabled: 0,
           ...patch,
           dirty: 1,
           updatedAt: nowIso(),
@@ -215,7 +216,8 @@ function StepPersonal({
   onDob: (v: string) => void
   onNext: () => void
 }) {
-  const canContinue = sex !== '' && dob !== ''
+  const dobProblem = dob ? dobError(dob) : null
+  const canContinue = sex !== '' && dob !== '' && !dobProblem
   return (
     <div className="flex flex-1 flex-col">
       <div className="mb-8">
@@ -261,10 +263,12 @@ function StepPersonal({
               type="date"
               value={dob}
               onChange={(e) => onDob(e.target.value)}
-              max={new Date().toISOString().slice(0, 10)}
+              min={dobBounds().min}
+              max={dobBounds().max}
               className="w-full bg-transparent py-3 outline-none"
             />
           </div>
+          {dobProblem && <p className="mt-1.5 text-[13px] text-danger">{dobProblem}</p>}
         </div>
       </div>
 

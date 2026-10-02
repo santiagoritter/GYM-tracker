@@ -65,7 +65,11 @@ export function prepareAds() {
         status = (await AdMob.trackingAuthorizationStatus()).status
       }
 
-      await AdMob.initialize({})
+      // Los anuncios solo se piden a adultos (AdBanner). Aun así el SDK queda
+      // acotado: contenido apto para adolescentes o menos. Bloquear categorías
+      // (suplementos, dietas, productos para bajar de peso) se hace en la
+      // consola de AdMob, no desde el código.
+      await AdMob.initialize({ maxAdContentRating: mod.MaxAdContentRating.Teen })
       return { mod, personalized: status === 'authorized', canRequestAds }
     })().catch((e) => {
       ready = null

@@ -7,7 +7,7 @@ Al crear una cuenta o usar Repe aceptás estos términos. Si no estás de acuerd
 
 ## Uso de la app y edad mínima
 
-Repe se ofrece para uso personal. Tenés que tener al menos **16 años** para crear una cuenta. Sos responsable de la información que cargás y de entrenar de forma segura.
+Repe se ofrece para uso personal. Tenés que tener al menos **13 años** para crear una cuenta. Sos responsable de la información que cargás y de entrenar de forma segura.
 
 ## Tu cuenta
 

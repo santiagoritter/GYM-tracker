@@ -66,11 +66,6 @@ export const PHILOSOPHICAL_QUOTES: Quote[] = [
     author: 'Séneca',
   },
   {
-    text: 'Las dificultades fortalecen la mente igual que el trabajo fortalece el cuerpo.',
-    author: 'Séneca',
-    daypart: ['morning', 'afternoon'],
-  },
-  {
     text: 'La suerte es lo que pasa cuando la preparación se cruza con la oportunidad.',
     author: 'Séneca',
     daypart: ['morning'],
@@ -166,16 +161,7 @@ export const PHILOSOPHICAL_QUOTES: Quote[] = [
     daypart: ['night'],
   },
 
-  // — Acción, cuerpo, presente —
-  {
-    text: 'Cuidá tu cuerpo. Es el único lugar que tenés para vivir.',
-    author: 'Jim Rohn',
-  },
-  {
-    text: 'El cuerpo humano es el carruaje; el yo, el que lo maneja; el pensamiento, las riendas; y las emociones, los caballos.',
-    author: 'Platón',
-    daypart: ['afternoon'],
-  },
+  // — Acción y presente —
   {
     text: 'La disciplina es elegir entre lo que querés ahora y lo que querés más.',
     author: 'Abraham Lincoln',

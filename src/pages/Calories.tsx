@@ -10,6 +10,7 @@ import { Card, EmptyState, Row, SectionHeader } from '@/components/ui/Card'
 import { GOAL_TYPE_LABELS, summarizeDay } from '@/lib/calories'
 import { localDayKey } from '@/lib/stats'
 import { cn, nowIso } from '@/lib/utils'
+import { isMinor } from '@/lib/age'
 import type { LocalProfile } from '@/types'
 
 const CalorieAddSheet = lazy(() => import('@/components/gym/CalorieAddSheet'))
@@ -42,7 +43,12 @@ export default function Calories() {
   if (!profile) return null
 
   const enabled = profile.calorieTrackingEnabled === 1
-  const goalType = profile.calorieGoalType ?? 'maintenance'
+  // Menores (o sin edad confiable): sin meta de déficit. Un déficit guardado
+  // antes de esta regla se muestra como mantenimiento.
+  const minor = isMinor(profile.dob)
+  const goalTypes = minor ? GOAL_TYPES.filter((t) => t !== 'deficit') : GOAL_TYPES
+  const storedGoalType = profile.calorieGoalType ?? 'maintenance'
+  const goalType = minor && storedGoalType === 'deficit' ? 'maintenance' : storedGoalType
   const goalKcal = profile.calorieGoalKcal ?? 2200
 
   const today = localDayKey(nowIso())
@@ -98,7 +104,7 @@ export default function Calories() {
               <SectionHeader title="Meta diaria" />
               <Card className="p-4">
                 <div className="flex gap-2">
-                  {GOAL_TYPES.map((t) => (
+                  {goalTypes.map((t) => (
                     <button
                       key={t}
                       onClick={() => update({ calorieGoalType: t })}

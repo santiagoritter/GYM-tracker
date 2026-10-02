@@ -21,8 +21,9 @@ import { SUPPORT_EMAIL } from '@/lib/legal'
 
 /** CONFIRMAR con el dueño / un abogado antes de publicar en la tienda. */
 export const LEGAL_JURISDICTION = 'la República Argentina'
-/** CONFIRMAR: edad mínima para usar la app con cuenta. */
-export const LEGAL_MIN_AGE = 16
+/** Edad mínima para usar la app (la fuerza src/lib/age.ts y el servidor, 0027).
+ * CONFIRMAR con un abogado antes de publicar. */
+export const LEGAL_MIN_AGE = 13
 export const LEGAL_UPDATED = 'septiembre 2026'
 
 export type LegalFlag = 'ads' | 'purchases'
@@ -117,13 +118,14 @@ export const PRIVACY: LegalDoc = {
     {
       title: 'Tus derechos',
       body: [
-        'Podés acceder, corregir y **exportar** tus datos desde Ajustes → Datos (con opción de cifrarlos), y pedirnos su eliminación. También podés retirar permisos (ubicación, cámara, notificaciones) desde los ajustes del iPhone en cualquier momento.',
+        'Podés acceder, corregir y **exportar** tus datos desde Ajustes → Datos (con opción de cifrarlos), y pedirnos su eliminación. Son los derechos de acceso, rectificación y supresión de la Ley 25.326 de Protección de los Datos Personales; la Agencia de Acceso a la Información Pública (AAIP) es el órgano de control y atiende las denuncias y reclamos. También podés retirar permisos (ubicación, cámara, notificaciones) desde los ajustes del iPhone en cualquier momento.',
       ],
     },
     {
       title: 'Menores',
       body: [
-        `Repe no está dirigida a menores de ${LEGAL_MIN_AGE} años y no recopilamos a sabiendas datos de menores de esa edad. Si creés que un menor creó una cuenta, escribinos y la eliminamos.`,
+        `Repe es para personas de ${LEGAL_MIN_AGE} años o más: la fecha de nacimiento es obligatoria y no se puede crear una cuenta por debajo de esa edad. Si creés que un menor de ${LEGAL_MIN_AGE} años creó una cuenta, escribinos y la eliminamos.`,
+        'Entre los 13 y los 17 años la app aplica reglas de cuidado: **no muestra anuncios**, el contador de calorías viene apagado y sin metas de déficit, y los avisos y frases hablan de constancia, nunca de peso o cuerpo. Un menor solo puede vincularse con un entrenador si su madre, padre o tutor lo confirma desde un enlace. Las fotos de progreso no se comparten con el entrenador y sus imágenes no salen del teléfono.',
       ],
     },
     {

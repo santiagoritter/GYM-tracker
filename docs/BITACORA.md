@@ -1240,3 +1240,28 @@ Se quitó el tipo `coach_message` (hoja, ícono, ruta, tipo TS) y
 refresca los badges de "Mensajes". El push del servidor sigue. Las filas ya
 guardadas por la versión anterior se filtran al leer (`isShownNotification`),
 sin cambio de esquema.
+
+## 2026-10-02 — Presentación vs. código: edad y reglas para menores (Bloque 1)
+
+La presentación de producto promete protección de menores; la auditoría del
+código mostró que no había ninguna regla por edad. Se agregó `docs/PROMESAS.md`
+(la presentación como checklist) y el Bloque 1:
+
+- `src/lib/age.ts`: edad mínima 13, `isMinor`, y **sin fecha de nacimiento
+  válida cuenta como menor** (el fallo seguro). Registro y onboarding la piden
+  (rango 13–100); el perfil ya no deja borrarla.
+- Servidor, migración `0027`: trigger que rechaza `dob` fuera de rango cuando
+  cambia. Es trigger y no CHECK porque hay un perfil previo (1 de 10 en
+  producción) con una fecha fuera de rango y un CHECK le habría roto cualquier
+  UPDATE. Ese perfil sigue sin cambios; queda como decisión de producto.
+  Probado en transacción que revierte: `supabase/tests/dob_rules_smoke.sql`.
+- Calorías: el contador nace apagado; a menores no se les ofrece el objetivo de
+  déficit.
+- Anuncios: no se muestran a menores ni con edad desconocida.
+- Frases: se retiraron las que hablaban del cuerpo; `scripts/test-age.mts` lo
+  verifica sobre todos los pools.
+- Legal: edad mínima 13, texto de menores, Ley 25.326 y AAIP, `LEGAL_VERSION` 3
+  (todos aceptan de nuevo). Falta revisión de un abogado.
+- Se decidió NO excluir `weight_kg`/`notes` de las fotos del sync (el pull
+  podría pisarlos con null); se corrigió el texto: las imágenes no salen del
+  teléfono, esos dos datos sí viajan bajo RLS y el coach no los ve.

@@ -4,6 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { workoutsFor } from '@/db/scoped'
 import { useAuthStore } from '@/stores/authStore'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
+import { useIsMinor } from '@/hooks/useIsMinor'
 import { useEntitlementsStore } from '@/stores/entitlementsStore'
 import { purchasesAvailable } from '@/lib/purchases'
 import { platform } from '@/lib/native'
@@ -34,6 +35,8 @@ export default function AdBanner() {
   const userId = useCurrentUserId()
   const role = useAuthStore((s) => s.role)
   const adFree = useEntitlementsStore((s) => s.adFree)
+  // Menores y edad desconocida: nunca anuncios (presentación, slide "Alertas").
+  const minor = useIsMinor()
   const activeWorkout = useLiveQuery(
     () => (userId ? workoutsFor(userId).filter((w) => !w.finishedAt).first() : undefined),
     [userId]
@@ -44,7 +47,7 @@ export default function AdBanner() {
 
   const onAdRoute = AD_ROUTES.some((r) => pathname === r || pathname.startsWith(`${r}/`))
   const eligible =
-    adsAvailable() && onAdRoute && !adFree && role !== 'coach' && role !== 'admin' && !activeWorkout
+    adsAvailable() && onAdRoute && !adFree && !minor && role !== 'coach' && role !== 'admin' && !activeWorkout
 
   useEffect(() => {
     if (!eligible) return

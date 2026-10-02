@@ -8,6 +8,7 @@ import { Card, Row } from '@/components/ui/Card'
 import MyCoachCard from '@/components/gym/MyCoachCard'
 import type { LocalProfile } from '@/types'
 import { cn } from '@/lib/utils'
+import { dobBounds, dobError } from '@/lib/age'
 import { getDailyMessage } from '@/lib/motivational'
 import { GOAL_LABELS, LEVEL_LABELS } from '@/lib/strengthStandards'
 
@@ -148,10 +149,21 @@ export default function Profile() {
               <input
                 type="date"
                 value={profile.dob ?? ''}
-                onChange={(e) => update({ dob: e.target.value || undefined })}
+                // Sin borrar: la fecha es la llave de las reglas para menores. Un
+                // valor vacío o fuera de rango (mientras se tipea) no se guarda.
+                onChange={(e) => {
+                  if (!dobError(e.target.value)) update({ dob: e.target.value })
+                }}
+                min={dobBounds().min}
+                max={dobBounds().max}
                 className="h-full w-full bg-transparent outline-none"
               />
             </div>
+            {!profile.dob && (
+              <p className="mt-1.5 text-[12px] text-ink-3">
+                Sin fecha de nacimiento no se muestran anuncios y el contador de calorías se mantiene apagado.
+              </p>
+            )}
           </Row>
         </Card>
       </section>

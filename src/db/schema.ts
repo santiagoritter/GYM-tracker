@@ -351,7 +351,9 @@ export async function ensureProfile(userId: string): Promise<void> {
         units: 'kg',
         restTimerDefault: 90,
         onboardingComplete: 0,
-        calorieTrackingEnabled: 1,
+        // Apagado por defecto: la presentación promete que el contador de
+        // calorías no aparece solo (y menos para menores).
+        calorieTrackingEnabled: 0,
       } as LocalProfile)
     }
   })

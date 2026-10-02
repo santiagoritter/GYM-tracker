@@ -20,16 +20,16 @@ export const REST_END_MESSAGES: MotivationalMessage[] = [
   { text: 'De vuelta al trabajo.' },
 ]
 
+// Regla de producto (presentación, slide "Cuidados"): frases sobre hábito y
+// constancia, nunca sobre peso o cuerpo. Lo verifica scripts/test-age.mts
+// sobre todos los pools, incluidos los de quotes.ts.
 export const ONBOARDING_MESSAGES: MotivationalMessage[] = [
   { text: 'El único entrenamiento malo es el que no hiciste.', author: 'Joe Weider' },
   { text: 'No te limites. Mucha gente se limita a lo que piensa que puede hacer. Podés llegar tan lejos como tu mente te deje.', author: 'Mary Kay Ash' },
   { text: 'El dolor que sentís hoy es la fuerza que vas a sentir mañana.' },
   { text: 'Éxito no es un destino, es el viaje.', author: 'Zig Ziglar' },
   { text: 'La disciplina es el puente entre tus metas y tus logros.' },
-  { text: 'Cada rep que hacés es una inversión en el cuerpo que querés tener.' },
-  { text: 'El cuerpo alcanza lo que la mente cree.' },
   { text: 'No pares cuando estés cansado. Pará cuando hayas terminado.' },
-  { text: 'Cuida tu cuerpo, es el único lugar que tenés para vivir.', author: 'Jim Rohn' },
   { text: 'Los campeones no son hechos en los gimnasios. Son hechos de algo profundo en su interior.', author: 'Muhammad Ali' },
 ]
 
@@ -39,7 +39,7 @@ export const WORKOUT_COMPLETE_MESSAGES: MotivationalMessage[] = [
   { text: '¡Rompiste el límite de hoy! El progreso es constante.' },
   { text: 'Mientras otros duermen, vos crecés. ¡Excelente sesión!' },
   { text: '¡Eso es todo! Cada kilo, cada rep, cuenta.' },
-  { text: 'Tu cuerpo lo logró de nuevo. Dale el descanso que merece.' },
+  { text: 'Tu esfuerzo de hoy cuenta. Dale el descanso que merece.' },
   { text: '¡Aplausos para vos! Otro paso hacia tu mejor versión.' },
 ]
 

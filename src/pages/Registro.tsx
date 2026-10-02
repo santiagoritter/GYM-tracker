@@ -8,6 +8,7 @@ import { migrateLocalUserToSupabase } from '@/db/migrateLocalUserToSupabase'
 import { migrateGuestData } from '@/lib/guest'
 import { LEGAL_VERSION } from '@/lib/legal'
 import { nowIso } from '@/lib/utils'
+import { dobBounds, dobError } from '@/lib/age'
 
 type Step = 'form' | 'verify'
 
@@ -21,6 +22,7 @@ export default function Registro() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
+  const [dob, setDob] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [acceptedLegal, setAcceptedLegal] = useState(false)
 
@@ -45,6 +47,8 @@ export default function Registro() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    const ageProblem = dobError(dob)
+    if (ageProblem) { setError(ageProblem); return }
     if (password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres.'); return }
     if (password !== confirm) { setError('Las contraseñas no coinciden.'); return }
     if (!acceptedLegal) { setError('Tenés que aceptar los términos y la política de privacidad.'); return }
@@ -82,6 +86,9 @@ export default function Registro() {
       // Si venía usando la app como invitado, sus datos se mueven a esta cuenta.
       await migrateGuestData(user.id)
       await ensureProfile(user.id)
+      // La fecha de nacimiento es la llave de las reglas para menores: se
+      // guarda apenas existe el perfil, el onboarding la vuelve a mostrar.
+      await db.profile.update(user.id, { dob })
       // Sella la aceptación de términos/privacidad hecha en el paso 1.
       await db.profile.update(user.id, {
         legalAcceptedAt: nowIso(),
@@ -161,6 +168,28 @@ export default function Registro() {
               placeholder="tu@email.com"
               className="h-12 w-full rounded-sm bg-surface px-4 text-base outline-none ring-1 ring-line-2 transition focus:ring-accent"
             />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-ink-2">
+              Fecha de nacimiento
+            </label>
+            {/* Padding en el wrapper y no en el input: bug de WebKit (ver Profile.tsx). */}
+            <div className="h-12 overflow-hidden rounded-sm bg-surface px-4 ring-1 ring-line-2 transition [color-scheme:dark] focus-within:ring-accent">
+              <input
+                type="date"
+                value={dob}
+                onChange={(e) => setDob(e.target.value)}
+                min={dobBounds().min}
+                max={dobBounds().max}
+                required
+                autoComplete="bday"
+                className="h-full w-full bg-transparent text-base outline-none"
+              />
+            </div>
+            <p className="mt-1.5 text-[12px] text-ink-3">
+              Repe es para mayores de 13 años. La usamos para cuidar a los más jóvenes.
+            </p>
           </div>
 
           <div>
