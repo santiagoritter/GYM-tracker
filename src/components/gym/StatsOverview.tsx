@@ -1,3 +1,4 @@
+import { formatTons, formatTotalDuration } from '@/lib/formatStats'
 import { Dumbbell, Flame, Timer, TrendingUp, Trophy, Weight } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { personalRecordsFor } from '@/db/scoped'
@@ -12,15 +13,13 @@ export default function StatsOverview() {
     [userId]
   ) ?? 0
 
-  const hours = Math.round((stats.totalDurationSec / 3600) * 10) / 10
-  const tons = Math.round((stats.totalVolumeKg / 1000) * 10) / 10
   const avgPerWeek = weeksSinceFirst(stats.dayKeys)
 
   const cards = [
     { icon: Dumbbell, label: 'Entrenos', value: String(stats.totalWorkouts), color: 'text-info' },
-    { icon: Weight, label: 'Volumen', value: `${tons} t`, color: 'text-accent' },
-    { icon: Timer, label: 'Tiempo', value: `${hours} h`, color: 'text-success' },
-    { icon: Flame, label: 'Racha', value: `${stats.currentStreak}d`, color: 'text-warning' },
+    { icon: Weight, label: 'Volumen', value: formatTons(stats.totalVolumeKg), color: 'text-accent' },
+    { icon: Timer, label: 'Tiempo', value: formatTotalDuration(stats.totalDurationSec), color: 'text-success' },
+    { icon: Flame, label: 'Racha', value: stats.ready ? `${stats.currentStreak}d` : '—', color: 'text-warning' },
     { icon: Trophy, label: 'PRs', value: String(prCount), color: 'text-accent' },
     { icon: TrendingUp, label: 'Prom/sem', value: avgPerWeek, color: 'text-info' },
   ]

@@ -28,7 +28,9 @@ export default function StreakWeekCard() {
           {done >= goal ? 'Meta semanal cumplida' : `Faltan ${goal - done} para la meta`}
         </p>
         <p className="mt-1 text-[13px] text-ink-3">
-          {stats.currentStreak === 0
+          {!stats.ready
+            ? ' '
+            : stats.currentStreak === 0
             ? 'Entrená hoy para arrancar una racha'
             : `Racha actual: ${stats.currentStreak} ${stats.currentStreak === 1 ? 'día' : 'días'} · mejor: ${stats.longestStreak}`}
         </p>

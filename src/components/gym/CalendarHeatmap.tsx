@@ -209,7 +209,7 @@ export default function CalendarHeatmap() {
                 </div>
                 <div>
                   <p className="font-mono text-xl font-bold leading-none tabular-nums">
-                    {trainingStats.currentStreak}
+                    {trainingStats.ready ? trainingStats.currentStreak : '—'}
                   </p>
                   <p className="mt-1 text-xs text-ink-3">
                     {trainingStats.currentStreak === 1 ? 'día de racha' : 'días de racha'}

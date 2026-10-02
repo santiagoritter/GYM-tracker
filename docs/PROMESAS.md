@@ -51,10 +51,10 @@ está bien y la presentación dice otra cosa).
 
 | Promesa | Estado | Evidencia / nota |
 |---|---|---|
-| Tarjeta para compartir el entreno | FALTA | no hay nada de share |
-| "Septiembre De" | BUG | `MonthlyStats.tsx:132` (`capitalize`) |
-| "1.3 h" | BUG | `StatsOverview.tsx:15` |
-| Racha 0 arriba y 1 en Progreso | NO REPRODUCIBLE | una sola fuente (`computeStreak`); pedir captura |
+| Tarjeta para compartir el entreno | OK | `shareCard.ts` (canvas 1080×1920, negro y lima, logo, récords, volumen, radar), `ShareWorkoutButton.tsx` en "Revisá tu entreno"; plugins `@capacitor/share` y `filesystem`. Sin fotos ni peso corporal |
+| "Septiembre De" | OK | `capitalizeFirst` (`formatStats.ts`) |
+| "1.3 h" | OK | `formatTotalDuration`: "1 h 18 min"; toneladas con coma |
+| Racha 0 arriba y 1 en Progreso | MITIGADO | una sola fuente (`computeStreak`); el 0 de "cargando" ahora es "—" (`useTrainingStats`) |
 | Voseo ("Revisa") | AJUSTAR TEXTO | ya corregido en `src/` |
 | Links de invitación con dominio propio | PARCIAL | configurable por `VITE_PUBLIC_APP_URL`, default github.io |
 | App Store y después Android | PARCIAL | sin lane de archive ni TestFlight; sin push nativo |

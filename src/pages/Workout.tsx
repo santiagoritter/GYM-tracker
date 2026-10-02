@@ -32,6 +32,7 @@ import { toast } from '@/stores/toastStore'
 import { getRandomMessage, WORKOUT_COMPLETE_MESSAGES } from '@/lib/motivational'
 import { groupExerciseUnits, defaultActiveUnitKey, unitKeyForExercise } from '@/lib/workoutUnits'
 import { computeVolumeKg, previewPRs, workingSetsOf, type PRPreviewItem } from '@/lib/workoutSummary'
+import ShareWorkoutButton from '@/components/gym/ShareWorkoutButton'
 
 type WorkoutScreen =
   | { kind: 'active' }
@@ -420,6 +421,20 @@ export default function Workout() {
           >
             Confirmar
           </button>
+          {workout && (
+            <ShareWorkoutButton
+              workoutName={workout.name}
+              startedAt={workout.startedAt}
+              volumeKg={screen.volumeKg}
+              setsCount={workingSetsOf(sets ?? []).length}
+              prs={screen.prPreview.map((pr) => ({
+                name: exerciseMap.get(pr.exerciseId)?.name ?? 'Ejercicio',
+                weightKg: pr.weightKg,
+                reps: pr.reps,
+              }))}
+              units={units}
+            />
+          )}
           <button
             onClick={handleCancelPreview}
             disabled={isFinishing}

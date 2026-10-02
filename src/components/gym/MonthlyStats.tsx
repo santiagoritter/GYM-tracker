@@ -1,3 +1,4 @@
+import { capitalizeFirst } from '@/lib/formatStats'
 import { useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { CalendarX, ChevronLeft, ChevronRight } from 'lucide-react'
@@ -36,7 +37,7 @@ export function MonthlyStats() {
     return {
       monthStart: start,
       monthEnd: end,
-      monthLabel: start.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }),
+      monthLabel: capitalizeFirst(start.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })),
     }
   }, [monthOffset])
 
@@ -129,7 +130,7 @@ export function MonthlyStats() {
         <button onClick={() => setMonthOffset((o) => o - 1)} className="p-2 text-ink-2">
           <ChevronLeft size={20} />
         </button>
-        <span className="font-semibold capitalize">{monthLabel}</span>
+        <span className="font-semibold">{monthLabel}</span>
         <button
           onClick={() => setMonthOffset((o) => Math.min(0, o + 1))}
           disabled={monthOffset === 0}

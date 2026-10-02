@@ -13,13 +13,19 @@ const EMPTY: TrainingStats = {
   dayKeys: new Set(),
 }
 
+/** `ready` es false mientras la DB todavía no respondió: mostrar "0 días de racha"
+ * en ese instante contradecía lo que aparecía un segundo después en Progreso. */
+export type LiveTrainingStats = TrainingStats & { ready: boolean }
+
+const LOADING: LiveTrainingStats = { ...EMPTY, ready: false }
+
 /** Métricas de entrenamiento reactivas (se recalculan al cambiar la DB). */
-export function useTrainingStats(): TrainingStats {
+export function useTrainingStats(): LiveTrainingStats {
   const userId = useCurrentUserId()
   const workouts = useLiveQuery(
     () => (userId ? workoutsFor(userId).toArray() : []),
     [userId]
   )
-  if (!workouts) return EMPTY
-  return computeStats(workouts)
+  if (!workouts) return LOADING
+  return { ...computeStats(workouts), ready: true }
 }

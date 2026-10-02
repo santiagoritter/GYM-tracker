@@ -1305,3 +1305,22 @@ Migración `0030`: `coach_is_entitled` y su uso en `coaches`, `coach_invites`,
 `accept_coach_invite` e `is_coach_of`. Con el flag apagado (producción hoy) nada
 cambia; las tres pruebas de RLS pasan. El flag NO se prendió: falta publicar las
 builds nativas y es una decisión del dueño (`docs/21-COACH.md`).
+
+## 2026-10-02 — Tarjeta para compartir y pulido (Bloque 5)
+
+- **Tarjeta del entreno**: botón "Compartir entreno" en "Revisá tu entreno".
+  Canvas propio 1080×1920 (negro y lima de DESIGN.md, isotipo, duración, volumen,
+  series, hasta 3 récords y el radar de niveles). El radar se omite si no entra
+  (título largo o varios récords: gana lo que se hizo hoy). Nunca lleva fotos ni
+  peso corporal. Nativo: Filesystem (caché) + Share del sistema; web: Web Share
+  con archivo o descarga. Verificado renderizando tres variantes (completa, larga
+  y sin récords) y mirando las imágenes; se corrigieron cifras cortadas
+  ("1 h 18…") y etiquetas del radar superpuestas. **No verificado**: la hoja de
+  compartir en un iPhone real.
+- `@capacitor/share` y `@capacitor/filesystem` agregados; `cap sync ios`
+  actualizó `Package.swift`. Hay que correr `npx cap sync ios` otra vez si se
+  vuelve a construir.
+- "Septiembre De" → "Septiembre de"; "1.3 h" → "1 h 18 min"; toneladas con
+  coma. Test: `scripts/test-format-stats.mts`.
+- Racha: una sola fuente de cálculo; lo que se veía como "0" arriba era el estado
+  de carga. Ahora se muestra "—" hasta que Dexie responde.
