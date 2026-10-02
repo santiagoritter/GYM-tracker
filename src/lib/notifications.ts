@@ -37,3 +37,13 @@ export async function pushNotification(params: {
     updatedAt: nowIso(),
   })
 }
+
+/**
+ * Los mensajes del chat de coach/alumno ya no van a la campana (tienen su
+ * badge en "Mensajes" y el push del servidor). Una versión anterior guardó
+ * filas con `type: 'coach_message'`: quedan en Dexie pero no se muestran ni
+ * cuentan como no leídas.
+ */
+export function isShownNotification(n: { type: string }): boolean {
+  return n.type !== 'coach_message'
+}

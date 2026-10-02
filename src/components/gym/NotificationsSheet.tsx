@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Bell, Dumbbell, MessageSquare, Timer, Trophy, Users, X } from 'lucide-react'
+import { Bell, Dumbbell, Timer, Trophy, Users, X } from 'lucide-react'
 import { db } from '@/db/schema'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { cn, formatDate } from '@/lib/utils'
 import ResponsiveSheet from '@/components/ui/ResponsiveSheet'
 import { EmptyState } from '@/components/ui/Card'
+import { isShownNotification } from '@/lib/notifications'
 import type { AppNotification, NotificationType } from '@/types'
 
 const TYPE_LABELS: Record<NotificationType, string> = {
@@ -15,7 +16,6 @@ const TYPE_LABELS: Record<NotificationType, string> = {
   rest_recommendation: 'Descanso',
   update: 'Novedades',
   coach: 'Coach',
-  coach_message: 'Mensajes',
 }
 
 const TYPE_ICONS: Record<NotificationType, typeof Trophy> = {
@@ -24,7 +24,6 @@ const TYPE_ICONS: Record<NotificationType, typeof Trophy> = {
   rest_recommendation: Timer,
   update: Bell,
   coach: Users,
-  coach_message: MessageSquare,
 }
 
 /** A dónde navega tocar una notificación de cada tipo — mismas pestañas de
@@ -50,6 +49,7 @@ export default function NotificationsSheet({ onClose }: { onClose: () => void })
             .equals(userId)
             .reverse()
             .sortBy('createdAt')
+            .then((all) => all.filter(isShownNotification))
         : [],
     [userId]
   ) ?? []
@@ -62,14 +62,7 @@ export default function NotificationsSheet({ onClose }: { onClose: () => void })
 
   const handleTap = async (n: AppNotification) => {
     if (n.read === 0) await db.notifications.update(n.id, { read: 1 })
-    // El hilo de un mensaje depende de quién lo recibe: el alumno tiene un
-    // solo chat; el coach, uno por alumno (`exerciseId` = clientId del hilo).
-    const route =
-      n.type === 'coach_message'
-        ? n.exerciseId === userId
-          ? '/mi-coach/chat'
-          : `/coach/alumno/${n.exerciseId}/chat`
-        : TYPE_ROUTE[n.type]
+    const route = TYPE_ROUTE[n.type]
     if (route) {
       onClose()
       navigate(route)

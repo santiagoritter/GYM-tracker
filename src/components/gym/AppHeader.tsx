@@ -7,6 +7,7 @@ import { workoutsFor } from '@/db/scoped'
 import { useAuthStore } from '@/stores/authStore'
 import { useWorkoutStore } from '@/stores/workoutStore'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
+import { isShownNotification } from '@/lib/notifications'
 import { useElapsedDuration } from '@/hooks/useElapsedDuration'
 import { useStaleWorkout } from '@/hooks/useStaleWorkout'
 import { useCountdown } from '@/hooks/useCountdown'
@@ -56,6 +57,7 @@ export default function AppHeader() {
         ? db.notifications
             .where('[userId+read]')
             .equals([userId, 0])
+            .filter(isShownNotification)
             .count()
         : 0,
     [userId]

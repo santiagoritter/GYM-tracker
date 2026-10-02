@@ -1231,3 +1231,12 @@ escuchando solo en `localhost` (IPv6) mientras la página externa se servía en
 - Verificado a 393 px: slides de descansos y PRs, flechas, sin scroll
   horizontal de página ni errores de consola. La slide de comunidad con
   datos cacheados todavía no se verificó visualmente.
+
+## 2026-10-02 — Los mensajes de coach/alumno salen de Notificaciones
+
+Pedido del usuario: la campana no debe mostrar mensajes del chat de coach.
+Se quitó el tipo `coach_message` (hoja, ícono, ruta, tipo TS) y
+`useCoachMessageNotifier` ya no crea notificaciones: solo emite el evento que
+refresca los badges de "Mensajes". El push del servidor sigue. Las filas ya
+guardadas por la versión anterior se filtran al leer (`isShownNotification`),
+sin cambio de esquema.

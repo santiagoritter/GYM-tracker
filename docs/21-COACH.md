@@ -225,9 +225,11 @@ Antes un mensaje del chat solo se veía con el chat abierto. Ahora:
   remitente. Usa las mismas `push_subscriptions` y claves VAPID que los
   recordatorios; el envío vive en `supabase/functions/_shared/webPush.ts`.
   Tocar la notificación abre ese chat.
-- **In-app:** `useCoachMessageNotifier` (montado en el layout) deja una entrada
-  `coach_message` en la campana si no se está mirando ese hilo, una sola sin
-  leer por hilo.
+- **In-app:** los mensajes **no** van a la campana de Notificaciones (decisión
+  del producto). `useCoachMessageNotifier` (montado en el layout) solo emite
+  `COACH_MESSAGE_EVENT` para refrescar los contadores. Una versión previa
+  guardó filas `coach_message`: `isShownNotification` las oculta de la hoja y
+  del punto de la campana.
 - **No leídos del alumno:** contador en "Mensajes" de la tarjeta Mi coach
   (`fetchMyUnreadFromCoach`). El del coach ya existía (`useCoachUnread`).
 
@@ -235,8 +237,8 @@ Antes un mensaje del chat solo se veía con el chat abierto. Ahora:
 Push del navegador no aplica. Falta: el plugin `@capacitor/push-notifications`,
 una cuenta de Apple Developer con certificado de push, un proyecto de Firebase
 y guardar el token del dispositivo en `push_subscriptions` (hoy guarda
-suscripciones Web Push). Mientras tanto, en la app nativa el aviso es solo el
-de la campana, con la app abierta.
+suscripciones Web Push). Mientras tanto, en la app nativa no hay aviso
+con la app cerrada; con la app abierta se ve el contador de "Mensajes".
 
 **Rol entre dispositivos:** el rol viaja en el JWT. `become-coach` refresca el
 token solo en el dispositivo que lo pidió; ahora los demás lo refrescan al
