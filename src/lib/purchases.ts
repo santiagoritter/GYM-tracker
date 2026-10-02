@@ -1,10 +1,17 @@
 import { platform } from '@/lib/native'
 import { useEntitlementsStore } from '@/stores/entitlementsStore'
+import { ENTITLEMENT_PREMIUM, periodLabel } from '@/lib/premium'
+
+export {
+  ENTITLEMENT_PREMIUM,
+  PRODUCT_PREMIUM_ANNUAL,
+  PRODUCT_PREMIUM_MONTHLY,
+} from '@/lib/premium'
 
 /**
  * Compras dentro de la app (StoreKit/Play Billing vía RevenueCat). Guideline
  * 3.1.1 (iOS) y la política de Play equivalente: las funciones digitales
- * (modo coach, quitar anuncios) se cobran SOLO por IAP; no hay pagos
+ * (modo coach, Premium) se cobran SOLO por IAP; no hay pagos
  * externos.
  *
  * Todo degrada sin romper: si el flag `VITE_PURCHASES_ENABLED` está apagado,
@@ -56,7 +63,9 @@ export interface PurchaseOption {
   title: string
   /** Precio ya localizado por StoreKit (moneda y formato del usuario). */
   priceString: string
-  /** "mensual" — no se asume: viene del producto. */
+  /** Precio numérico, solo para calcular el ahorro del plan anual. */
+  price: number
+  /** "mes" o "año": no se asume, sale del período del producto. */
   period: string
 }
 
@@ -76,6 +85,7 @@ function applyCustomerInfo(info: CustomerInfo): void {
   useEntitlementsStore.getState().setEntitlements({
     adFree: Boolean(active[ENTITLEMENT_AD_FREE]),
     coach: Boolean(active[ENTITLEMENT_COACH]),
+    premium: Boolean(active[ENTITLEMENT_PREMIUM]),
   })
 }
 
@@ -136,7 +146,8 @@ export async function loadPurchaseOptions(): Promise<PurchaseOption[]> {
       productId: p.product.identifier,
       title: p.product.title,
       priceString: p.product.priceString,
-      period: p.product.subscriptionPeriod === 'P1M' ? 'mes' : (p.product.subscriptionPeriod ?? ''),
+      price: p.product.price,
+      period: periodLabel(p.product.subscriptionPeriod),
     }
   })
 }

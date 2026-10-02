@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Camera, Columns2, Trash2, X } from 'lucide-react'
 import {
@@ -19,7 +19,10 @@ import { useChartColors } from '@/hooks/useChartColors'
 import { compressImage } from '@/lib/photos'
 import type { ProgressPhoto } from '@/types'
 import { cn, nowIso, uid } from '@/lib/utils'
+
+const Paywall = lazy(() => import('@/components/gym/Paywall'))
 import { EmptyState } from '@/components/ui/Card'
+import { usePremiumLocked } from '@/components/gym/PremiumGate'
 
 export function PhotoGallery() {
   const userId = useCurrentUserId()
@@ -28,6 +31,8 @@ export function PhotoGallery() {
   const [viewing, setViewing] = useState<ProgressPhoto | null>(null)
   const [saving, setSaving] = useState(false)
   const [compareMode, setCompareMode] = useState(false)
+  const premiumLocked = usePremiumLocked()
+  const [paywallOpen, setPaywallOpen] = useState(false)
   const [compareIds, setCompareIds] = useState<string[]>([])
 
   const photos = useLiveQuery(
@@ -103,6 +108,11 @@ export function PhotoGallery() {
 
   return (
     <div className="animate-fade-up space-y-4">
+      {paywallOpen && (
+        <Suspense fallback={null}>
+          <Paywall kind="premium" onClose={() => setPaywallOpen(false)} />
+        </Suspense>
+      )}
       <input
         ref={fileRef}
         type="file"
@@ -126,6 +136,8 @@ export function PhotoGallery() {
         {(photos?.length ?? 0) >= 2 && (
           <button
             onClick={() => {
+              // Comparar fotos es parte de Premium.
+              if (premiumLocked) return setPaywallOpen(true)
               setCompareMode((v) => !v)
               setCompareIds([])
             }}

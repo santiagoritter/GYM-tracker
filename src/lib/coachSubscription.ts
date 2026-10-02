@@ -1,13 +1,11 @@
 import { useAppConfigStore } from '@/stores/appConfigStore'
 
 /**
- * Plan del modo coach. Precio y beneficios en un solo lugar (los usan el alta
+ * Plan del modo coach. Beneficios en un solo lugar (el precio lo muestra StoreKit, localizado: nunca se escribe acá) (los usan el alta
  * de coach, la pantalla de plan y el paywall). El cobro real es una compra
  * dentro de la app vía StoreKit (Guideline 3.1.1: las funciones digitales no
  * pueden cobrarse por fuera).
  */
-
-export const COACH_PRICE_USD = 5
 
 /** Versión de los términos específicos de coach que se aceptan en el alta. Si
  * cambian de fondo, subirla. Se guarda en `coaches.terms_version`. */

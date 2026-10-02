@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Check, X } from 'lucide-react'
 import {
   loadPurchaseOptions,
   purchase,
   PRODUCT_AD_FREE,
   PRODUCT_COACH,
+  PRODUCT_PREMIUM_ANNUAL,
+  PRODUCT_PREMIUM_MONTHLY,
   restorePurchases,
   subscriptionManagementHint,
   type PurchaseOption,
@@ -13,18 +15,31 @@ import {
 import { COACH_PERKS } from '@/lib/coachSubscription'
 import { toast } from '@/stores/toastStore'
 import ResponsiveSheet from '@/components/ui/ResponsiveSheet'
+import SegmentedControl from '@/components/ui/SegmentedControl'
+import { useAuthStore } from '@/stores/authStore'
+import { annualSavingPct, productBase } from '@/lib/premium'
 
-export type PaywallKind = 'coach' | 'ad_free'
+export type PaywallKind = 'premium' | 'coach' | 'ad_free'
 
-const COPY: Record<PaywallKind, { title: string; product: string; perks: readonly string[] }> = {
+const COPY: Record<PaywallKind, { title: string; products: readonly string[]; perks: readonly string[] }> = {
+  premium: {
+    title: 'Repe Premium',
+    products: [PRODUCT_PREMIUM_MONTHLY, PRODUCT_PREMIUM_ANNUAL],
+    perks: [
+      'Niveles de fuerza por grupo muscular',
+      'Gráficos avanzados de progreso',
+      'Comparación de fotos de progreso',
+      'Sin anuncios en ninguna pantalla',
+    ],
+  },
   coach: {
     title: 'Modo coach',
-    product: PRODUCT_COACH,
+    products: [PRODUCT_COACH],
     perks: COACH_PERKS,
   },
   ad_free: {
     title: 'Sin anuncios',
-    product: PRODUCT_AD_FREE,
+    products: [PRODUCT_AD_FREE],
     perks: ['Sin banners en ninguna pantalla', 'Apoyás el desarrollo de la app'],
   },
 }
@@ -49,6 +64,11 @@ export default function Paywall({
   const [options, setOptions] = useState<PurchaseOption[] | null>(null)
   const [loadError, setLoadError] = useState(false)
   const [busy, setBusy] = useState(false)
+  const navigate = useNavigate()
+  // Una compra sin cuenta queda atada a un id anónimo de RevenueCat y el
+  // webhook la ignora: se pide la cuenta primero.
+  const isGuest = useAuthStore((s) => s.isGuest)
+  const [selected, setSelected] = useState<string>(copy.products[0] ?? '')
 
   useEffect(() => {
     let alive = true
@@ -60,11 +80,16 @@ export default function Paywall({
     }
   }, [])
 
-  // En Android (Play Billing 5+) `productId` viene compuesto:
-  // `gymtracker.coach.monthly:monthly-base` — un `===` exacto contra el id
-  // "pelado" de `copy.product` nunca matcheaba ahí, así que la única
-  // opción real quedaba invisible y el paywall decía "no disponible".
-  const option = options?.find((o) => o.productId.split(':')[0] === copy.product) ?? null
+  // En Android (Play Billing 5+) `productId` viene compuesto
+  // (`gymtracker.coach.monthly:monthly-base`): se compara la base, no el id
+  // entero, o la única opción real quedaba invisible.
+  const available = copy.products
+    .map((id) => options?.find((o) => productBase(o.productId) === id))
+    .filter((o): o is PurchaseOption => Boolean(o))
+  const option = available.find((o) => productBase(o.productId) === selected) ?? available[0] ?? null
+  const monthly = available.find((o) => o.period === 'mes')
+  const annual = available.find((o) => o.period === 'año')
+  const saving = monthly && annual ? annualSavingPct(monthly.price, annual.price) : null
 
   const buy = async () => {
     if (!option || busy) return
@@ -103,7 +128,7 @@ export default function Paywall({
         <button
           onClick={onClose}
           aria-label="Cerrar"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-fill text-ink-2 active:bg-fill-2"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-fill text-ink-2 active:bg-fill-2"
         >
           <X size={16} />
         </button>
@@ -130,6 +155,16 @@ export default function Paywall({
             Este producto no está disponible ahora. Probá más tarde.
           </p>
         )}
+        {available.length > 1 && (
+          <SegmentedControl
+            options={available.map((o) => ({
+              value: productBase(o.productId),
+              label: o.period === 'año' ? (saving ? `Anual · ahorrás ${saving} %` : 'Anual') : 'Mensual',
+            }))}
+            value={option ? productBase(option.productId) : ''}
+            onChange={setSelected}
+          />
+        )}
         {option && (
           <div className="rounded-md bg-surface-2 p-4">
             <p className="font-mono text-2xl font-bold tabular-nums">
@@ -146,13 +181,31 @@ export default function Paywall({
       </div>
 
       <div className="space-y-2 px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-2">
-        <button
-          onClick={buy}
-          disabled={!option || busy}
-          className="h-12 w-full rounded-sm bg-accent text-sm font-bold text-bg disabled:opacity-40"
-        >
-          {busy ? 'Procesando…' : option ? `Suscribirme — ${option.priceString}` : 'Suscribirme'}
-        </button>
+        {isGuest ? (
+          <>
+            <p className="text-[13px] leading-relaxed text-ink-3">
+              Para suscribirte hace falta una cuenta: así la compra queda atada a vos y la recuperás en otro teléfono.
+              Tus datos actuales pasan a la cuenta.
+            </p>
+            <button
+              onClick={() => {
+                onClose()
+                navigate('/registro')
+              }}
+              className="h-12 w-full rounded-sm bg-accent text-sm font-bold text-bg"
+            >
+              Crear cuenta
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={buy}
+            disabled={!option || busy}
+            className="h-12 w-full rounded-sm bg-accent text-sm font-bold text-bg disabled:opacity-40"
+          >
+            {busy ? 'Procesando…' : option ? `Suscribirme — ${option.priceString}` : 'Suscribirme'}
+          </button>
+        )}
         <button
           onClick={restore}
           disabled={busy}

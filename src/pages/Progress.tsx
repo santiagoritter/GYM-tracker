@@ -1,4 +1,5 @@
 import { lazy, Suspense, useMemo, useState } from 'react'
+import PremiumGate from '@/components/gym/PremiumGate'
 import { useSearchParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Trophy } from 'lucide-react'
@@ -109,9 +110,14 @@ export default function Progress() {
         </div>
       )}
       {tab === 'charts' && (
-        <Suspense fallback={tabFallback}>
-          <WeightCharts />
-        </Suspense>
+        <PremiumGate
+          title="Gráficos avanzados"
+          description="Evolución de peso y volumen por ejercicio, pesos sugeridos y próximo entreno. Parte de Repe Premium."
+        >
+          <Suspense fallback={tabFallback}>
+            <WeightCharts />
+          </Suspense>
+        </PremiumGate>
       )}
       {tab === 'rest' && (
         <Suspense fallback={tabFallback}>
@@ -129,7 +135,12 @@ export default function Progress() {
             <StrengthLevelsLazy />
             <section>
               <SectionHeader title="Grupos musculares" />
-              <MuscleGroupLevelsLazy />
+              <PremiumGate
+                title="Niveles por grupo muscular"
+                description="Tu nivel de fuerza en cada uno de los 11 grupos musculares. Parte de Repe Premium."
+              >
+                <MuscleGroupLevelsLazy />
+              </PremiumGate>
             </section>
           </div>
         </Suspense>

@@ -1,6 +1,7 @@
 import { Check } from 'lucide-react'
-import { COACH_PERKS, COACH_PRICE_USD, useCoachBillingEnabled } from '@/lib/coachSubscription'
-import { subscriptionManagementHint } from '@/lib/purchases'
+import { COACH_PERKS, useCoachBillingEnabled } from '@/lib/coachSubscription'
+import { PRODUCT_COACH, subscriptionManagementHint } from '@/lib/purchases'
+import { useProductPrice } from '@/hooks/useProductPrice'
 
 /**
  * Tarjeta del plan de coach: precio + beneficios. La usan el paso "Plan" del
@@ -9,15 +10,23 @@ import { subscriptionManagementHint } from '@/lib/purchases'
  */
 export default function CoachPlanCard() {
   const billing = useCoachBillingEnabled()
+  const price = useProductPrice(PRODUCT_COACH)
   return (
     <div className="rounded-xl bg-surface p-5">
       <p className="text-[14px] font-semibold text-accent">Modo coach</p>
       <p className="mt-1 text-3xl font-bold">
         {billing ? (
-          <>
-            US${COACH_PRICE_USD}
-            <span className="ml-1 align-middle text-[15px] font-medium text-ink-3">/ mes</span>
-          </>
+          price ? (
+            <>
+              {price.price}
+              <span className="ml-1 align-middle text-[15px] font-medium text-ink-3">/ {price.period || 'mes'}</span>
+            </>
+          ) : (
+            <>
+              Suscripción
+              <span className="ml-2 align-middle text-[15px] font-medium text-ink-3">mensual</span>
+            </>
+          )
         ) : (
           <>
             Gratis

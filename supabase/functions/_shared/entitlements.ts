@@ -2,7 +2,8 @@
 // (scripts/test-revenuecat-entitlements.mts) y se importa desde
 // revenuecat-webhook/index.ts.
 
-export const KNOWN_ENTITLEMENTS = ['coach', 'ad_free'] as const
+// `ad_free` es el producto suelto "Sin anuncios" anterior; `premium` lo incluye.
+export const KNOWN_ENTITLEMENTS = ['coach', 'ad_free', 'premium'] as const
 export type KnownEntitlement = (typeof KNOWN_ENTITLEMENTS)[number]
 
 /**

@@ -1278,3 +1278,23 @@ código mostró que no había ninguna regla por edad. Se agregó `docs/PROMESAS.
 - `coach_rls_smoke.sql` tuvo que dejar de asumir que un usuario sin fecha de
   nacimiento es adulto (ahora cuenta como menor). Las dos pruebas pasan.
 - Panel de admin: sección "Verificación de coaches" con el DNI cargado.
+
+## 2026-10-02 — Plan Premium (Bloque 3)
+
+- Entitlement `premium` (migración `0029`, webhook de RevenueCat redeplegado) con
+  productos `gymtracker.premium.monthly` y `gymtracker.premium.annual`.
+  "Sin anuncios" pasa a ser parte de Premium (`selectHasNoAds`); el producto
+  suelto anterior sigue reconocido por quien ya lo compró.
+- Candados: pestaña Gráficos, "Grupos musculares" de Niveles y comparar fotos.
+  Series, rutinas, cronómetro y récords no se tocaron. **El candado solo existe
+  cuando se puede pagar** (`purchasesAvailable()`): sin compras la app es
+  gratuita, para que nunca quede una función cerrada sin forma de abrirla. Es de
+  cliente: los datos son locales.
+- Paywall con selector mensual/anual (el ahorro sale de los precios de StoreKit)
+  y pide cuenta antes de comprar (una compra anónima la ignora el webhook).
+- Se eliminó `COACH_PRICE_USD = 5`: el precio de Coach lo muestra StoreKit.
+- `ios/App/GymTracker.storekit` reorganizado en dos grupos (Coach; Premium con
+  anual, mensual y el "Sin anuncios" anterior) con precios en ARS.
+- Verificado: tipos, tests y build. NO verificado en pantalla: el candado no se
+  ve en navegador (depende de iOS/Android + `VITE_PURCHASES_ENABLED=on` + key de
+  RevenueCat).

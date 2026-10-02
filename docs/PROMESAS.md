@@ -24,9 +24,9 @@ está bien y la presentación dice otra cosa).
 | Promesa | Estado | Evidencia / nota |
 |---|---|---|
 | Registro básico gratis siempre | OK | sin candados en series, rutinas, récords |
-| Premium $1.990: niveles por músculo, gráficos avanzados, fotos, sin anuncios | FALTA | no existe el plan; todo está abierto |
-| Premium anual $17.990 | FALTA | el Paywall solo entiende `P1M` |
-| Coach $9.990 | PARCIAL | el código muestra US$5 (`coachSubscription.ts`) |
+| Premium $1.990: niveles por músculo, gráficos avanzados, fotos, sin anuncios | OK en código | entitlement `premium` (0029), candados en `Progress.tsx` y `PhotoGallery.tsx`, `PremiumGate.tsx`; **solo bloquea donde hay compras** (iOS/Android con RevenueCat). Falta crear los productos en las tiendas |
+| Premium anual $17.990 | OK en código | `Paywall.tsx` con selector mensual/anual y ahorro calculado del precio de StoreKit |
+| Coach $9.990 | PARCIAL | ya no hay precio escrito en el código (lo muestra StoreKit); falta fijarlo en las tiendas. `GymTracker.storekit` local ya trae $9.990 |
 | "El código ya soporta RevenueCat" | PARCIAL | escrito pero apagado en CI |
 | Cobro de Coach obligatorio | PARCIAL | `coach_billing_required = false` y se esquiva por RLS |
 | Anuncios fuera de entrenamiento | OK | `AdBanner.tsx:23` |

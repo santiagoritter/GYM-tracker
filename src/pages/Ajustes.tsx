@@ -101,7 +101,7 @@ import { useCanInstallPwa, promptInstall, isStandalone } from '@/lib/pwaInstall'
 import { isNative } from '@/lib/native'
 import { discardGuestData } from '@/lib/guest'
 import { purchasesAvailable, restorePurchases } from '@/lib/purchases'
-import { useEntitlementsStore } from '@/stores/entitlementsStore'
+import { selectHasNoAds, useEntitlementsStore } from '@/stores/entitlementsStore'
 import { toast } from '@/stores/toastStore'
 
 const ANDROID_APK_URL = 'https://github.com/santiagoritter/GYM-tracker/releases/latest'
@@ -143,7 +143,8 @@ export default function Ajustes() {
   const [coachSheetOpen, setCoachSheetOpen] = useState(false)
   const [deleteSheetOpen, setDeleteSheetOpen] = useState(false)
   const [paywallOpen, setPaywallOpen] = useState(false)
-  const adFree = useEntitlementsStore((s) => s.adFree)
+  const premium = useEntitlementsStore((s) => s.premium)
+  const noAds = useEntitlementsStore(selectHasNoAds)
   const showPurchases = purchasesAvailable()
   const [levelSheetOpen, setLevelSheetOpen] = useState(false)
   const [goalSheetOpen, setGoalSheetOpen] = useState(false)
@@ -652,14 +653,18 @@ export default function Ajustes() {
           <section>
             <SectionHeader title="Suscripciones" />
             <Card>
-              <Row onClick={() => !adFree && setPaywallOpen(true)}>
+              <Row onClick={() => !premium && setPaywallOpen(true)}>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[15px]">Sin anuncios</p>
+                  <p className="text-[15px]">Repe Premium</p>
                   <p className="text-[13px] text-ink-3">
-                    {adFree ? 'Activa' : 'Quitá los banners de la app'}
+                    {premium
+                      ? 'Activa'
+                      : noAds
+                        ? 'Sin anuncios activo · sumá niveles por músculo, gráficos y comparación de fotos'
+                        : 'Niveles por músculo, gráficos avanzados, comparación de fotos y sin anuncios'}
                   </p>
                 </div>
-                {!adFree && <ChevronRight size={16} className="shrink-0 text-ink-4" />}
+                {!premium && <ChevronRight size={16} className="shrink-0 text-ink-4" />}
               </Row>
               <Row onClick={handleRestore}>
                 <div className="min-w-0 flex-1">
@@ -717,7 +722,7 @@ export default function Ajustes() {
 
       {paywallOpen && (
         <Suspense fallback={null}>
-          <Paywall kind="ad_free" onClose={() => setPaywallOpen(false)} />
+          <Paywall kind="premium" onClose={() => setPaywallOpen(false)} />
         </Suspense>
       )}
       {deleteSheetOpen && (

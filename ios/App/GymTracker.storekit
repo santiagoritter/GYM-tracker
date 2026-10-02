@@ -1,88 +1,119 @@
 {
-  "identifier" : "B6E2A1D0",
-  "nonRenewingSubscriptions" : [
-
-  ],
-  "products" : [
-
-  ],
-  "settings" : {
-    "_failTransactionsEnabled" : false,
-    "_locale" : "es_AR",
-    "_storefront" : "ARG",
-    "_storeKitErrors" : [
-
-    ]
+  "identifier": "B6E2A1D0",
+  "nonRenewingSubscriptions": [],
+  "products": [],
+  "settings": {
+    "_failTransactionsEnabled": false,
+    "_locale": "es_AR",
+    "_storefront": "ARG",
+    "_storeKitErrors": []
   },
-  "subscriptionGroups" : [
+  "subscriptionGroups": [
     {
-      "id" : "21500001",
-      "localizations" : [
-
-      ],
-      "name" : "GymTracker",
-      "subscriptions" : [
+      "id": "21500001",
+      "localizations": [],
+      "name": "Modo coach",
+      "subscriptions": [
         {
-          "adHocOffers" : [
-
-          ],
-          "codeOffers" : [
-
-          ],
-          "displayPrice" : "5.00",
-          "familyShareable" : false,
-          "groupNumber" : 1,
-          "internalID" : "6470000001",
-          "introductoryOffer" : null,
-          "localizations" : [
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "9990.00",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "6470000001",
+          "introductoryOffer": null,
+          "localizations": [
             {
-              "description" : "Alumnos ilimitados, progreso completo y rutinas a medida.",
-              "displayName" : "Modo coach",
-              "locale" : "es_AR"
+              "description": "Alumnos ilimitados, rutinas asignadas, seguimiento completo y chat.",
+              "displayName": "Modo coach",
+              "locale": "es_AR"
             }
           ],
-          "productID" : "gymtracker.coach.monthly",
-          "recurringSubscriptionPeriod" : "P1M",
-          "referenceName" : "Coach mensual",
-          "subscriptionGroupID" : "21500001",
-          "type" : "RecurringSubscription",
-          "winbackOffers" : [
-
-          ]
+          "productID": "gymtracker.coach.monthly",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Coach mensual",
+          "subscriptionGroupID": "21500001",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        }
+      ]
+    },
+    {
+      "id": "21500002",
+      "localizations": [],
+      "name": "Repe Premium",
+      "subscriptions": [
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "17990.00",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "6470000004",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Niveles por músculo, gráficos avanzados, comparación de fotos y sin anuncios.",
+              "displayName": "Repe Premium anual",
+              "locale": "es_AR"
+            }
+          ],
+          "productID": "gymtracker.premium.annual",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Premium anual",
+          "subscriptionGroupID": "21500002",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
         },
         {
-          "adHocOffers" : [
-
-          ],
-          "codeOffers" : [
-
-          ],
-          "displayPrice" : "1.99",
-          "familyShareable" : false,
-          "groupNumber" : 2,
-          "internalID" : "6470000002",
-          "introductoryOffer" : null,
-          "localizations" : [
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "1990.00",
+          "familyShareable": false,
+          "groupNumber": 2,
+          "internalID": "6470000003",
+          "introductoryOffer": null,
+          "localizations": [
             {
-              "description" : "Quitá los banners de la app.",
-              "displayName" : "Sin anuncios",
-              "locale" : "es_AR"
+              "description": "Niveles por músculo, gráficos avanzados, comparación de fotos y sin anuncios.",
+              "displayName": "Repe Premium mensual",
+              "locale": "es_AR"
             }
           ],
-          "productID" : "gymtracker.noads.monthly",
-          "recurringSubscriptionPeriod" : "P1M",
-          "referenceName" : "Sin anuncios mensual",
-          "subscriptionGroupID" : "21500001",
-          "type" : "RecurringSubscription",
-          "winbackOffers" : [
-
-          ]
+          "productID": "gymtracker.premium.monthly",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium mensual",
+          "subscriptionGroupID": "21500002",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "1990.00",
+          "familyShareable": false,
+          "groupNumber": 3,
+          "internalID": "6470000002",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "Quitá los banners de la app.",
+              "displayName": "Sin anuncios",
+              "locale": "es_AR"
+            }
+          ],
+          "productID": "gymtracker.noads.monthly",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Sin anuncios mensual (anterior a Premium)",
+          "subscriptionGroupID": "21500002",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
         }
       ]
     }
   ],
-  "version" : {
-    "major" : 3,
-    "minor" : 0
+  "version": {
+    "major": 3,
+    "minor": 0
   }
 }

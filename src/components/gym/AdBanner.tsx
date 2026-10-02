@@ -5,7 +5,7 @@ import { workoutsFor } from '@/db/scoped'
 import { useAuthStore } from '@/stores/authStore'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useIsMinor } from '@/hooks/useIsMinor'
-import { useEntitlementsStore } from '@/stores/entitlementsStore'
+import { selectHasNoAds, useEntitlementsStore } from '@/stores/entitlementsStore'
 import { purchasesAvailable } from '@/lib/purchases'
 import { platform } from '@/lib/native'
 import { ADS_INTRO_KEY, adsAvailable, hideBannerAd, showBannerAd } from '@/lib/ads'
@@ -34,7 +34,7 @@ export default function AdBanner() {
   const { pathname } = useLocation()
   const userId = useCurrentUserId()
   const role = useAuthStore((s) => s.role)
-  const adFree = useEntitlementsStore((s) => s.adFree)
+  const adFree = useEntitlementsStore(selectHasNoAds)
   // Menores y edad desconocida: nunca anuncios (presentación, slide "Alertas").
   const minor = useIsMinor()
   const activeWorkout = useLiveQuery(
@@ -112,7 +112,7 @@ export default function AdBanner() {
       </ResponsiveSheet>
       {paywall && (
         <Suspense fallback={null}>
-          <Paywall kind="ad_free" onClose={() => setPaywall(false)} onPurchased={accept} />
+          <Paywall kind="premium" onClose={() => setPaywall(false)} onPurchased={accept} />
         </Suspense>
       )}
     </>
