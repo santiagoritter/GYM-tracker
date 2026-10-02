@@ -271,3 +271,29 @@ vuelve y acepta.
   perfil todavía no sincronizó, `JoinCoach` sube los cambios antes de aceptar.
 - Pendiente a propósito: que el tutor pueda revocar sin la app, y la copia de
   los mensajes al tutor.
+
+
+## El cobro se exige en la base (migración 0030)
+
+Antes, con `coach_billing_required` prendido, solo `become-coach` pedía
+suscripción: un cliente modificado se saltaba el cobro hablándole directo a
+PostgREST (crear su ficha, sus invitaciones y aceptar alumnos). Ahora
+`coach_is_entitled(uid)` (cobro apagado, o admin, o suscripción `coach` activa y
+vigente) la usan:
+
+- las políticas de escritura de `coaches` y `coach_invites`,
+- `accept_coach_invite` (el mensaje es el mismo "Código inválido o vencido": no
+  se le cuenta a un alumno por qué),
+- `is_coach_of`, de la que cuelgan las lecturas del progreso del alumno, las
+  rutinas asignadas y las RPC del coach.
+
+Un coach cuya suscripción vence **pierde el acceso a los datos al instante**, sin
+job. Los vínculos siguen "activos" hasta que corras `enforce_coach_billing()`
+(`scripts/enforce-coach-billing.mjs`), que además baja el rol. **El flag sigue
+apagado**: prenderlo y correr ese script es manual y solo después de publicar
+las builds de iOS, Android y PWA. Probado en transacción:
+`supabase/tests/coach_gate_smoke.sql`.
+
+Pendiente: el chat sigue guardando por vínculo activo (un coach vencido no ve
+mensajes, pero la política de insert no mira la suscripción); se cierra al correr
+`enforce_coach_billing()`.

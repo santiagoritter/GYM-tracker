@@ -1298,3 +1298,10 @@ código mostró que no había ninguna regla por edad. Se agregó `docs/PROMESAS.
 - Verificado: tipos, tests y build. NO verificado en pantalla: el candado no se
   ve en navegador (depende de iOS/Android + `VITE_PURCHASES_ENABLED=on` + key de
   RevenueCat).
+
+## 2026-10-02 — El cobro de Coach deja de poder esquivarse (Bloque 4)
+
+Migración `0030`: `coach_is_entitled` y su uso en `coaches`, `coach_invites`,
+`accept_coach_invite` e `is_coach_of`. Con el flag apagado (producción hoy) nada
+cambia; las tres pruebas de RLS pasan. El flag NO se prendió: falta publicar las
+builds nativas y es una decisión del dueño (`docs/21-COACH.md`).

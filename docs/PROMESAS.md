@@ -28,7 +28,7 @@ está bien y la presentación dice otra cosa).
 | Premium anual $17.990 | OK en código | `Paywall.tsx` con selector mensual/anual y ahorro calculado del precio de StoreKit |
 | Coach $9.990 | PARCIAL | ya no hay precio escrito en el código (lo muestra StoreKit); falta fijarlo en las tiendas. `GymTracker.storekit` local ya trae $9.990 |
 | "El código ya soporta RevenueCat" | PARCIAL | escrito pero apagado en CI |
-| Cobro de Coach obligatorio | PARCIAL | `coach_billing_required = false` y se esquiva por RLS |
+| Cobro de Coach obligatorio | PARCIAL | se exige en la base (0030: `coach_is_entitled`, políticas, `is_coach_of`, `accept_coach_invite`); **el flag sigue apagado a propósito** hasta publicar las builds |
 | Anuncios fuera de entrenamiento | OK | `AdBanner.tsx:23` |
 
 ## Menores (slides 9–12)
