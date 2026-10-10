@@ -1,3 +1,4 @@
+import { nextExerciseOrder } from '@/lib/workoutUnits'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { db } from '@/db/schema'
@@ -226,6 +227,13 @@ export const useWorkoutStore = create<WorkoutStore>()(
         ])
         if (!workout) throw new Error('Entreno no encontrado')
         const last = existing.sort((a, b) => a.setNumber - b.setNumber).at(-1)
+        // Posición del ejercicio en el entreno: la hereda de sus otras series, y un
+        // ejercicio nuevo va después de todos los que ya hay.
+        const exerciseOrder =
+          last?.exerciseOrder ??
+          (existing.length > 0
+            ? undefined
+            : nextExerciseOrder(await db.workoutSets.where('workoutId').equals(workoutId).toArray()))
         const newSet: WorkoutSet = {
           id: uid(),
           workoutId,
@@ -240,6 +248,7 @@ export const useWorkoutStore = create<WorkoutStore>()(
           completed: 0,
           dirty: 1,
           updatedAt: nowIso(),
+          ...(exerciseOrder !== undefined && { exerciseOrder }),
         }
         await db.workoutSets.add(newSet)
       },
@@ -295,6 +304,11 @@ export const useWorkoutStore = create<WorkoutStore>()(
         }
 
         get().skipRest()
+        // Sube ya: antes el entreno terminado esperaba al próximo timer o a volver a
+        // abrir la app, y un coach veía "no entrena" mientras tanto. Sin esperar: la
+        // pantalla de cierre no depende de la red. Sirve también a Cardio y Run, que
+        // cierran por acá.
+        void import('@/lib/sync').then((m) => m.runSync(userId)).catch(() => undefined)
         return newPRs
       },
 

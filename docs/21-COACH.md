@@ -297,3 +297,17 @@ las builds de iOS, Android y PWA. Probado en transacción:
 Pendiente: el chat sigue guardando por vínculo activo (un coach vencido no ve
 mensajes, pero la política de insert no mira la suscripción); se cierra al correr
 `enforce_coach_billing()`.
+
+
+## "Mi alumno entrena y me figura que no" (octubre 2026)
+
+Causa: el cliente enviaba `workouts.kind` y esa columna nunca existió en el
+servidor (ver `0031_sync_columns.sql`), así que ningún entreno nuevo subía y el
+tablero mostraba el último que sí había llegado. Corregido en el servidor (las
+filas pendientes suben solas) y con un test que compara las interfaces de TypeScript
+contra las migraciones (`scripts/test-sync-schema.mts`).
+
+Además: el entreno se sube al terminarlo (no espera al timer), el tablero se
+refresca al volver a la app y tiene botón "Actualizar", la ficha del alumno usa el
+mismo criterio de "último entreno" (`finishedAt`) que el listado, y `coach_roster` /
+`coach_client_summaries` respetan el cobro igual que `is_coach_of`.

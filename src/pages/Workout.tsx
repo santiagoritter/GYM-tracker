@@ -30,7 +30,7 @@ import { computeStats } from '@/lib/stats'
 import { syncAchievements, type AchievementDef } from '@/lib/achievements'
 import { toast } from '@/stores/toastStore'
 import { getRandomMessage, WORKOUT_COMPLETE_MESSAGES } from '@/lib/motivational'
-import { groupExerciseUnits, defaultActiveUnitKey, unitKeyForExercise } from '@/lib/workoutUnits'
+import { groupExerciseUnits, defaultActiveUnitKey, orderExerciseGroups, unitKeyForExercise } from '@/lib/workoutUnits'
 import { computeVolumeKg, previewPRs, workingSetsOf, type PRPreviewItem } from '@/lib/workoutSummary'
 import ShareWorkoutButton from '@/components/gym/ShareWorkoutButton'
 
@@ -120,19 +120,15 @@ export default function Workout() {
     [exercises]
   )
 
-  // Agrupar sets por ejercicio, en orden de aparición
-  const grouped = useMemo(() => {
-    const order: string[] = []
-    const map = new Map<string, WorkoutSet[]>()
-    for (const s of (sets ?? []).sort((a, b) => a.setNumber - b.setNumber)) {
-      if (!map.has(s.exerciseId)) {
-        map.set(s.exerciseId, [])
-        order.push(s.exerciseId)
-      }
-      map.get(s.exerciseId)!.push(s)
-    }
-    return order.map((id) => ({ exercise: exerciseMap.get(id), sets: map.get(id)! }))
-  }, [sets, exerciseMap])
+  // Ejercicios en el orden de la rutina (ver orderExerciseGroups). Un id que no
+  // está en el catálogo no se dibuja: era la tarjeta fantasma "Ejercicio".
+  const grouped = useMemo(
+    () =>
+      orderExerciseGroups(sets ?? [], dayEntries)
+        .map((g) => ({ exercise: exerciseMap.get(g.exerciseId), sets: g.sets }))
+        .filter((g): g is { exercise: Exercise; sets: WorkoutSet[] } => g.exercise !== undefined),
+    [sets, exerciseMap, dayEntries]
+  )
 
   // Ejercicio suelto o par en superserie: la unidad que se colapsa/expande
   // junta (ver lib/workoutUnits.ts).

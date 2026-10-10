@@ -1,3 +1,4 @@
+import { useRefreshOnFocus } from '@/hooks/useRefreshOnFocus'
 import { useCallback, useEffect, useState } from 'react'
 import { MessageSquare, Unlink } from 'lucide-react'
 import { fetchClientProgress, type ClientProgress } from '@/lib/coachClientData'
@@ -58,6 +59,14 @@ export default function ClientDetailPanel({
         setProgress({ status: 'error', message: e instanceof Error ? e.message : 'No se pudo cargar.' })
       )
   }, [clientId])
+
+  // Recarga silenciosa (sin volver a la pantalla de "cargando") al volver a la app.
+  const reload = useCallback(() => {
+    fetchClientProgress(clientId)
+      .then((data) => setProgress({ status: 'ok', data }))
+      .catch(() => undefined)
+  }, [clientId])
+  useRefreshOnFocus(reload)
 
   const loadPlan = useCallback(() => {
     Promise.all([fetchClientRoutines(clientId), fetchClientGoals(clientId)])

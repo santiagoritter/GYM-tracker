@@ -1,6 +1,7 @@
+import { useRefreshOnFocus } from '@/hooks/useRefreshOnFocus'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, ChevronRight, Search, Settings, UserPlus, Users } from 'lucide-react'
+import { ArrowLeft, ChevronRight, RefreshCw, Search, Settings, UserPlus, Users } from 'lucide-react'
 import { fetchMyClients, fetchCoachRoster, type ClientSummary } from '@/lib/coachQueries'
 import { useCoachUnread } from '@/hooks/useCoachUnread'
 import { useIsDesktop } from '@/hooks/useMediaQuery'
@@ -59,6 +60,17 @@ export default function CoachHome() {
   }, [])
 
   useEffect(load, [load])
+  // Silencioso: sin pasar por "cargando" ni borrar lo que ya se ve.
+  useRefreshOnFocus(() => {
+    fetchMyClients()
+      .then((clients) => setState({ s: 'ok', clients }))
+      .catch(() => undefined)
+    if (isDesktop) {
+      fetchCoachRoster()
+        .then((rows) => setRosterState({ s: 'ok', rows }))
+        .catch(() => undefined)
+    }
+  })
   useEffect(() => {
     if (isDesktop) loadRoster()
   }, [isDesktop, loadRoster])
@@ -81,6 +93,16 @@ export default function CoachHome() {
     <header className="flex items-center justify-between">
       <h1 className="text-2xl font-bold">Alumnos</h1>
       <div className="flex items-center gap-1">
+        <button
+          onClick={() => {
+            load()
+            if (isDesktop) loadRoster()
+          }}
+          aria-label="Actualizar alumnos"
+          className="flex h-11 w-11 items-center justify-center text-ink-2"
+        >
+          <RefreshCw size={20} />
+        </button>
         <button
           onClick={() => navigate('/coach/invitar')}
           aria-label="Invitar alumno"

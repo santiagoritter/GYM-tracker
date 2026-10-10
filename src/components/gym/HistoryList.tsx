@@ -1,3 +1,4 @@
+import { orderExerciseGroups } from '@/lib/workoutUnits'
 import { useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ChevronDown, History } from 'lucide-react'
@@ -32,13 +33,8 @@ export function HistoryList() {
       {(workouts ?? []).map((w) => {
         const isOpen = expanded === w.id
         const sets = isOpen ? expandedSets.filter((s) => s.completed === 1) : []
-        // Agrupar por ejercicio para el detalle
-        const byExercise = new Map<string, typeof sets>()
-        for (const s of sets.sort((a, b) => a.setNumber - b.setNumber)) {
-          const list = byExercise.get(s.exerciseId) ?? []
-          list.push(s)
-          byExercise.set(s.exerciseId, list)
-        }
+        // Ejercicios en el orden en que se entrenaron (ver orderExerciseGroups)
+        const byExercise = orderExerciseGroups(sets)
 
         return (
           <div key={w.id} className="overflow-hidden rounded-xl bg-surface">
@@ -61,7 +57,7 @@ export function HistoryList() {
 
             {isOpen && (
               <div className="border-t border-line px-4 py-3">
-                {[...byExercise.entries()].map(([exerciseId, exSets]) => (
+                {byExercise.map(({ exerciseId, sets: exSets }) => (
                   <div key={exerciseId} className="mb-3 last:mb-0">
                     <p className="mb-1 text-sm font-semibold">
                       {exerciseMap.get(exerciseId)?.name ?? 'Ejercicio'}
@@ -76,7 +72,7 @@ export function HistoryList() {
                     ))}
                   </div>
                 ))}
-                {byExercise.size === 0 && (
+                {byExercise.length === 0 && (
                   <p className="text-sm text-ink-3">Sin series completadas</p>
                 )}
               </div>

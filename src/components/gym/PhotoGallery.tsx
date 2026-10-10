@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Camera, Columns2, Trash2, X } from 'lucide-react'
+import { Camera, Columns2, Trash2 } from 'lucide-react'
 import {
   CartesianGrid,
   Line,
@@ -13,7 +13,7 @@ import {
 import { db } from '@/db/schema'
 import { softDelete } from '@/db/mutations'
 import { progressPhotosFor } from '@/db/scoped'
-import Portal from '@/components/ui/Portal'
+import FullScreenOverlay, { OverlayCloseButton } from '@/components/ui/FullScreenOverlay'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useChartColors } from '@/hooks/useChartColors'
 import { compressImage } from '@/lib/photos'
@@ -293,21 +293,18 @@ function CompareViewer({
       : null
 
   return (
-    <Portal>
-    <div className="fixed inset-0 z-50 flex flex-col bg-bg">
-      <div className="flex items-center justify-between px-4 py-3">
+    <FullScreenOverlay onClose={onClose}>
+      <div className="flex items-center justify-between px-4 py-1">
         <p className="font-semibold">Comparación</p>
-        <button onClick={onClose} className="rounded-lg p-2 text-ink-2">
-          <X size={22} />
-        </button>
+        <OverlayCloseButton onClick={onClose} />
       </div>
-      <div className="grid flex-1 grid-cols-2 gap-2 p-4">
+      <div className="grid min-h-0 flex-1 grid-cols-2 gap-2 p-4">
         {[
           { photo: before, url: beforeUrl },
           { photo: after, url: afterUrl },
         ].map(({ photo, url }) => (
-          <div key={photo.id} className="flex flex-col gap-2">
-            <div className="flex-1 overflow-hidden rounded-xl bg-surface">
+          <div key={photo.id} className="flex min-h-0 flex-col gap-2">
+            <div className="min-h-0 flex-1 overflow-hidden rounded-md bg-surface">
               {url && <img src={url} alt="" className="h-full w-full object-cover" />}
             </div>
             <div className="text-center">
@@ -322,7 +319,7 @@ function CompareViewer({
         ))}
       </div>
       {weightDiff !== null && (
-        <p className="pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-center text-sm text-ink-2">
+        <p className="pb-2 text-center text-sm text-ink-2">
           Diferencia:{' '}
           <span
             className={cn(
@@ -335,19 +332,22 @@ function CompareViewer({
           </span>
         </p>
       )}
-    </div>
-    </Portal>
+      <div className="px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        <button onClick={onClose} className="h-14 w-full rounded-md bg-fill font-semibold text-ink active:bg-fill-2">
+          Cerrar
+        </button>
+      </div>
+    </FullScreenOverlay>
   )
 }
 
 function PhotoViewer({ photo, onClose }: { photo: ProgressPhoto; onClose: () => void }) {
   const url = usePhotoUrl(photo.blob)
   return (
-    <Portal>
-    <div className="fixed inset-0 z-50 flex flex-col bg-bg">
-      <div className="flex items-center justify-between px-4 py-3">
-        <div>
-          <p className="font-medium">
+    <FullScreenOverlay onClose={onClose}>
+      <div className="flex items-center justify-between gap-3 px-4 py-1">
+        <div className="min-w-0">
+          <p className="truncate font-medium">
             {new Date(photo.takenAt).toLocaleDateString('es-AR', {
               weekday: 'long',
               day: 'numeric',
@@ -359,27 +359,28 @@ function PhotoViewer({ photo, onClose }: { photo: ProgressPhoto; onClose: () => 
             <p className="font-mono text-sm text-ink-2">{photo.weightKg} kg</p>
           )}
         </div>
-        <div className="flex gap-1">
-          <button
-            onClick={async () => {
-              if (confirm('¿Eliminar esta foto?')) {
-                await softDelete('progressPhotos', photo.id)
-                onClose()
-              }
-            }}
-            className="rounded-lg p-2 text-danger/80"
-          >
-            <Trash2 size={20} />
-          </button>
-          <button onClick={onClose} className="rounded-lg p-2 text-ink-2">
-            <X size={22} />
-          </button>
-        </div>
+        <OverlayCloseButton onClick={onClose} />
       </div>
-      <div className="flex flex-1 items-center justify-center p-4">
-        {url && <img src={url} alt="" className="max-h-full max-w-full rounded-xl" />}
+      <div className="flex min-h-0 flex-1 items-center justify-center p-4">
+        {url && <img src={url} alt="" className="max-h-full max-w-full rounded-md" />}
       </div>
-    </div>
-    </Portal>
+      {/* Abajo y separados: "Cerrar" es lo que más se toca, "Eliminar" no se pisa con él. */}
+      <div className="flex gap-2 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        <button
+          onClick={async () => {
+            if (confirm('¿Eliminar esta foto?')) {
+              await softDelete('progressPhotos', photo.id)
+              onClose()
+            }
+          }}
+          className="flex h-14 flex-1 items-center justify-center gap-2 rounded-md text-danger active:bg-danger/10"
+        >
+          <Trash2 size={18} /> Eliminar
+        </button>
+        <button onClick={onClose} className="h-14 flex-[1.4] rounded-md bg-fill font-semibold text-ink active:bg-fill-2">
+          Cerrar
+        </button>
+      </div>
+    </FullScreenOverlay>
   )
 }

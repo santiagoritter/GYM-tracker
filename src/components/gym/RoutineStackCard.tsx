@@ -1,6 +1,7 @@
+import DayAction from '@/components/gym/DayAction'
 import { useEffect, useRef } from 'react'
 import { motion } from 'motion/react'
-import { Pencil, Play, QrCode, Repeat2, Star, Trash2, X } from 'lucide-react'
+import { Pencil, QrCode, Repeat2, Star, Trash2, X } from 'lucide-react'
 import { Row } from '@/components/ui/Card'
 import type { Routine, RoutineDay } from '@/types'
 import { cn } from '@/lib/utils'
@@ -14,6 +15,8 @@ export const FRONT_HEIGHT = 240
 export interface RoutineStackCardProps {
   routine: Routine
   days: RoutineDay[]
+  /** Ejercicios entrenables por día; `undefined` mientras carga. */
+  dayCounts?: Map<string, number>
   pose: { y: number; scale: number; opacity: number }
   stackOrder: number
   isFront: boolean
@@ -51,6 +54,7 @@ export interface RoutineStackCardProps {
 export default function RoutineStackCard({
   routine,
   days,
+  dayCounts,
   pose,
   stackOrder,
   isFront,
@@ -260,12 +264,11 @@ export default function RoutineStackCard({
                   {day.isRest === 1 && ' · descanso'}
                 </span>
                 {day.isRest === 0 && (
-                  <button
-                    onClick={() => onTrain(day.id)}
-                    className="flex h-9 shrink-0 items-center gap-1.5 rounded-xs bg-accent px-3 text-[13px] font-bold text-bg"
-                  >
-                    <Play size={13} fill="currentColor" /> Entrenar
-                  </button>
+                  <DayAction
+                    isEmpty={dayCounts !== undefined && (dayCounts.get(day.id) ?? 0) === 0}
+                    onTrain={() => onTrain(day.id)}
+                    onAdd={onEdit}
+                  />
                 )}
               </Row>
             ))}

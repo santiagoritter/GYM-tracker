@@ -1,7 +1,8 @@
+import DayAction from '@/components/gym/DayAction'
 import { useEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { ArrowLeftRight, Pencil, Play, QrCode, Star, Trash2 } from 'lucide-react'
+import { ArrowLeftRight, Pencil, QrCode, Star, Trash2 } from 'lucide-react'
 import { Card, Row } from '@/components/ui/Card'
 import Portal from '@/components/ui/Portal'
 import type { Routine, RoutineDay } from '@/types'
@@ -76,6 +77,7 @@ function poseForStep(step: number): { y: number; scale: number; opacity: number 
 export interface RoutineStackProps {
   routines: Routine[]
   daysByRoutine: Map<string, RoutineDay[]>
+  dayCounts?: Map<string, number>
   // Qué rutina está al frente del mazo. Controlado desde afuera (en vez de
   // estado interno) para que "volver a favorita" y el picker de búsqueda
   // (Fase 4) puedan saltar directo a una posición específica, no solo
@@ -92,6 +94,7 @@ export interface RoutineStackProps {
 export default function RoutineStack({
   routines,
   daysByRoutine,
+  dayCounts,
   frontIndex,
   onFrontIndexChange,
   onTrain,
@@ -188,12 +191,11 @@ export default function RoutineStack({
                     {day.isRest === 1 && ' · descanso'}
                   </span>
                   {day.isRest === 0 && (
-                    <button
-                      onClick={() => onTrain(day.id)}
-                      className="flex h-9 shrink-0 items-center gap-1.5 rounded-xs bg-accent px-3 text-[13px] font-bold text-bg"
-                    >
-                      <Play size={13} fill="currentColor" /> Entrenar
-                    </button>
+                    <DayAction
+                      isEmpty={dayCounts !== undefined && (dayCounts.get(day.id) ?? 0) === 0}
+                      onTrain={() => onTrain(day.id)}
+                      onAdd={() => onEdit(routine)}
+                    />
                   )}
                 </Row>
               ))}
@@ -241,6 +243,7 @@ export default function RoutineStack({
               key={routine.id}
               routine={routine}
               days={daysByRoutine.get(routine.id) ?? []}
+              dayCounts={dayCounts}
               pose={pose}
               stackOrder={displayOrder.length - index}
               isFront={index === 0}

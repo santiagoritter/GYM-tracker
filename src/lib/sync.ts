@@ -4,6 +4,7 @@ import { useSyncStore } from '@/stores/syncStore'
 import { pushNotification } from '@/lib/notifications'
 import { upsertResilient } from '@/lib/syncBatch'
 import { repairRoutineExercises } from '@/db/routines'
+import { BOOLEAN_FIELDS, camelToSnake, LOCAL_ONLY_FIELDS, REMOTE_TABLE } from '@/lib/syncSchema'
 import type { LocalProfile, SyncedTable } from '@/types'
 
 /**
@@ -22,55 +23,8 @@ import type { LocalProfile, SyncedTable } from '@/types'
  * storage.sql), no se mete de prepo acá.
  */
 
-// Postgres usa snake_case; local (Dexie/TS) usa camelCase. Es una
-// conversión regular en TODOS los campos de estas 12 tablas (verificado
-// contra supabase/migrations/0002-0006), así que una función genérica
-// alcanza — no hace falta un mapeo campo por campo.
-function camelToSnake(key: string): string {
-  return key.replace(/[A-Z]/g, (c) => '_' + c.toLowerCase())
-}
-
 function snakeToCamel(key: string): string {
   return key.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase())
-}
-
-// El nombre de tabla SÍ tiene una irregularidad: local es "profile"
-// (singular, PK = userId, relación 1:1) pero Postgres es "profiles"
-// (plural, como el resto). El resto ya son plurales de los dos lados.
-const REMOTE_TABLE: Record<SyncedTable, string> = {
-  profile: 'profiles',
-  routines: 'routines',
-  routineDays: 'routine_days',
-  routineExercises: 'routine_exercises',
-  workouts: 'workouts',
-  workoutSets: 'workout_sets',
-  personalRecords: 'personal_records',
-  bodyMeasurements: 'body_measurements',
-  achievements: 'achievements',
-  progressPhotos: 'progress_photos',
-  exercisePhotos: 'exercise_photos',
-  calorieEntries: 'calorie_entries',
-  restLogs: 'rest_logs',
-  notifications: 'notifications',
-}
-
-// Postgres guarda estos campos como boolean; local los guarda 0|1 (IndexedDB
-// no indexa booleans). Todo lo que no está listado acá viaja tal cual.
-const BOOLEAN_FIELDS: Partial<Record<SyncedTable, readonly string[]>> = {
-  routines: ['isActive', 'isArchived'],
-  routineDays: ['isRest'],
-  workoutSets: ['isWarmup', 'completed'],
-  profile: ['onboardingComplete', 'reminderEnabled', 'calorieTrackingEnabled'],
-  restLogs: ['discarded'],
-  notifications: ['read'],
-}
-
-// Bookkeeping puramente del cliente, sin columna en Postgres: la cola de
-// push (`dirty`) y el blob/flag de subida de las fotos (ver nota de
-// Storage arriba).
-const LOCAL_ONLY_FIELDS: Partial<Record<SyncedTable, readonly string[]>> = {
-  progressPhotos: ['blob', 'uploaded'],
-  exercisePhotos: ['blob', 'uploaded'],
 }
 
 // Postgres NULL ↔ campo opcional local ausente: el modelo local representa
@@ -131,6 +85,8 @@ const PULL_PAGE_SIZE = 1000
 export async function pushDirtyRows(userId: string): Promise<boolean> {
   if (!supabase) return false
   let hadError = false
+  let rejectedCount = 0
+  let rejectedCode: string | undefined
 
   for (const table of SYNC_ORDER) {
     const t = db.table<RowWithId>(table)
@@ -153,6 +109,8 @@ export async function pushDirtyRows(userId: string): Promise<boolean> {
     )
     if (failed.length) {
       hadError = true // best-effort: lo que falló se reintenta en el próximo sync
+      rejectedCount += failed.length
+      rejectedCode ??= failed[0]!.error.code
       for (const f of failed.slice(0, 3)) {
         console.warn(`[sync] ${table} ${dirtyRows[f.index]!.id} rechazada:`, f.error.code, f.error.message)
       }
@@ -189,6 +147,7 @@ export async function pushDirtyRows(userId: string): Promise<boolean> {
     else await db.tombstones.delete(tomb.id)
   }
 
+  useSyncStore.getState().setRejected(rejectedCount, rejectedCode)
   return hadError
 }
 
@@ -339,6 +298,9 @@ export async function runSync(userId: string): Promise<void> {
         await repairRoutineExercises(userId).catch((e: unknown) => console.warn('[sync] reparación de rutinas', e))
         const pushFailed = await pushDirtyRows(userId)
         const pullFailed = await pullRemoteChanges(userId)
+        // También después del pull: lo que baja de otro dispositivo (duplicados,
+        // orden repetido) se repara en este mismo ciclo y no recién en el próximo.
+        await repairRoutineExercises(userId).catch((e: unknown) => console.warn('[sync] reparación de rutinas', e))
         if (pushFailed || pullFailed) useSyncStore.getState().setError()
         else useSyncStore.getState().setSynced()
       } catch {

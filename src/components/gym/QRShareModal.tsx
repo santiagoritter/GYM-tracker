@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
-import { Copy, Download, X } from 'lucide-react'
+import { Copy, Download } from 'lucide-react'
+import { OverlayCloseButton } from '@/components/ui/FullScreenOverlay'
 import { buildShareUrl, generateQRDataUrl, shareRoutine } from '@/lib/qr'
 import type { Routine } from '@/types'
 import ResponsiveSheet from '@/components/ui/ResponsiveSheet'
@@ -49,9 +50,7 @@ export function QRShareModal({ routine, onClose }: { routine: Routine; onClose: 
         {...handleDragProps}
       >
         <h2 className="text-lg font-bold">Compartir rutina</h2>
-        <button onClick={onClose} className="rounded-lg p-2 text-ink-2">
-          <X size={22} />
-        </button>
+        <OverlayCloseButton onClick={onClose} />
       </motion.div>
 
       <motion.div

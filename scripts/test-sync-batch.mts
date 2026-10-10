@@ -36,6 +36,17 @@ const r3 = await upsertResilient(offline, rows)
 check(r3.okIndexes.length === 0 && r3.failed.length === 3, 'offline: nada sube')
 check(calls === 1, 'offline: no debería multiplicar requests que van a fallar igual')
 
+// Columna inexistente (PGRST204): es el error que dejó de subir todos los entrenos
+// cuando el cliente empezó a mandar `kind` sin que existiera en el servidor. Tiene
+// `code`, así que se reintenta fila por fila, y TODAS quedan rechazadas con el código
+// a la vista (es lo que Ajustes muestra al usuario).
+const noColumn: Upsert = async () => ({
+  error: { code: 'PGRST204', message: "Could not find the 'kind' column of 'workouts' in the schema cache" },
+})
+const r4 = await upsertResilient(noColumn, rows)
+check(r4.okIndexes.length === 0 && r4.failed.length === 3, 'PGRST204: ninguna fila sube')
+check(r4.failed.every((f) => f.error.code === 'PGRST204'), 'PGRST204: el código llega hasta quien lo muestra')
+
 if (fail.length) {
   console.error('❌ Sync por lotes:\n - ' + fail.join('\n - '))
   process.exit(1)

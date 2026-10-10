@@ -1,3 +1,5 @@
+import { daysSinceWorkout } from '@/lib/coachRoster'
+import { formatTotalDuration } from '@/lib/formatStats'
 import { Suspense, lazy, useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ChevronDown, Lock } from 'lucide-react'
@@ -42,7 +44,6 @@ const TAB_LABELS: Record<ProgressTab, string> = {
   calorias: 'Calorías',
 }
 
-const DAY_MS = 86_400_000
 const PAGE_SIZE = 20
 
 /**
@@ -115,15 +116,20 @@ export default function ClientProgressView({
 
 function Summary({ data, units }: { data: ClientProgress; units: 'kg' | 'lbs' }) {
   const stats = useMemo(() => computeStats(data.workouts), [data.workouts])
-  const last = data.workouts[0]?.startedAt ?? null
-  const daysSince = last ? Math.floor((Date.now() - new Date(last).getTime()) / DAY_MS) : null
-  const hours = Math.round((stats.totalDurationSec / 3600) * 10) / 10
+  // Mismo criterio que el listado de alumnos (RPC `coach_roster`): el último
+  // entreno TERMINADO. Antes esta ficha usaba `startedAt` y el listado
+  // `finished_at`, y el mismo alumno podía figurar con dos fechas distintas.
+  const last = data.workouts.reduce<string | null>(
+    (latest, w) => (w.finishedAt && (!latest || w.finishedAt > latest) ? w.finishedAt : latest),
+    null
+  )
+  const daysSince = daysSinceWorkout(last)
   const p = data.profile
 
   const cards = [
     { label: 'Entrenos', value: String(stats.totalWorkouts) },
     { label: 'Volumen', value: `${Math.round(stats.totalVolumeKg / 100) / 10} t` },
-    { label: 'Tiempo', value: `${hours} h` },
+    { label: 'Tiempo', value: formatTotalDuration(stats.totalDurationSec) },
     { label: 'Racha', value: `${stats.currentStreak} d` },
     { label: 'Esta semana', value: p?.weeklyGoal ? `${stats.thisWeekCount}/${p.weeklyGoal}` : String(stats.thisWeekCount) },
     { label: 'PRs', value: String(data.prs.length) },

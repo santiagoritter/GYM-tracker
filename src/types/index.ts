@@ -92,6 +92,10 @@ export interface WorkoutSet extends SyncFields {
   isWarmup: 0 | 1
   completed: 0 | 1
   supersetGroup?: number // heredado de la rutina: controla el descanso
+  /** Posición del ejercicio dentro del entreno (1..n). Antes no se guardaba y la
+   * pantalla lo reconstruía por el UUID de la serie, o sea al azar. `undefined`
+   * en series anteriores a esta columna: se ordenan por la rutina del día. */
+  exerciseOrder?: number
 }
 
 export interface PersonalRecord extends SyncFields {

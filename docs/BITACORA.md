@@ -1336,3 +1336,45 @@ builds nativas y es una decisión del dueño (`docs/21-COACH.md`).
 - `liveActivity.ts` deja un `console.warn` en vez de tragar el error en
   silencio (no se le muestra nada al usuario).
 - `docs/PROMESAS.md` cierra con la lista de lo que solo puede hacer el dueño.
+
+## 2026-10-10 — Bugs de testers: sync roto, orden, fantasmas, escáner, tutorial
+
+**Lo grave, que no estaba en la lista**: ningún entreno nuevo llegaba al servidor
+desde el 16/9. `Workout.kind` se agregó al cliente (commit `2ce87c2`) sin crear la
+columna; PostgREST rechazaba el lote (`PGRST204`) y las filas quedaban `dirty` para
+siempre. El alumno veía sus entrenos (los lee de su base local) y el coach no: era el
+"mi alumno no entrena" del reporte. Mismo desfase en `profiles.motivational_notifs_enabled`.
+Verificado en `information_schema` y con agregados (0 entrenos nuevos de nadie desde el
+29/9). Nada se perdió: las filas siguen locales. Migración `0031` aplicada ANTES de
+publicar el cliente; las pendientes suben solas en el próximo sync.
+
+- **Que no se repita**: `src/lib/syncSchema.ts` (nombres, booleanos, campos locales) +
+  `scripts/test-sync-schema.mts`, que lee las interfaces con la API de TypeScript y las
+  migraciones SQL y falla si un campo local no tiene columna o un 0|1 va a una columna
+  boolean sin estar en `BOOLEAN_FIELDS`. Primero salió rojo: acusó exactamente `kind` y
+  `motivational_notifs_enabled`. (`motivationalNotifsEnabled` tampoco estaba en
+  `BOOLEAN_FIELDS`: habría viajado como número a una columna boolean.)
+- El entreno se sube al terminarlo; Ajustes muestra "N cambios no se pudieron subir
+  (error PGRST204)" en vez de un `console.warn`; el tablero del coach se refresca al
+  volver a la app. Se descartó mostrar "Sin sincronizar" en el tablero: el servidor solo
+  sabe cuándo se escribió algo, no distingue "no entrena" de "no sube".
+- **Orden de ejercicios**: el entreno no guardaba el orden y la pantalla lo
+  reconstruía por el UUID de la serie. Ahora `WorkoutSet.exerciseOrder` (+ columna
+  `exercise_order`) y `orderExerciseGroups` (con respaldo a la posición en la rutina para
+  entrenos viejos). Arregla de paso supersets partidos e historial. Empates de
+  `exerciseOrder` en la rutina: se desempata por id, "mover" renumera 1..n, `addDay` usa
+  max+1.
+- **Fantasmas**: un día sin ejercicios ya no se ofrece ni crea un entreno vacío
+  ("Agregar ejercicios" en su lugar); `startWorkoutFromDay` ignora ejercicios que no
+  están en el catálogo; la reparación de rutinas corre también para invitados y después
+  del pull, y **ya no borra** ids que este dispositivo no conoce (los oculta: una app
+  desactualizada los habría borrado para todos).
+- **Escáner**: la X quedaba bajo la Dynamic Island (`contentInset: 'never'` +
+  `viewport-fit=cover`). `FullScreenOverlay` aplica el inset una vez y lo usan escáner,
+  vista previa de importación, visor y comparación de fotos y selector de ejercicios;
+  "Cerrar" va abajo; X de 44 px; el `Toast` baja bajo la isla. Verificado con
+  `Emulation.setSafeAreaInsetsOverride` (top 59, bottom 34) y cámara falsa.
+- **Tutorial** "Cómo ordenar tu rutina" (`InfoDisclosure`, contenido en
+  `src/lib/routineGuide.ts` con fuentes: ACSM 2009, Simão 2012, Schoenfeld 2017).
+- No se hizo (decisión): descartar automáticamente entrenos "en curso" con 0 series al
+  abrir Inicio; la tarjeta de entreno sin terminar ya los cubre a las 3 h.

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ArrowDown, ArrowLeft, ArrowUp, Link2, Moon, Plus, Trash2, X } from 'lucide-react'
+import { ArrowDown, ArrowLeft, ArrowUp, Lightbulb, Link2, Moon, Plus, Trash2, X } from 'lucide-react'
 import { db } from '@/db/schema'
 import { softDelete } from '@/db/mutations'
 import { toast } from '@/stores/toastStore'
@@ -17,6 +17,10 @@ import {
 import { ExercisePicker } from '@/components/gym/ExercisePicker'
 import { MuscleChip } from '@/components/gym/MuscleChip'
 import { Card, Row } from '@/components/ui/Card'
+import InfoDisclosure from '@/components/ui/InfoDisclosure'
+import { routineExercisesForUser } from '@/db/scoped'
+import { compareRoutineEntries } from '@/lib/routineEntries'
+import { ROUTINE_GUIDE, ROUTINE_GUIDE_FOOTNOTE, ROUTINE_GUIDE_TITLE } from '@/lib/routineGuide'
 import DraftNumberInput from '@/components/ui/DraftNumberInput'
 import type { Exercise, RoutineDay, RoutineExercise } from '@/types'
 import { cn } from '@/lib/utils'
@@ -38,7 +42,12 @@ export default function RoutineEditor() {
         : [],
     [routineId]
   )
-  const allEntries = useLiveQuery(() => db.routineExercises.toArray(), []) ?? []
+  // Solo las filas de esta cuenta (antes `toArray()` trajo las de todas las cuentas del dispositivo).
+  const allEntries =
+    useLiveQuery(
+      () => (routine ? routineExercisesForUser(routine.userId).toArray() : []),
+      [routine?.userId]
+    ) ?? []
   const exercises = useLiveQuery(() => db.exercises.toArray(), []) ?? []
   const exerciseMap = useMemo(() => new Map(exercises.map((e) => [e.id, e])), [exercises])
 
@@ -91,10 +100,22 @@ export default function RoutineEditor() {
           ))}
         </div>
 
+        <InfoDisclosure icon={<Lightbulb size={18} strokeWidth={1.8} />} title={ROUTINE_GUIDE_TITLE}>
+          <ul>
+            {ROUTINE_GUIDE.map((point) => (
+              <li key={point.title} className="px-4 py-3 [&:not(:first-child)]:border-t [&:not(:first-child)]:border-line-2">
+                <p className="text-[14px] font-semibold">{point.title}</p>
+                <p className="mt-1 text-[14px] leading-relaxed text-ink-2">{point.body}</p>
+              </li>
+            ))}
+          </ul>
+          <p className="border-t border-line-2 px-4 py-3 text-[12px] leading-relaxed text-ink-3">{ROUTINE_GUIDE_FOOTNOTE}</p>
+        </InfoDisclosure>
+
         {(days ?? []).map((day) => {
           const entries = allEntries
             .filter((e) => e.dayId === day.id)
-            .sort((a, b) => a.exerciseOrder - b.exerciseOrder)
+            .sort(compareRoutineEntries)
           return (
             <section key={day.id}>
               <Card>
@@ -109,6 +130,7 @@ export default function RoutineEditor() {
                       key={entry.id}
                       entry={entry}
                       exercise={exerciseMap.get(entry.exerciseId)}
+                      catalogLoaded={exercises.length > 0}
                       isFirst={index === 0}
                       isLast={index === entries.length - 1}
                       linkedWithPrev={
@@ -186,12 +208,15 @@ function DayHeaderRow({ day }: { day: RoutineDay }) {
 function RoutineExerciseRow({
   entry,
   exercise,
+  catalogLoaded,
   isFirst,
   isLast,
   linkedWithPrev,
 }: {
   entry: RoutineExercise
   exercise?: Exercise
+  /** Falso mientras el catálogo todavía no cargó: ahí "no disponible" sería mentira. */
+  catalogLoaded: boolean
   isFirst: boolean
   isLast: boolean
   linkedWithPrev: boolean
@@ -200,12 +225,31 @@ function RoutineExerciseRow({
   const isCustomRest = !REST_OPTIONS.includes(entry.restSeconds)
   const [restCustomOpen, setRestCustomOpen] = useState(isCustomRest)
 
+  // Un ejercicio que este dispositivo no conoce (o una fila vacía): antes se dibujaba
+  // como una tarjeta "Ejercicio" sin músculos. No se entrena; se puede quitar.
+  if (!exercise) {
+    return (
+      <Row>
+        <p className="min-w-0 flex-1 text-[14px] text-ink-3">
+          {catalogLoaded ? 'Ejercicio no disponible' : 'Cargando…'}
+        </p>
+        <button
+          onClick={() => softDelete('routineExercises', entry.id)}
+          aria-label="Quitar ejercicio"
+          className="flex h-11 w-11 shrink-0 items-center justify-center text-ink-3"
+        >
+          <X size={16} />
+        </button>
+      </Row>
+    )
+  }
+
   return (
     <Row className="flex-col items-stretch gap-0">
       <div className="flex w-full items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <p className="truncate font-medium">{exercise?.name ?? 'Ejercicio'}</p>
+            <p className="truncate font-medium">{exercise.name}</p>
             {entry.supersetGroup !== undefined && (
               <span className="shrink-0 rounded-xs bg-accent/15 px-1.5 py-0.5 text-[10px] font-bold text-accent">
                 SS
@@ -213,7 +257,7 @@ function RoutineExerciseRow({
             )}
           </div>
           <div className="mt-1 flex flex-wrap gap-1">
-            {exercise?.musclePrimary.map((m) => <MuscleChip key={m} muscle={m} />)}
+            {exercise.musclePrimary.map((m) => <MuscleChip key={m} muscle={m} />)}
           </div>
         </div>
         <div className="flex shrink-0 items-center">

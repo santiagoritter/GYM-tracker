@@ -212,3 +212,7 @@ para no romper `DESIGN.md §4`.
 - **`LogPastWorkout` con ids estables por serie** (hoy keys por índice; solo se
   agregan/quitan al final, así que no rompe).
 - **Subir el deployment target de la app a 16.2** para igualar al widget.
+- **Tabla `runs` en el servidor** (ruta GPS y parciales de las salidas a correr son hoy solo locales: el coach ve el entreno pero no el recorrido).
+- **El chat del coach vencido**: la política de insert no mira la suscripción; se corta al correr `enforce_coach_billing()`.
+- **`dayId` en el entreno** en vez de buscar el día por nombre (`Workout.tsx` y `nextRoutineDay` asumen nombres únicos).
+- **`Routines.tsx` trae `routineDays` de todas las cuentas del dispositivo** (`db.routineDays.toArray()` sin scope).

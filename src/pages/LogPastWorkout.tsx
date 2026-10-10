@@ -1,3 +1,4 @@
+import { routineDayEntries } from '@/db/routines'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
@@ -74,7 +75,7 @@ export default function LogPastWorkout() {
   const handleSelectDay = async (day: RoutineDay) => {
     setRoutineSheetOpen(false)
     if (!userId) return
-    const entries = await db.routineExercises.where('dayId').equals(day.id).sortBy('exerciseOrder')
+    const entries = await routineDayEntries(day.id)
     const existingIds = new Set(draftExercises.map((e) => e.exerciseId))
 
     // Historial completo del usuario, traído una sola vez antes del loop

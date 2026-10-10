@@ -297,7 +297,14 @@ Base en `src/components/ui/`, dominio en `src/components/gym/`.
 - **Selector de opciones** (`SegmentedControl`): 2–6 opciones en un riel
   `fill` con radio `sm`; cada opción 44px de alto, radio `xs`, la activa en
   acento. Es el único: nada de `rounded-full` en Correr y bordes en Ajustes.
-- **Botón de cerrar**: 44×44, `rounded-full bg-fill`, icono `X` 16.
+- **Botón de cerrar**: 44×44, `rounded-full bg-fill`, icono `X` (`OverlayCloseButton`).
+- **Capa a pantalla completa** (`FullScreenOverlay`: escáner, visor de fotos,
+  selector de ejercicios): aplica `env(safe-area-inset-top)` una sola vez, porque
+  la app se dibuja bajo la Dynamic Island. Nunca un `fixed inset-0` armado a mano.
+  Lo que más se usa va abajo: "Cerrar"/"Cancelar" en un pie de 56 px con
+  `safe-area-inset-bottom`; la X de arriba es un atajo, no la única salida.
+- **Desplegable de información** (`InfoDisclosure`): `<details>` nativo, fila de
+  44 px, cerrado por defecto, separadores finos adentro (sin tarjetas anidadas).
 - **Fila de lista**: alto mínimo 44px, hairline entre filas, chevron a la
   derecha solo si navega.
 - **Input**: alto 44px, `body` (16px, obligatorio para no disparar el zoom

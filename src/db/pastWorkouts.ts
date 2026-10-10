@@ -34,7 +34,7 @@ export async function logPastWorkout(
   }
 
   const sets: WorkoutSet[] = []
-  for (const ex of exercises) {
+  for (const [exIndex, ex] of exercises.entries()) {
     ex.sets.forEach((s, i) => {
       sets.push({
         id: uid(),
@@ -48,6 +48,7 @@ export async function logPastWorkout(
         completed: 1,
         dirty: 1,
         updatedAt: nowIso(),
+        exerciseOrder: exIndex + 1,
       })
     })
   }

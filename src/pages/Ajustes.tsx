@@ -138,6 +138,7 @@ export default function Ajustes() {
   const spotifyDisconnect = useSpotifyStore((s) => s.disconnect)
   const syncStatus = useSyncStore((s) => s.status)
   const lastSyncedAt = useSyncStore((s) => s.lastSyncedAt)
+  const rejected = useSyncStore((s) => s.rejected)
   const canInstall = useCanInstallPwa()
   const showAppSection = !isNative && !isStandalone()
   const [coachSheetOpen, setCoachSheetOpen] = useState(false)
@@ -266,7 +267,11 @@ export default function Ajustes() {
     : syncStatus === 'syncing'
       ? 'Sincronizando…'
       : syncStatus === 'error'
-        ? 'No se pudo sincronizar — se reintenta solo'
+        ? rejected.count > 0 && rejected.code
+          ? `${rejected.count} ${rejected.count === 1 ? 'cambio no se pudo subir' : 'cambios no se pudieron subir'} (error ${rejected.code}). No desinstales la app y avisanos.`
+          : rejected.count > 0
+            ? `${rejected.count} ${rejected.count === 1 ? 'cambio sin subir' : 'cambios sin subir'}: sin conexión, se reintenta solo`
+            : 'No se pudo sincronizar — se reintenta solo'
         : lastSyncedAt
           ? `Sincronizado ${timeAgo(lastSyncedAt)}`
           : 'Todavía no sincronizó'

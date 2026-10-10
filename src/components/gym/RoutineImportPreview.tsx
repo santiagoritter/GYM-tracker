@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { X } from 'lucide-react'
+import { OverlayCloseButton } from '@/components/ui/FullScreenOverlay'
 import { db } from '@/db/schema'
 import type { QRPayload } from '@/lib/qr'
 
@@ -24,11 +24,9 @@ export function RoutineImportPreview({
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-1 flex-col overflow-hidden">
-      <div className="flex items-center justify-between border-b border-line px-4 py-3">
+      <div className="flex items-center justify-between border-b border-line px-4 py-1">
         <h2 className="text-lg font-bold">Importar rutina</h2>
-        <button onClick={onClose} className="rounded-lg p-2 text-ink-2">
-          <X size={22} />
-        </button>
+        <OverlayCloseButton onClick={onClose} />
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
@@ -64,8 +62,11 @@ export function RoutineImportPreview({
         ))}
       </div>
 
-      <div className="border-t border-line px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-        <button onClick={onImport} className="w-full rounded-xl bg-accent py-4 font-bold text-bg">
+      <div className="flex gap-2 border-t border-line px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        <button onClick={onClose} className="h-14 flex-1 rounded-md bg-fill font-semibold text-ink active:bg-fill-2">
+          Cancelar
+        </button>
+        <button onClick={onImport} className="h-14 flex-[1.6] rounded-md bg-accent font-bold text-bg active:bg-accent-dim">
           Importar rutina
         </button>
       </div>

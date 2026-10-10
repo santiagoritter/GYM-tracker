@@ -71,7 +71,7 @@ export default function ImportRoutine() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-bg">
+    <div className="flex min-h-screen flex-col bg-bg pt-[env(safe-area-inset-top)]">
       <RoutineImportPreview
         payload={payload}
         name={name}

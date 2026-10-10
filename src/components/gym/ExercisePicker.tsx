@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Search, X } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { db } from '@/db/schema'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { useRecentExerciseIds } from '@/hooks/useRecentExerciseIds'
 import type { Equipment, Exercise, MuscleGroup } from '@/types'
 import { MUSCLE_LABELS, MuscleChip } from '@/components/gym/MuscleChip'
 import EquipmentIcon from '@/components/gym/EquipmentIcon'
-import Portal from '@/components/ui/Portal'
+import FullScreenOverlay, { OverlayCloseButton } from '@/components/ui/FullScreenOverlay'
 import { cn } from '@/lib/utils'
 import { EQUIPMENT_LABELS, EQUIPMENT_FILTERS, MUSCLE_FILTERS } from '@/lib/exerciseFilters'
 
@@ -71,10 +71,9 @@ export function ExercisePicker({ onSelect, onClose, excludeIds = [] }: Props) {
   )
 
   return (
-    <Portal>
-      <div className="fixed inset-0 z-50 flex flex-col bg-bg">
+    <FullScreenOverlay onClose={onClose}>
         <div className="mx-auto flex w-full max-w-lg flex-1 flex-col overflow-hidden">
-        <div className="flex items-center gap-3 border-b border-line px-4 py-3">
+        <div className="flex items-center gap-3 border-b border-line px-4 py-2">
           <div className="flex flex-1 items-center gap-2 rounded-lg bg-surface px-3 py-2">
             <Search size={18} className="text-ink-3" />
             <input
@@ -85,9 +84,7 @@ export function ExercisePicker({ onSelect, onClose, excludeIds = [] }: Props) {
               className="w-full bg-transparent text-base outline-none placeholder:text-ink-3"
             />
           </div>
-          <button onClick={onClose} className="rounded-lg p-2 text-ink-2 active:bg-surface">
-            <X size={22} />
-          </button>
+          <OverlayCloseButton onClick={onClose} />
         </div>
 
         <div className="flex shrink-0 gap-2 overflow-x-auto px-4 pt-3 [scrollbar-width:none]">
@@ -144,7 +141,6 @@ export function ExercisePicker({ onSelect, onClose, excludeIds = [] }: Props) {
           )}
         </div>
         </div>
-      </div>
-    </Portal>
+    </FullScreenOverlay>
   )
 }

@@ -1,3 +1,5 @@
+import { toast } from '@/stores/toastStore'
+import { useDayExerciseCounts } from '@/hooks/useDayExerciseCounts'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
@@ -47,6 +49,7 @@ export default function Routines() {
     [userId]
   )
   const days = useLiveQuery(() => db.routineDays.toArray(), []) ?? []
+  const dayCounts = useDayExerciseCounts()
   const activeWorkout = useLiveQuery(
     () => (userId ? workoutsFor(userId).filter((w) => !w.finishedAt).first() : undefined),
     [userId]
@@ -84,8 +87,12 @@ export default function Routines() {
       navigate(`/entreno/${activeWorkout.id}`)
       return
     }
-    const workoutId = await startWorkoutFromDay(userId, dayId)
-    navigate(`/entreno/${workoutId}`)
+    try {
+      const workoutId = await startWorkoutFromDay(userId, dayId)
+      navigate(`/entreno/${workoutId}`)
+    } catch (e) {
+      toast.error('No se pudo empezar el entreno', e instanceof Error ? e.message : 'Probá de nuevo.')
+    }
   }
 
   // Salto directo (no round-robin como "Cambiar rutina") a la posición de
@@ -171,6 +178,7 @@ export default function Routines() {
       <RoutineStack
         routines={routines ?? []}
         daysByRoutine={daysByRoutine}
+        dayCounts={dayCounts}
         frontIndex={frontIndex}
         onFrontIndexChange={setFrontIndex}
         onTrain={handleTrain}

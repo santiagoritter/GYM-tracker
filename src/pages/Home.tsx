@@ -1,3 +1,5 @@
+import { toast } from '@/stores/toastStore'
+import { useDayExerciseCounts } from '@/hooks/useDayExerciseCounts'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
@@ -30,6 +32,7 @@ export default function Home() {
   // efecto; useMemo solo para no rebuscar la lista en cada re-render.
   const quote = useMemo(() => getQuoteForNow(), [])
   const [daysSheetOpen, setDaysSheetOpen] = useState(false)
+  const dayCounts = useDayExerciseCounts()
   const [cardioSheetOpen, setCardioSheetOpen] = useState(false)
 
   const activeWorkout = useLiveQuery(
@@ -61,8 +64,12 @@ export default function Home() {
   const handleStart = async () => {
     if (!userId) return
     if (nextDay) {
-      const id = await startWorkoutFromDay(userId, nextDay.id)
-      navigate(`/entreno/${id}`)
+      try {
+        const id = await startWorkoutFromDay(userId, nextDay.id)
+        navigate(`/entreno/${id}`)
+      } catch (e) {
+        toast.error('No se pudo empezar el entreno', e instanceof Error ? e.message : 'Probá de nuevo.')
+      }
       return
     }
     const name = new Date().toLocaleDateString('es-AR', { weekday: 'long' })
@@ -80,8 +87,12 @@ export default function Home() {
 
   const handleStartDay = async (dayId: string) => {
     if (!userId) return
-    const id = await startWorkoutFromDay(userId, dayId)
-    navigate(`/entreno/${id}`)
+    try {
+      const id = await startWorkoutFromDay(userId, dayId)
+      navigate(`/entreno/${id}`)
+    } catch (e) {
+      toast.error('No se pudo empezar el entreno', e instanceof Error ? e.message : 'Probá de nuevo.')
+    }
   }
 
   return (
@@ -183,7 +194,12 @@ export default function Home() {
         <RoutineDaysSheet
           routine={activeRoutine}
           days={routineDays ?? []}
+          dayCounts={dayCounts}
           onStartDay={handleStartDay}
+          onEditRoutine={() => {
+            setDaysSheetOpen(false)
+            navigate(`/rutina/${activeRoutine.id}`)
+          }}
           onClose={() => setDaysSheetOpen(false)}
         />
       )}

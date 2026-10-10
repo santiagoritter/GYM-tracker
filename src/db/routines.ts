@@ -6,6 +6,7 @@ import { nowIso, uid } from '@/lib/utils'
 import { progressWeight, recommend, type MuscleGroupAdjustment } from '@/lib/recommendation'
 import { getMuscleGroupLevels } from '@/lib/muscleGroupStrength'
 import { ageFromDob } from '@/lib/strengthStandards'
+import { compareRoutineEntries, visibleEntries } from '@/lib/routineEntries'
 
 export const ROUTINE_COLORS = ['#E8FF47', '#60A5FA', '#F97316', '#EC4899', '#4ADE80', '#A855F7']
 
@@ -61,7 +62,9 @@ export async function addDay(routineId: string, userId: string, name: string): P
     routineId,
     userId,
     name,
-    dayOrder: existing.length + 1,
+    // max+1 y no cantidad+1: si se borró un día del medio, la cantidad repetía el
+    // orden de otro día.
+    dayOrder: Math.max(0, ...existing.map((d) => d.dayOrder)) + 1,
     isRest: 0,
     dirty: 1,
     updatedAt: nowIso(),
@@ -112,16 +115,31 @@ export async function addExerciseToDay(
 }
 
 /**
- * Reparación de lo que ya quedó mal en un dispositivo. Corre después de cada
- * sync (idempotente, barata: solo las rutinas del usuario):
- * - el mismo ejercicio repetido en un día: queda el primero, el resto se
- *   borra con lápida para que el borrado llegue a los otros dispositivos;
- * - filas con un ejercicio que no existe en el catálogo (se ven como
- *   "Ejercicio" y el servidor nunca las acepta: `exercise_id` es not null).
+ * Los ejercicios que de verdad se muestran y se entrenan en un día: con ejercicio
+ * conocido del catálogo y en el orden de la rutina. Lo usan el arranque del entreno,
+ * el conteo por día y los selectores de "qué día toca".
+ */
+export async function routineDayEntries(dayId: string): Promise<RoutineExercise[]> {
+  const rows = await db.routineExercises.where('dayId').equals(dayId).toArray()
+  const catalog = new Set(await db.exercises.toCollection().primaryKeys())
+  return visibleEntries(rows, catalog)
+}
+
+/**
+ * Reparación de lo que ya quedó mal en un dispositivo. Idempotente y barata (solo
+ * las rutinas del usuario). Corre después de cada sync y también al arrancar, para
+ * que la cuenta sin conexión (modo invitado) se repare igual:
+ * - el mismo ejercicio repetido en un día: queda el primero, el resto se borra con
+ *   lápida para que el borrado llegue a los otros dispositivos;
+ * - filas sin ejercicio (`exerciseId` vacío): no significan nada, se borran;
+ * - `exerciseOrder` repetido o con huecos: se renumera 1..n (con empate, "mover
+ *   arriba/abajo" intercambiaba dos números iguales y no hacía nada).
+ * Las filas con un id que ESTE dispositivo no conoce NO se borran: se ocultan
+ * (`routineDayEntries`). Una app desactualizada que recibe un ejercicio nuevo del
+ * catálogo lo habría borrado para todos los dispositivos.
  * Devuelve cuántas filas sacó.
  */
 export async function repairRoutineExercises(userId: string): Promise<number> {
-  const catalog = new Set(await db.exercises.toCollection().primaryKeys())
   const rows = await db.routineExercises.where('userId').equals(userId).toArray()
   const byDay = new Map<string, RoutineExercise[]>()
   for (const r of rows) {
@@ -131,17 +149,22 @@ export async function repairRoutineExercises(userId: string): Promise<number> {
   }
 
   const toDelete: string[] = []
+  const renumber: { id: string; exerciseOrder: number }[] = []
   for (const list of byDay.values()) {
     const seen = new Set<string>()
-    for (const r of [...list].sort((a, b) => a.exerciseOrder - b.exerciseOrder || a.id.localeCompare(b.id))) {
-      if (!r.exerciseId || !catalog.has(r.exerciseId) || seen.has(r.exerciseId)) toDelete.push(r.id)
-      else seen.add(r.exerciseId)
+    let position = 0
+    for (const r of [...list].sort(compareRoutineEntries)) {
+      if (!r.exerciseId || !r.exerciseId.trim() || seen.has(r.exerciseId)) {
+        toDelete.push(r.id)
+        continue
+      }
+      seen.add(r.exerciseId)
+      position++
+      if (r.exerciseOrder !== position) renumber.push({ id: r.id, exerciseOrder: position })
     }
   }
-  // Sin catálogo cargado (primer arranque a medias) no se toca nada: todo
-  // parecería "desconocido".
-  if (catalog.size === 0) return 0
   await softDeleteMany('routineExercises', toDelete)
+  for (const r of renumber) await db.routineExercises.update(r.id, { exerciseOrder: r.exerciseOrder })
   return toDelete.length
 }
 
@@ -153,7 +176,7 @@ export async function toggleSupersetWithPrevious(entryId: string): Promise<void>
   const entry = await db.routineExercises.get(entryId)
   if (!entry) return
   const siblings = (await db.routineExercises.where('dayId').equals(entry.dayId).toArray()).sort(
-    (a, b) => a.exerciseOrder - b.exerciseOrder
+    compareRoutineEntries
   )
   const index = siblings.findIndex((s) => s.id === entryId)
   if (index <= 0) return
@@ -185,15 +208,19 @@ export async function moveExercise(entryId: string, direction: -1 | 1): Promise<
   const entry = await db.routineExercises.get(entryId)
   if (!entry) return
   const siblings = (await db.routineExercises.where('dayId').equals(entry.dayId).toArray()).sort(
-    (a, b) => a.exerciseOrder - b.exerciseOrder
+    compareRoutineEntries
   )
   const index = siblings.findIndex((s) => s.id === entryId)
   const targetIndex = index + direction
-  if (targetIndex < 0 || targetIndex >= siblings.length) return
-  const other = siblings[targetIndex]
+  if (index === -1 || targetIndex < 0 || targetIndex >= siblings.length) return
+  // Se intercambian las POSICIONES y se renumera todo 1..n: intercambiar los
+  // `exerciseOrder` de dos vecinos no hacía nada cuando eran iguales.
+  const reordered = [...siblings]
+  ;[reordered[index], reordered[targetIndex]] = [reordered[targetIndex]!, reordered[index]!]
   await db.transaction('rw', db.routineExercises, async () => {
-    await db.routineExercises.update(entry.id, { exerciseOrder: other.exerciseOrder })
-    await db.routineExercises.update(other.id, { exerciseOrder: entry.exerciseOrder })
+    for (const [i, row] of reordered.entries()) {
+      if (row.exerciseOrder !== i + 1) await db.routineExercises.update(row.id, { exerciseOrder: i + 1 })
+    }
   })
 }
 
@@ -218,7 +245,11 @@ export async function nextRoutineDay(
   const days = (await db.routineDays.where('routineId').equals(routineId).toArray()).sort(
     (a, b) => a.dayOrder - b.dayOrder
   )
-  const trainable = days.filter((d) => d.isRest === 0)
+  // Un día sin ejercicios no se puede entrenar: antes se ofrecía y creaba un
+  // entreno vacío que quedaba "en curso".
+  const withWork = new Set<string>()
+  for (const d of days) if (d.isRest === 0 && (await routineDayEntries(d.id)).length > 0) withWork.add(d.id)
+  const trainable = days.filter((d) => withWork.has(d.id))
   if (trainable.length === 0) return undefined
 
   const dayNames = new Set(days.map((d) => d.name))
@@ -235,7 +266,7 @@ export async function nextRoutineDay(
   // Primer día entrenable después del último hecho, dando la vuelta al final
   for (let step = 1; step <= days.length; step++) {
     const candidate = days[(lastIndex + step) % days.length]
-    if (candidate.isRest === 0) return candidate
+    if (withWork.has(candidate.id)) return candidate
   }
   return trainable[0]
 }
@@ -248,9 +279,12 @@ export async function nextRoutineDay(
 export async function startWorkoutFromDay(userId: string, dayId: string): Promise<string> {
   const day = await db.routineDays.get(dayId)
   if (!day) throw new Error('Día de rutina no encontrado')
-  const entries = (await db.routineExercises.where('dayId').equals(dayId).toArray()).sort(
-    (a, b) => a.exerciseOrder - b.exerciseOrder
-  )
+  // Solo ejercicios que existen, en el orden de la rutina. Un día vacío no crea
+  // un entreno vacío (quedaba "en curso" y tapaba "Iniciar entrenamiento").
+  const entries = await routineDayEntries(dayId)
+  if (entries.length === 0) {
+    throw new Error('Este día no tiene ejercicios. Agregalos en la rutina y volvé a intentar.')
+  }
 
   const workout: Workout = {
     id: uid(),
@@ -313,7 +347,7 @@ export async function startWorkoutFromDay(userId: string, dayId: string): Promis
       : 0
 
   const sets: WorkoutSet[] = []
-  for (const entry of entries) {
+  for (const [entryIndex, entry] of entries.entries()) {
     const history = historyByExercise.get(entry.exerciseId) ?? []
 
     const exercise = exerciseMap.get(entry.exerciseId)
@@ -379,6 +413,8 @@ export async function startWorkoutFromDay(userId: string, dayId: string): Promis
         dirty: 1,
         updatedAt: nowIso(),
         supersetGroup: entry.supersetGroup,
+        // La posición en la rutina: sin esto el orden se perdía al empezar el entreno.
+        exerciseOrder: entryIndex + 1,
       })
     }
   }

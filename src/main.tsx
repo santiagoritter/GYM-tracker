@@ -5,6 +5,7 @@ import App from '@/App'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import { db, seedIfEmpty } from '@/db/schema'
 import { installSyncHooks, setSyncUser } from '@/db/syncHooks'
+import { repairRoutineExercises } from '@/db/routines'
 import { useAuthStore } from '@/stores/authStore'
 import { supabase } from '@/lib/supabaseClient'
 import { runSync } from '@/lib/sync'
@@ -82,6 +83,17 @@ installSyncHooks(db)
 // también fuera del árbol de React (stores, helpers de db).
 setSyncUser(useAuthStore.getState().userId)
 useAuthStore.subscribe((state) => setSyncUser(state.userId))
+
+// Reparación de rutinas (duplicados, filas vacías, orden): al arrancar y al cambiar
+// de cuenta. Antes solo corría dentro de runSync, que no corre en el modo sin cuenta:
+// un invitado con un ejercicio fantasma lo tenía para siempre.
+const repairRoutines = (userId: string | null) => {
+  if (userId) void repairRoutineExercises(userId).catch((e: unknown) => console.warn('[rutinas] reparación', e))
+}
+repairRoutines(useAuthStore.getState().userId)
+useAuthStore.subscribe((state, prev) => {
+  if (state.userId !== prev.userId) repairRoutines(state.userId)
+})
 
 // Fuente de verdad de la sesión: Supabase, no cada pantalla de login por
 // separado. Dispara también con la sesión restaurada al recargar la

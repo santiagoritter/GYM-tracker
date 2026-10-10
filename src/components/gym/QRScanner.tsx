@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import jsQR from 'jsqr'
-import { ClipboardPaste, X } from 'lucide-react'
+import { ClipboardPaste } from 'lucide-react'
 import { decodePayload, extractShareCode, importPayload, resolveShareCode, type QRPayload } from '@/lib/qr'
 import { useCurrentUserId } from '@/hooks/useCurrentUserId'
-import Portal from '@/components/ui/Portal'
+import FullScreenOverlay, { OverlayCloseButton } from '@/components/ui/FullScreenOverlay'
+import { toast } from '@/stores/toastStore'
 import { RoutineImportPreview } from '@/components/gym/RoutineImportPreview'
 
 /** Intenta resolver lo escaneado/pegado, en orden: código/URL de share
@@ -123,15 +124,16 @@ export function QRScanner({ onClose }: { onClose: () => void }) {
         setPayload(parsed)
         setName(parsed.n)
       } else {
-        alert(
+        toast.error(
+          'No se pudo importar',
           navigator.onLine
-            ? 'El texto pegado no es una rutina válida de Repe'
+            ? 'El texto pegado no es una rutina válida de Repe.'
             : 'No hay conexión: conectate a internet para importar la rutina.'
         )
       }
     } catch {
       setResolving(false)
-      alert('No se pudo leer el portapapeles')
+      toast.error('No se pudo leer el portapapeles', 'Probá de nuevo o escaneá el código.')
     }
   }
 
@@ -140,47 +142,45 @@ export function QRScanner({ onClose }: { onClose: () => void }) {
     try {
       const { routineId, skipped } = await importPayload(userId, payload, name)
       if (skipped > 0) {
-        alert(`Rutina importada. ${skipped} ejercicio(s) no se encontraron en el catálogo y se omitieron.`)
+        toast.info(
+          'Rutina importada',
+          `${skipped} ejercicio(s) no se encontraron en el catálogo y se omitieron.`
+        )
       }
       onClose()
       navigate(`/rutina/${routineId}`)
     } catch {
       // Sin catch, un error acá dejaba al usuario mirando el preview sin
       // ningún aviso de que la importación falló.
-      alert('No se pudo importar la rutina. Probá de nuevo.')
+      toast.error('No se pudo importar la rutina', 'Probá de nuevo.')
     }
   }
 
   // ── Preview de importación ──
   if (payload) {
     return (
-      <Portal>
-        <div className="fixed inset-0 z-50 flex flex-col bg-bg">
-          <RoutineImportPreview
-            payload={payload}
-            name={name}
-            onNameChange={setName}
-            onImport={handleImport}
-            onClose={onClose}
-          />
-        </div>
-      </Portal>
+      <FullScreenOverlay onClose={onClose}>
+        <RoutineImportPreview
+          payload={payload}
+          name={name}
+          onNameChange={setName}
+          onImport={handleImport}
+          onClose={onClose}
+        />
+      </FullScreenOverlay>
     )
   }
 
   // ── Vista de cámara ──
   return (
-    <Portal>
-      <div className="fixed inset-0 z-50 flex flex-col bg-bg">
+    <FullScreenOverlay onClose={onClose}>
         <div className="mx-auto flex w-full max-w-lg flex-1 flex-col">
-          <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center justify-between px-4 py-1">
             <h2 className="text-lg font-bold">Escanear rutina</h2>
-            <button onClick={onClose} className="rounded-lg p-2 text-ink-2">
-              <X size={22} />
-            </button>
+            <OverlayCloseButton onClick={onClose} />
           </div>
 
-          <div className="relative mx-4 flex-1 overflow-hidden rounded-2xl bg-surface">
+          <div className="relative mx-4 flex-1 overflow-hidden rounded-md bg-surface">
             {cameraError ? (
               <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
                 <p className="text-sm text-ink-2">
@@ -216,16 +216,22 @@ export function QRScanner({ onClose }: { onClose: () => void }) {
             </p>
           )}
 
-          <div className="px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+          {/* Abajo, donde llega el pulgar: "Cerrar" no depende de la X de arriba. */}
+          <div className="flex gap-2 px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+            <button
+              onClick={onClose}
+              className="h-14 flex-1 rounded-md bg-fill font-semibold text-ink active:bg-fill-2"
+            >
+              Cerrar
+            </button>
             <button
               onClick={handlePaste}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-line-2 py-3 font-semibold text-ink-2"
+              className="flex h-14 flex-[1.4] items-center justify-center gap-2 rounded-md border border-line-2 font-semibold text-ink-2 active:bg-surface"
             >
               <ClipboardPaste size={18} /> Pegar código
             </button>
           </div>
         </div>
-      </div>
-    </Portal>
+    </FullScreenOverlay>
   )
 }
