@@ -8,6 +8,7 @@ import { installSyncHooks, setSyncUser } from '@/db/syncHooks'
 import {
   addDay,
   addExerciseToDay,
+  dayEntriesForWorkout,
   moveExercise,
   nextRoutineDay,
   repairRoutineExercises,
@@ -118,6 +119,25 @@ const next = await nextRoutineDay(U, 'r3')
 check(next?.id === 'dMix', `nextRoutineDay propuso ${next?.id}, se esperaba dMix (dEmpty no tiene ejercicios)`)
 await db.routineDays.add({ id: 'dOnlyEmpty', routineId: 'r4', userId: U, name: 'Solo vacío', dayOrder: 1, isRest: 0 } as never)
 check((await nextRoutineDay(U, 'r4')) === undefined, 'nextRoutineDay propuso un día vacío cuando es el único')
+
+// ── Entreno de una rutina que NO es la favorita (reportado: seguía desordenado) ──
+await db.routines.bulkAdd([
+  { id: 'rFav', userId: U, name: 'Favorita', color: '#E8FF47', isActive: 1, isArchived: 0 },
+  { id: 'rOtra', userId: U, name: 'Otra', color: '#60A5FA', isActive: 0, isArchived: 0 },
+] as never)
+await db.routineDays.bulkAdd([
+  { id: 'dFav', routineId: 'rFav', userId: U, name: 'Día 1', dayOrder: 1, isRest: 0 },
+  { id: 'dOtra', routineId: 'rOtra', userId: U, name: 'Día 1', dayOrder: 1, isRest: 0 },
+] as never)
+await db.routineExercises.bulkAdd([
+  { id: 'f1', dayId: 'dFav', exerciseId: 'bench-press', exerciseOrder: 1, ...base },
+  { id: 'o1', dayId: 'dOtra', exerciseId: 'deadlift', exerciseOrder: 1, ...base },
+  { id: 'o2', dayId: 'dOtra', exerciseId: 'squat', exerciseOrder: 2, ...base },
+] as never)
+const found = await dayEntriesForWorkout(U, 'Día 1', new Set(['deadlift', 'squat']))
+check(found.map((e) => e.id).join() === 'o1,o2', `entreno de otra rutina: encontró ${found.map((e) => e.id).join()}, se esperaba o1,o2`)
+check((await dayEntriesForWorkout(U, 'Entreno libre', new Set(['squat']))).length === 0, 'entreno libre: no debería matchear ningún día')
+check((await dayEntriesForWorkout(OTHER, 'Día 1', new Set(['squat']))).length === 0, 'tocó rutinas de otra cuenta')
 
 if (fail.length) {
   console.error('❌ Duplicados de rutina:\n - ' + fail.join('\n - '))

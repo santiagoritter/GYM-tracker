@@ -4,7 +4,7 @@
  * rompe el orden, y comprueba el nuevo.
  */
 import { nextExerciseOrder, orderExerciseGroups } from '@/lib/workoutUnits'
-import { compareRoutineEntries, isKnownEntry, visibleEntries } from '@/lib/routineEntries'
+import { compareRoutineEntries, isKnownEntry, pickBestDay, visibleEntries } from '@/lib/routineEntries'
 import type { WorkoutSet } from '@/types'
 
 const fail: string[] = []
@@ -101,6 +101,20 @@ check(visibleEntries(rows, catalog).map((r) => r.exerciseId).join('') === 'ABC',
 check(!isKnownEntry({ exerciseId: '  ' }, catalog) && !isKnownEntry({ exerciseId: 'fantasma' }, catalog), 'vacío y desconocido no son válidos')
 check(isKnownEntry({ exerciseId: 'cualquiera' }, new Set()), 'catálogo vacío: se acepta lo que tenga id')
 check(compareRoutineEntries({ id: 'a', exerciseOrder: 1 }, { id: 'b', exerciseOrder: 1 }) < 0, 'empate: por id')
+
+// ── Qué día originó el entreno ────────────────────────────────────────────
+// Dos rutinas con un "Día 1": gana la que comparte más ejercicios, no la favorita.
+const cand = [
+  { dayId: 'activa', routineIsActive: true, exerciseIds: ['X', 'Y'] },
+  { dayId: 'otra', routineIsActive: false, exerciseIds: ['A', 'B', 'C'] },
+]
+check(pickBestDay(cand, new Set(['A', 'B', 'C']))?.dayId === 'otra', 'pickBestDay: ganó la favorita aunque no comparte ejercicios')
+check(pickBestDay(cand, new Set(['Z']))?.dayId === 'activa', 'pickBestDay: sin coincidencias debe preferir la favorita')
+check(pickBestDay([], new Set(['A'])) === undefined, 'pickBestDay: sin candidatos')
+check(
+  pickBestDay([{ dayId: 'a', routineIsActive: false, exerciseIds: ['A'] }, { dayId: 'b', routineIsActive: true, exerciseIds: ['A'] }], new Set(['A']))?.dayId === 'b',
+  'pickBestDay: empate de ejercicios → la favorita'
+)
 
 if (fail.length) {
   console.error('❌ Orden de ejercicios:\n  ' + fail.join('\n  '))

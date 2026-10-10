@@ -6,7 +6,7 @@ import { nowIso, uid } from '@/lib/utils'
 import { progressWeight, recommend, type MuscleGroupAdjustment } from '@/lib/recommendation'
 import { getMuscleGroupLevels } from '@/lib/muscleGroupStrength'
 import { ageFromDob } from '@/lib/strengthStandards'
-import { compareRoutineEntries, visibleEntries } from '@/lib/routineEntries'
+import { compareRoutineEntries, pickBestDay, visibleEntries, type DayCandidate } from '@/lib/routineEntries'
 
 export const ROUTINE_COLORS = ['#E8FF47', '#60A5FA', '#F97316', '#EC4899', '#4ADE80', '#A855F7']
 
@@ -123,6 +123,34 @@ export async function routineDayEntries(dayId: string): Promise<RoutineExercise[
   const rows = await db.routineExercises.where('dayId').equals(dayId).toArray()
   const catalog = new Set(await db.exercises.toCollection().primaryKeys())
   return visibleEntries(rows, catalog)
+}
+
+/**
+ * Los ejercicios del día de rutina que originó un entreno (ver `pickBestDay`): se
+ * usa para el orden de los entrenos anteriores a `exerciseOrder` y para el descanso
+ * de cada ejercicio. Vacío si el entreno es libre o la rutina ya no existe.
+ */
+export async function dayEntriesForWorkout(
+  userId: string,
+  workoutName: string,
+  workoutExerciseIds: ReadonlySet<string>
+): Promise<RoutineExercise[]> {
+  const days = await db.routineDays.filter((d) => d.userId === userId && d.name === workoutName).toArray()
+  if (days.length === 0) return []
+  const routines = new Map((await db.routines.where('userId').equals(userId).toArray()).map((r) => [r.id, r]))
+  const entriesByDay = new Map<string, RoutineExercise[]>()
+  const candidates: DayCandidate[] = []
+  for (const day of days) {
+    const entries = await routineDayEntries(day.id)
+    entriesByDay.set(day.id, entries)
+    candidates.push({
+      dayId: day.id,
+      routineIsActive: routines.get(day.routineId)?.isActive === 1,
+      exerciseIds: entries.map((e) => e.exerciseId),
+    })
+  }
+  const best = pickBestDay(candidates, workoutExerciseIds)
+  return best ? (entriesByDay.get(best.dayId) ?? []) : []
 }
 
 /**

@@ -36,3 +36,35 @@ export function visibleEntries<T extends Pick<RoutineExercise, 'id' | 'exerciseI
 ): T[] {
   return rows.filter((r) => isKnownEntry(r, catalogIds)).sort(compareRoutineEntries)
 }
+
+export interface DayCandidate {
+  dayId: string
+  /** ¿Es un día de la rutina favorita? Desempata cuando dos rutinas tienen un día con el mismo nombre. */
+  routineIsActive: boolean
+  exerciseIds: readonly string[]
+}
+
+/**
+ * Qué día de rutina originó un entreno. El entreno no guarda el `dayId` (solo el
+ * nombre del día), y dos rutinas pueden tener un "Día 1": se elige el que más
+ * ejercicios comparte con las series del entreno y, ante un empate, el de la rutina
+ * favorita. Antes se buscaba solo entre los días de la rutina favorita, así que un
+ * entreno de otra rutina perdía su orden y sus descansos.
+ */
+export function pickBestDay(
+  candidates: readonly DayCandidate[],
+  workoutExerciseIds: ReadonlySet<string>
+): DayCandidate | undefined {
+  let best: { c: DayCandidate; overlap: number } | undefined
+  for (const c of candidates) {
+    const overlap = c.exerciseIds.filter((id) => workoutExerciseIds.has(id)).length
+    if (
+      !best ||
+      overlap > best.overlap ||
+      (overlap === best.overlap && c.routineIsActive && !best.c.routineIsActive)
+    ) {
+      best = { c, overlap }
+    }
+  }
+  return best?.c
+}

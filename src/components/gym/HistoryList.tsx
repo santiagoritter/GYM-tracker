@@ -3,6 +3,8 @@ import { useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ChevronDown, History } from 'lucide-react'
 import { db } from '@/db/schema'
+import { dayEntriesForWorkout } from '@/db/routines'
+import { useCurrentUserId } from '@/hooks/useCurrentUserId'
 import { cn, formatDate, formatDuration } from '@/lib/utils'
 import { EmptyState } from '@/components/ui/Card'
 
@@ -25,6 +27,18 @@ export function HistoryList() {
         expanded ? db.workoutSets.where('workoutId').equals(expanded).toArray() : [],
       [expanded]
     ) ?? []
+  // Orden de un entreno anterior a `exerciseOrder`: el de la rutina que lo originó.
+  const userId = useCurrentUserId()
+  const expandedWorkout = (workouts ?? []).find((w) => w.id === expanded)
+  const expandedKey = [...new Set(expandedSets.map((s) => s.exerciseId))].sort().join('|')
+  const expandedDayEntries =
+    useLiveQuery(
+      () =>
+        userId && expandedWorkout
+          ? dayEntriesForWorkout(userId, expandedWorkout.name, new Set(expandedKey ? expandedKey.split('|') : []))
+          : [],
+      [userId, expandedWorkout?.name, expandedKey]
+    ) ?? []
   const exercises = useLiveQuery(() => db.exercises.toArray(), []) ?? []
   const exerciseMap = useMemo(() => new Map(exercises.map((e) => [e.id, e])), [exercises])
 
@@ -34,7 +48,7 @@ export function HistoryList() {
         const isOpen = expanded === w.id
         const sets = isOpen ? expandedSets.filter((s) => s.completed === 1) : []
         // Ejercicios en el orden en que se entrenaron (ver orderExerciseGroups)
-        const byExercise = orderExerciseGroups(sets)
+        const byExercise = orderExerciseGroups(sets, isOpen ? expandedDayEntries : [])
 
         return (
           <div key={w.id} className="overflow-hidden rounded-xl bg-surface">

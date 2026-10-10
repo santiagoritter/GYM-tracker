@@ -7,10 +7,8 @@ import {
   workoutSetsOf,
   workoutsFor,
   personalRecordsFor,
-  routinesFor,
-  routineDaysOf,
-  routineExercisesOf,
 } from '@/db/scoped'
+import { dayEntriesForWorkout } from '@/db/routines'
 import { useWorkoutStore } from '@/stores/workoutStore'
 import { useStaleWorkout } from '@/hooks/useStaleWorkout'
 import StaleWorkoutCard from '@/components/gym/StaleWorkoutCard'
@@ -85,34 +83,24 @@ export default function Workout() {
     [userId]
   )
 
-  // Descanso por ejercicio: RoutineExercise.restSeconds se configura en
-  // RoutineEditor pero Workout no guarda de qué rutina/día vino (decisión
-  // documentada en routines.ts — evitar migrar Dexie/Postgres por esa FK).
-  // Se resuelve con la misma heurística que ya usa `nextRoutineDay`: el
-  // nombre del entreno es el nombre del día (`startWorkoutFromDay` lo
-  // nombra así), así que se busca el día de la rutina activa con ese
-  // nombre y se lee restSeconds del ejercicio ahí. Si no matchea (entreno
-  // libre, rutina renombrada), cae al default global de Ajustes.
-  const activeRoutine = useLiveQuery(
-    () =>
-      userId
-        ? routinesFor(userId).filter((r) => r.isActive === 1 && r.isArchived === 0).first()
-        : undefined,
-    [userId]
-  )
-  const routineDays =
-    useLiveQuery(
-      () => (activeRoutine ? routineDaysOf(activeRoutine.id).toArray() : []),
-      [activeRoutine?.id]
-    ) ?? []
-  const matchingDay = useMemo(
-    () => routineDays.find((d) => d.name === workout?.name),
-    [routineDays, workout?.name]
+  // Descanso y orden por ejercicio: el entreno no guarda de qué rutina/día vino
+  // (decisión documentada en routines.ts: evitar migrar Dexie/Postgres por esa FK).
+  // Se resuelve con el nombre del entreno (`startWorkoutFromDay` lo nombra como el
+  // día) entre los días de TODAS las rutinas del usuario, eligiendo el que comparte
+  // más ejercicios con el entreno (ver `dayEntriesForWorkout`). Antes solo miraba la
+  // rutina favorita: un entreno de otra rutina perdía su orden y sus descansos.
+  // Sin match (entreno libre, rutina borrada) cae al default global de Ajustes.
+  const setExerciseKey = useMemo(
+    () => [...new Set((sets ?? []).map((s) => s.exerciseId))].sort().join('|'),
+    [sets]
   )
   const dayEntries =
     useLiveQuery(
-      () => (matchingDay ? routineExercisesOf(matchingDay.id).toArray() : []),
-      [matchingDay?.id]
+      () =>
+        userId && workout
+          ? dayEntriesForWorkout(userId, workout.name, new Set(setExerciseKey ? setExerciseKey.split('|') : []))
+          : [],
+      [userId, workout?.name, setExerciseKey]
     ) ?? []
 
   const exerciseMap = useMemo(

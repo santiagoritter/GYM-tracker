@@ -1378,3 +1378,20 @@ publicar el cliente; las pendientes suben solas en el próximo sync.
   `src/lib/routineGuide.ts` con fuentes: ACSM 2009, Simão 2012, Schoenfeld 2017).
 - No se hizo (decisión): descartar automáticamente entrenos "en curso" con 0 series al
   abrir Inicio; la tarjeta de entreno sin terminar ya los cubre a las 3 h.
+
+## 2026-10-10 (2) — Orden de ejercicios: faltaba el caso de otra rutina
+
+El primer arreglo del orden solo cubría entrenos de la rutina FAVORITA: para los
+entrenos anteriores a `exerciseOrder` el orden se reconstruía buscando el día por
+nombre entre los días de la rutina activa. Un entreno de otra rutina (o de un
+"Día 1" repetido) no encontraba su día y seguía saliendo en el orden del UUID.
+Reproducido antes de tocar nada (`OK: false`) y arreglado: `dayEntriesForWorkout`
+busca entre los días de TODAS las rutinas del usuario y `pickBestDay` elige el que
+comparte más ejercicios con el entreno (desempata la favorita). Se usa también para
+el descanso por ejercicio (tenía el mismo defecto) y para el detalle del historial.
+Los entrenos nuevos ya guardan `exerciseOrder` y no dependen de esto.
+
+Lección: la verificación anterior sembraba justo el caso feliz (una sola rutina,
+activa). Ahora el escenario incluye dos rutinas con el mismo nombre de día y una no
+activa. Y recordatorio para iOS: el bundle de `ios/App/App/public` solo se actualiza
+con `npm run build && npx cap sync ios`; sin eso Xcode corre la versión anterior.
